@@ -1,0 +1,588 @@
+# MAXUSBApp.py
+#
+# Contains class definition for MAXUSBApp.
+
+import sys
+import time
+import codecs
+import traceback
+import greatfet
+
+from greatfet import errors
+from greatfet.protocol import vendor_requests
+
+from .Facedancer import *
+from .USB import *
+from .USBDevice import USBDeviceRequest
+from .USBEndpoint import USBEndpoint
+
+class GreatDancerApp(FacedancerApp):
+    app_name = "GreatDancer"
+    app_num = 0x00 # This doesn't have any meaning for us.
+
+    # Interrupt register (USBSTS) bits masks.
+    USBSTS_D_UI  = (1 << 0)
+    USBSTS_D_URI = (1 << 6)
+
+    # Number of supported USB endpoints.
+    # TODO: bump this up when we develop support using USB0 (cables flipped)
+    SUPPORTED_ENDPOINTS = 4
+
+    # USB directions
+    HOST_TO_DEVICE = 0
+    DEVICE_TO_HOST = 1
+
+    # Get status command indexes
+    GET_USBSTS         = 0
+    GET_ENDPTSETUPSTAT = 1
+    GET_ENDPTCOMPLETE  = 2
+    GET_ENDPTSTATUS    = 3
+
+
+    def __init__(self, device, verbose=0):
+        """
+        Sets up a new GreatFET-backed Facedancer (GreatDancer) application.
+
+        device: The GreatFET device that will act as our GreatDancer.
+        verbose: The verbosity level of the given application.
+        """
+        FacedancerApp.__init__(self, device, verbose)
+        self.connected_device = None
+
+        # Initialize a dictionary that will store the last setup
+        # whether each endpoint is currently stalled.
+        self.endpoint_stalled = {}
+        for i in range(self.SUPPORTED_ENDPOINTS):
+            self.endpoint_stalled[i] = False
+
+        # Store a reference to the device's active configuration,
+        # which we'll use to know which endpoints we'll need to check
+        # for data transfer readiness.
+        self.configuration = None
+
+    def init_commands(self):
+        """
+        API compatibility fucntion; not necessary for GreatDancer. 
+        """
+        pass
+
+
+    def get_version(self):
+        """
+        Returns information about the active GreatDancer version.
+        """
+        # TODO: Return the GreatFET software version, or something indicating
+        # the GreatFET API number?
+        raise NotImplementedError()
+
+
+    def ack_status_stage(self, direction=HOST_TO_DEVICE, endpoint_number=0):
+        """
+            Handles the status stage of a correctly completed control request,
+            by priming the appropriate endpint to handle the status phase.
+
+            direction: Determines if we're ACK'ing an IN or OUT vendor request.
+                (This should match the direcion of the DATA stage.)
+            endpoint_number: The endpoint number on which the control request
+            occurred.
+        """
+        if direction == self.HOST_TO_DEVICE:
+            # If this was an OUT request, we'll prime the output buffer to
+            # respond with the ZLP expected during the status stage.
+            self.send_on_endpoint(endpoint_number, data=[])
+        else:
+            # If this was an IN request, we'll need to set up a transfer descriptor
+            # so the status phase can operate correctly. This effectively reads the
+            # zero length packet from the STATUS phase.
+            self.read_from_endpoint(endpoint_number)
+
+
+    @staticmethod
+    def _generate_endpoint_config_quad(endpoint):
+        """
+        Generates a four-bite command used to configure a single GreatDancer endpoint.
+
+        endpoint: A USBEndpoint object that contains the endpoint 
+                configruation to be applied.
+        """
+
+        # Figure out the endpoint's address.
+        direction_mask = 0x80 if endpoint.direction == USBEndpoint.direction_in else 0x00
+        address = endpoint.number | direction_mask
+
+        # Figure out the two bytes of the maximum packet size.
+        max_packet_size_h = endpoint.max_packet_size >> 8
+        max_packet_size_l = endpoint.max_packet_size & 0xFF;
+
+        # Generate the relevant packet.
+        return [address, max_packet_size_l, max_packet_size_h, endpoint.transfer_type]
+
+
+    def _generate_endpoint_config_command(self, config):
+        """
+        Generates the data content for an Endpoint Configuration command that will
+        set up the GreatDancer's endpoints to match the active configuration.
+
+        config: A USBConfiguration object that represents the configuration being
+            applied to the GreatDancer.
+        """
+        command = []
+
+        for interface in config.interfaces:
+            for endpoint in interface.endpoints:
+
+                if self.verbose > 0:
+                    print ("Setting up endpoint {} (direction={}, transfer_type={})".format(endpoint.number, endpoint.direction, endpoint.transfer_type))
+
+                command.extend(self._generate_endpoint_config_quad(endpoint))
+
+        return command
+
+
+    def connect(self, usb_device):
+        """
+        Prepares the GreatDancer to connect to the target host and emulate
+        a given device.
+
+        usb_device: The USBDevice object that represents the device to be
+            emulated.
+        """
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_CONNECT)
+        self.connected_device = usb_device
+
+        if self.verbose > 0:
+            print(self.app_name, "connected device", self.connected_device.name)
+
+
+    def disconnect(self):
+        """ Disconnects the GreatDancer from its target host. """
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_DISCONNECT)
+
+
+    def send_on_endpoint(self, ep_num, data):
+        """
+        Sends a collection of USB data on a given endpoint.
+
+        ep_num: The number of the IN endpoint on which data should be sent.
+        data: The data to be sent.
+        """
+        if self.verbose > 3:
+            print("sending on {}: {}".format(ep_num, data))
+
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
+
+
+    def read_from_endpoint(self, ep_num):
+        """
+        Reads a block of data from the given endpoint.
+
+        ep_num: The number of the OUT endpoint on which data is to be rx'd.
+        """
+
+        # Start a nonblocking read from the given endpoint...
+        self._prime_out_endpoint(ep_num)
+
+        # ... and wait for the transfer to complete.
+        while not self._transfer_is_complete(ep_num, self.HOST_TO_DEVICE):
+            pass
+
+        # Finally, return the result.
+        return self._finish_primed_read_on_endpoint(ep_num)
+
+
+    def stall_endpoint(self, ep_num):
+        """
+        Stalls the provided endpoint, as defined in the USB spec.
+
+        ep_num: The number of the endpoint to be stalled.
+        """
+        self.endpoint_stalled[ep_num] = True
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_STALL_ENDPOINT, index=ep_num)
+
+
+    def stall_ep0(self):
+        """
+        Conveneince function that stalls the control endpoint zero.
+        """
+        self.stall_endpoint(0)
+
+
+    def set_address(self, address):
+        """
+        Sets the device address of the GreatDancer. Usually only used during
+        initial configuration.
+
+        address: The address that the GreatDancer should assume.
+        """
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_SET_ADDRESS, value=address)
+
+
+    @staticmethod
+    def _decode_usb_register(transfer_result):
+        """
+        Decodes a raw 32-bit register value from a form encoded
+        for transit as a USB control request.
+
+        transfer_result: The value returned by the vendor request.
+        returns: The raw integer value of the given register.
+        """
+        status_hex = codecs.encode(transfer_result[::-1], 'hex')
+        return int(status_hex, 16)
+
+
+    def _fetch_status_register(self, register_number):
+        """
+        Fetches a status register from the GreatDacner, and returns it
+        as an integer.
+        """
+        raw_status = self.device.vendor_request_in(vendor_requests.GREATDANCER_GET_STATUS, index=register_number, length=4)
+        return self._decode_usb_register(raw_status)
+
+
+    def _fetch_irq_status(self):
+        """
+        Fetch the USB controller's pending-IRQ bitmask, which indicates
+        which interrupts need to be serviced.
+
+        returns: A raw integer bitmap.
+        """
+        return self._fetch_status_register(self.GET_USBSTS)
+
+
+    def _fetch_setup_status(self):
+        """
+        Fetch the USB controller's "pending setup packet" bitmask, which
+        indicates which endpoints have setup packets to be read.
+
+        returns: A raw integer bitmap.
+        """
+        return self._fetch_status_register(self.GET_ENDPTSETUPSTAT)
+
+
+    def _handle_setup_events(self):
+        """
+        Handles any outstanding setup events on the USB controller.
+        """
+
+        # Determine if we have setup packets on any of our endpoints.
+        status = self._fetch_setup_status()
+
+        # If we don't, abort.
+        if not status:
+            return
+
+        # Otherwise, figure out which endpoints have outstanding setup events,
+        # and handle them.
+        for i in range(self.SUPPORTED_ENDPOINTS):
+            if status & (1 << i):
+                self._handle_setup_event_on_endpoint(i)
+
+
+    def _handle_setup_event_on_endpoint(self, endpoint_number):
+        """
+        Handles a known outstanding setup event on a given endpoint.
+
+        endpoint_number: The endpoint number for which a setup event should be serviced.
+        """
+
+        # HACK: to maintain API compatibility with the existing facedancer API,
+        # we need to know if a stall happens at any point during our handler.
+        self.endpoint_stalled[endpoint_number] = False
+
+        # Read the data from the SETUP stage...
+        data = self.device.vendor_request_in(vendor_requests.GREATDANCER_READ_SETUP, length=8, index=endpoint_number)
+        request = USBDeviceRequest(data)
+
+        # If this is an OUT request, handle the data stage,
+        # and add it to the request.
+        is_out   = request.get_direction() == self.HOST_TO_DEVICE
+        has_data = (request.length > 0)
+        if is_out and has_data:
+            # TODO: Test this and make sure it's okay. It _should_ prime a
+            # new transfer and then wait for it to complete, but it's only been
+            # minimally tested. If this doesn't work, we can abort here and
+            # fire off the handle_request from _handle_transfer_complete_on_endpoint.
+            new_data = self.read_from_endpoint(endpoint_number)
+            data.extend(new_data)
+
+        request = USBDeviceRequest(data)
+        self.connected_device.handle_request(request)
+
+        if not is_out and not self.endpoint_stalled[endpoint_number]:
+            self.ack_status_stage(direction=self.DEVICE_TO_HOST)
+
+
+    def _fetch_transfer_status(self):
+        """
+        Fetch the USB controller's "completed transfer" bitmask, which
+        indicates which endpoints have recently completed transactions.
+
+        returns: A raw integer bitmap.
+        """
+        return self._fetch_status_register(self.GET_ENDPTCOMPLETE)
+
+
+    def _transfer_is_complete(self, endpoint_number, direction):
+        """
+        Returns true iff a given endpoint has just completed a transfer.
+        Can be used to check for completion of a non-blocking transfer.
+
+        endpoint_number: The endpoint number to be queried.
+        direction:
+            The direction of the transfer. Should be self.HOST_TO_DEVICE or
+            self.DEVICE_TO_HOST.
+        """
+        status = self._fetch_transfer_status()
+
+        # From the LPC43xx manual: out endpoint completions start at bit zero,
+        # while in endpoint completions start at bit 16.
+        out_is_ready = (status & (1 << endpoint_number))
+        in_is_ready  = (status & (1 << (endpoint_number + 16)))
+
+        if direction == self.HOST_TO_DEVICE:
+            return out_is_ready
+        else:
+            return in_is_ready
+
+
+    def _handle_transfer_events(self):
+        """
+        Handles any outstanding setup events on the USB controller.
+        """
+
+        # Determine if we have setup packets on any of our endpoints.
+        status = self._fetch_transfer_status()
+
+        # If we don't, abort.
+        if not status:
+            return
+
+        if self.verbose > 5:
+            print("Out status: {}".format(bin(status & 0x0F)))
+            print("IN status: {}".format(bin(status >> 16)))
+
+        # Figure out which endpoints have recently completed transfers,
+        # and clean up any transactions on those endpoints. It's important
+        # that this be done /before/ the _handle_transfer_complete... section
+        # below, as those can generate further events which will need the freed
+        # transfer descriptors.
+        # [Note that it's safe to clean up the transfer descriptors before reading,
+        #  here-- the GreatFET's USB controller has transparently moved any data
+        #  from OUT transactions into a holding buffer for us. Nice of it!]
+        for i in range(self.SUPPORTED_ENDPOINTS):
+            if status & (1 << i):
+                self._clean_up_transfers_for_endpoint(i, self.HOST_TO_DEVICE)
+
+            if status & (1 << (i + 16)):
+                self._clean_up_transfers_for_endpoint(i, self.DEVICE_TO_HOST)
+
+        # Now that we've cleaned up all relevant transfer descriptors, trigger
+        # any events that should occur due to the completed transaction.
+        for i in range(self.SUPPORTED_ENDPOINTS):
+            if status & (1 << i):
+                self._handle_transfer_complete_on_endpoint(i, self.HOST_TO_DEVICE)
+
+            if status & (1 << (i + 16)):
+                self._handle_transfer_complete_on_endpoint(i, self.DEVICE_TO_HOST)
+
+
+        # Finally, after completing all of the above, we may now have idle
+        # (unprimed) endpoints. For OUT endpoints, we'll need to re-prime them
+        # so we're ready for reciept; for IN endpoints, we'll want to give the
+        # emulated device a chance to provide new data.
+        self._handle_transfer_readiness()
+
+
+    def _finish_primed_read_on_endpoint(self, endpoint_number):
+        """
+        Completes a non-blocking (primed) read on an OUT endpoint by reading any data
+        received since the endpoint was primed. See read_from_endpoint for an example
+        of proper use.
+
+        endpoint_number: The endpoint to read from.
+        """
+
+        # Figure out how much data we'll need to read from the endpoint...
+        raw_length = self.device.vendor_request_in(vendor_requests.GREATDANCER_GET_NONBLOCKING_LENGTH, index=endpoint_number, length=4)
+        length = self._decode_usb_register(raw_length)
+
+        # If there's no data available, we don't need to waste time reading anyting
+        # the GreatDancer. Return an empty packet.
+        if length == 0:
+            return b''
+
+        # Otherwise, read the data from the endpoint and return it.
+        data = self.device.vendor_request_in(vendor_requests.GREATDANCER_FINISH_NONBLOCKING_READ, index=endpoint_number, length=length)
+        return data.tostring()
+
+
+    def _clean_up_transfers_for_endpoint(self, endpoint_number, direction):
+        """
+        Cleans up any outstanding transfers on the given endpoint. This must be
+        called for each completed transaction so the relevant transfer descriptors
+        can be re-used.
+
+        There's no harm in calling this if a transaction isn't complete, but it _must_
+        be called at least once for each completed transaction.
+
+        endpoint_number: The endpoint number whose transfer desctiprots should be cleaned
+            up.
+        direction: The endpoint direction for which TD's should be cleaned.
+        """
+
+        if self.verbose > 5:
+            print("Cleaning up transfers on {}".format(endpoint_number))
+
+        # Ask the device to clean up any transaction descriptors related to the transfer.
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_CLEAN_UP_TRANSFER, index=endpoint_number, value=direction)
+
+
+    def _handle_transfer_complete_on_endpoint(self, endpoint_number, direction):
+        """
+        Handles a known-compelted transfer  on a given endpoint.
+
+        endpoint_number: The endpoint number for which a setup event should be serviced.
+        """
+
+        # If a transfer has just completed on an OUT endpoint, we've just received data!
+        if direction == self.HOST_TO_DEVICE:
+
+            # TODO: support control endpoints other than zero
+            if (endpoint_number != 0):
+                data = self._finish_primed_read_on_endpoint(endpoint_number)
+                self.connected_device.handle_data_available(endpoint_number, data)
+
+
+    def _fetch_transfer_readiness(self):
+        """
+        Queries the GreatFET for a bitmap describing the endpoints that are not
+        currently primed, and thus ready to be primed again.
+        """
+        return self._fetch_status_register(self.GET_ENDPTSTATUS)
+
+
+    def _prime_out_endpoint(self, endpoint_number):
+        """
+        Primes an out endpoint, allowing it to recieve data the next time the host chooses to send it.
+
+        endpoint_number: The endpoint that should be primed.
+        """
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_START_NONBLOCKING_READ, index=endpoint_number)
+
+
+    def _handle_transfer_readiness(self):
+        """
+        Check to see if any non-control IN endpoints are ready to
+        accept data from our device, and handle if they are.
+        """
+
+        # If we haven't been configured yet, we can't have any
+        # endpoints other than the control endpoint, and we don't n
+        if not self.configuration:
+            return
+
+        # Fetch the endpoint status.
+        status = self._fetch_transfer_readiness()
+
+        # Check the status of every endpoint /except/ endpoint zero,
+        # which is always a control endpoint and set handled by our
+        # control transfer handler.
+        for interface in self.configuration.interfaces:
+            for endpoint in interface.endpoints:
+
+                # Check to see if the endpoint is ready to be primed.
+                if self._is_ready_for_priming(endpoint.number, endpoint.direction):
+
+                    # If this is an IN endpoint, we're ready to accept data to be
+                    # presented on the next IN token.
+                    if endpoint.direction == USBEndpoint.direction_in:
+                        self.connected_device.handle_buffer_available(endpoint.number)
+
+                    # If this is an OUT endpoint, we'll need to prime the endpoint to
+                    # accept new data. This provides a place for data to go once the
+                    # host sends an OUT token.
+                    else:
+                        self._prime_out_endpoint(endpoint.number)
+
+
+    def _is_ready_for_priming(self, ep_num, direction):
+        """
+        Returns true iff the endpoint is ready to be primed.
+
+        ep_num: The endpoint number in question.
+        direction: The endpoint direction in question.
+        """
+
+        # Fetch the endpoint status.
+        status = self._fetch_transfer_readiness()
+
+        ready_for_in  = (not status & (1 << (ep_num + 16)))
+        ready_for_out = (not status & (1 << (ep_num)))
+
+        if direction == self.HOST_TO_DEVICE:
+            return ready_for_out
+        else:
+            return ready_for_in
+
+
+    def _bus_reset(self):
+        """
+        Triggers the GreatDancer to perform its side of a bus reset.
+        """
+        self.device.vendor_request_out(vendor_requests.GREATDANCER_BUS_RESET)
+
+
+    def _configure_endpoints(self, configuration):
+        """
+        Configures the GreatDancer's endpoints to match the provided configuration.
+
+        configurat: The USBConfigruation object that describes the endpoints provided.
+        """
+        endpoint_config_command = self._generate_endpoint_config_command(configuration)
+
+        # If we need to issue a configuration command, issue one.
+        # (If there are no endpoints other than control, this command will be
+        #  empty, and we can skip this.)
+        if endpoint_config_command:
+            self.device.vendor_request_out(vendor_requests.GREATDANCER_SET_UP_ENDPOINTS, data=endpoint_config_command)
+
+
+    def configured(self, configuration):
+        """
+        Callback that's issued when a USBDevice is configured, e.g. by the
+        SET_CONFIGRUATION request. Allows us to apply the new configuration.
+
+        configuration: The configruation applied by the SET_CONFIG request.
+        """
+        self._configure_endpoints(configuration)
+
+        self.configuration = configuration
+
+        # If we've just set up endpoints, check to see if any of them
+        # need to be primed.
+        self._handle_transfer_readiness()
+
+
+    def service_irqs(self):
+        """
+        Core Facedancer execution/event loop. Continuously monitors the 
+        GreatDancer's execution status, and reacts as events occur.
+        """
+
+        while True:
+            status = self._fetch_irq_status()
+
+            # Other bits that may be of interest:
+            # D_SRI = start of frame received
+            # D_PCI = port change detect (switched between low, full, high speed state)
+            # D_SLI = device controller suspend
+            # D_UEI = USB error; completion of transaction caused error, see usb1_isr in firmware
+            # D_NAKI = both the tx/rx NAK bit and corresponding endpoint NAK enable are set
+
+            if status & self.USBSTS_D_UI:
+                self._handle_setup_events()
+                self._handle_transfer_events()
+
+            if status & self.USBSTS_D_URI:
+                self._bus_reset()
+
