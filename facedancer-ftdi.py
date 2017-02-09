@@ -2,17 +2,10 @@
 #
 # facedancer-ftdi.py
 
-import greatfet
-import facedancer
-
-from greatfet import *
-from facedancer.GreatDancerApp import GreatDancerApp
-
+from facedancer import FacedancerUSBApp
 from USBFtdi import *
 
-gf = GreatFET()
-u = GreatDancerApp(gf, verbose=6)
-
+u = FacedancerUSBApp(verbose=1)
 d = USBFtdiDevice(u, verbose=6)
 
 d.connect()

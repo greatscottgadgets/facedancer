@@ -22,15 +22,10 @@ if len(sys.argv)==1:
 
 from serial import Serial, PARITY_NONE
 
-import greatfet
-
-from greatfet import *
-from facedancer.GreatDancerApp import GreatDancerApp
-
+from facedancer import FacedancerUSBApp
 from USBMassStorage import *
 
-gf = GreatFET()
-u = GreatDancerApp(gf, verbose=6)
+u = FacedancerUSBApp(verbose=1)
 d = USBMassStorageDevice(u, sys.argv[1], verbose=3)
 
 d.connect()

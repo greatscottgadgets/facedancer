@@ -2,16 +2,10 @@
 #
 # facedancer-keyboard.py
 
-import greatfet
-
-from greatfet import *
-from facedancer.GreatDancerApp import GreatDancerApp
-
+from facedancer import FacedancerUSBApp
 from USBKeyboard import *
 
-gf = GreatFET()
-u = GreatDancerApp(gf, verbose=5)
-
+u = FacedancerUSBApp(verbose=1)
 d = USBKeyboardDevice(u, verbose=5)
 
 d.connect()
