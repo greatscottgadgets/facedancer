@@ -11,10 +11,10 @@ import greatfet
 from greatfet import errors
 from greatfet.protocol import vendor_requests
 
-from .Facedancer import *
-from .USB import *
-from .USBDevice import USBDeviceRequest
-from .USBEndpoint import USBEndpoint
+from ..core import *
+from ..USB import *
+from ..USBDevice import USBDeviceRequest
+from ..USBEndpoint import USBEndpoint
 
 class GreatDancerApp(FacedancerApp):
     app_name = "GreatDancer"
@@ -38,14 +38,38 @@ class GreatDancerApp(FacedancerApp):
     GET_ENDPTCOMPLETE  = 2
     GET_ENDPTSTATUS    = 3
 
+    @classmethod
+    def appropriate_for_environment(cls, backend_name):
+        """
+        Determines if the current environment seems appropriate
+        for using the GreatDancer backend.
+        """
 
-    def __init__(self, device, verbose=0):
+        # Check: if we have a backend name other than greatfet,
+        # the user is trying to use something else. Abort!
+        if backend_name and backend_name != "greatfet":
+            return False
+
+        # If we're not explicitly trying to use something else,
+        # see if there's a connected GreatFET.
+        try:
+            gf = greatfet.GreatFET()
+            return True
+        except:
+            return False
+
+
+    def __init__(self, device=None, verbose=0):
         """
         Sets up a new GreatFET-backed Facedancer (GreatDancer) application.
 
         device: The GreatFET device that will act as our GreatDancer.
         verbose: The verbosity level of the given application.
         """
+
+        if device is None:
+            device = greatfet.GreatFET()
+
         FacedancerApp.__init__(self, device, verbose)
         self.connected_device = None
 
