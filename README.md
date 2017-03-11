@@ -41,13 +41,13 @@ export BACKEND=goodfet
  * All GoodFET-based facedancers, including the common FaceDancer21 (```BACKEND=goodfet```)
  * The [GreatFET One](http://greatscottgadgets.com/greatfet/) (```BACKEND=greatfet```)
  * The NXP LPC4330 Xplorer board (```BACKEND=greatfet```)
+ * RPi + Max3241 Raspdancer boards (```BACKEND=raspdancer```)
 
 Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulating
 more complex devices-- there's limitation on the number/type of endpoints that can be
 set up. The LPC4330 boards-- such as the GreatFET-- don't suffer these limitations.
 
 ## What boards could be supported soon?
- * The Raspdancer (just needs a teensy bit of porting)
  * Any Linux computer with gadgetfs support (e.g. the Pi Zero or Beaglebone Black)
 
 ## What features do you plan on adding?
