@@ -2,9 +2,6 @@
 #
 # Contains class definitions to implement a USB FTDI chip.
 
-
-import greatfet
-
 from facedancer.USB import *
 from facedancer.USBDevice import *
 from facedancer.USBConfiguration import *

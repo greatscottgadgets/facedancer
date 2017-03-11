@@ -1,12 +1,9 @@
 # Facedancer.py
 #
-# TODO: Either make sure this is only used for GoodFET based facedancers, or
-# clean up the GoodFET-specific part to improve neutrality.
-#
-# Contains class definitions for Facedancer, FacedancerCommand, FacedancerApp,
+# Contains the core methods for working with a facedancer, inclduing methods
+# necessary for autodetection.
 # and GoodFETMonitorApp.
 
-import serial
 import os
 
 from .errors import *
@@ -108,69 +105,3 @@ class FacedancerApp:
 
     def enable(self):
         pass
-
-
-class GoodFETMonitorApp(FacedancerApp):
-    app_name = "GoodFET monitor"
-    app_num = 0x00
-
-    def read_byte(self, addr):
-        d = [ addr & 0xff, addr >> 8 ]
-        cmd = FacedancerCommand(self.app_num, 2, d)
-
-        self.device.writecmd(cmd)
-        resp = self.device.readcmd()
-
-        return resp.data[0]
-
-    def get_infostring(self):
-        return bytes([ self.read_byte(0xff0), self.read_byte(0xff1) ])
-
-    def get_clocking(self):
-        return bytes([ self.read_byte(0x57), self.read_byte(0x56) ])
-
-    def print_info(self):
-        infostring = self.get_infostring()
-        clocking = self.get_clocking()
-
-        print("MCU", bytes_as_hex(infostring, delim=""))
-        print("clocked at", bytes_as_hex(clocking, delim=""))
-
-    def list_apps(self):
-        cmd = FacedancerCommand(self.app_num, 0x82, b'\x01')
-        self.device.writecmd(cmd)
-
-        resp = self.device.readcmd()
-        print("build date:", resp.data.decode("utf-8"))
-
-        print("firmware apps:")
-        while True:
-            resp = self.device.readcmd()
-            if len(resp.data) == 0:
-                break
-            print(resp.data.decode("utf-8"))
-
-    def echo(self, s):
-        b = bytes(s, encoding="utf-8")
-
-        cmd = FacedancerCommand(self.app_num, 0x81, b)
-        self.device.writecmd(cmd)
-
-        resp = self.device.readcmd()
-
-        return resp.data == b
-
-    def announce_connected(self):
-        cmd = FacedancerCommand(self.app_num, 0xb1, b'')
-        self.device.writecmd(cmd)
-        resp = self.device.readcmd()
-
-
-def GoodFETSerialPort(**kwargs):
-    "Return a Serial port using default values possibly overriden by caller"
-
-    port = os.environ.get('GOODFET') or "/dev/ttyUSB0"
-    args = dict(port=port, baudrate=115200,
-                parity=serial.PARITY_NONE, timeout=2)
-    args.update(kwargs)
-    return serial.Serial(**args)

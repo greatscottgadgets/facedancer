@@ -1,6 +1,6 @@
 
 import os
-import serial
+import sys
 import time
 
 from ..core import FacedancerApp
@@ -73,6 +73,9 @@ class GoodfetMaxUSBApp(MAXUSBApp):
             gf = GoodFETSerialPort()
             gf.close()
             return True
+        except ImportError:
+            sys.stderr.write("NOTE: Skipping GoodFET-based devices, as pyserial isn't installed.\n")
+            return False
         except:
             return False
 
@@ -459,6 +462,8 @@ class GoodFETMonitorApp(FacedancerApp):
 def GoodFETSerialPort(**kwargs):
     "Return a Serial port using default values possibly overriden by caller"
 
+    import serial
+
     port = os.environ.get('GOODFET') or "/dev/ttyUSB0"
     args = dict(port=port, baudrate=115200,
                 parity=serial.PARITY_NONE, timeout=2)
@@ -520,3 +525,4 @@ class GoodFETMonitorApp(FacedancerApp):
         cmd = FacedancerCommand(self.app_num, 0xb1, b'')
         self.device.writecmd(cmd)
         resp = self.device.readcmd()
+
