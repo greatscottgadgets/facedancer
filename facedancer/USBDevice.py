@@ -186,8 +186,6 @@ class USBDevice:
             endpoint = self.endpoints[ep_num]
             if callable(endpoint.handler):
                 endpoint.handler()
-            else:
-                print("not callable")
 
     # standard request handlers
     #####################################################
