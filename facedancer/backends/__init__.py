@@ -1,1 +1,1 @@
-__all__ = ["GoodFETMaxUSBApp", "MAXUSBApp", "GreatDancerApp"]
+__all__ = ["GoodFETMaxUSBApp", "MAXUSBApp", "GreatDancerApp", "RaspdancerMaxUSBApp"]
