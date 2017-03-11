@@ -54,13 +54,6 @@ class MAXUSBApp(FacedancerApp):
     def bytes_as_hex(b, delim=" "):
         return delim.join(["%02x" % x for x in b])
 
-    def enable(self):
-        for i in range(3):
-            self.device.writecmd(self.enable_app_cmd)
-            self.device.readcmd()
-
-        if self.verbose > 0:
-            print(self.app_name, "enabled")
 
     # HACK: but given the limitations of the MAX chips, it seems necessary
     def send_on_endpoint(self, ep_num, data):
@@ -116,14 +109,6 @@ class MAXUSBApp(FacedancerApp):
 
     def get_version(self):
         return self.read_register(self.reg_revision)
-
-
-    def ack_status_stage(self):
-        if self.verbose > 5:
-            print(self.app_name, "sending ack!")
-
-        self.device.writecmd(self.ack_cmd)
-        self.device.readcmd()
 
 
     def connect(self, usb_device):
