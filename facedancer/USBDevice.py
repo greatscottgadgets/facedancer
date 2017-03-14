@@ -94,8 +94,8 @@ class USBDevice:
     def run(self):
         self.maxusb_app.service_irqs()
 
-    def ack_status_stage(self):
-        self.maxusb_app.ack_status_stage()
+    def ack_status_stage(self, blocking=False):
+        self.maxusb_app.ack_status_stage(blocking=blocking)
 
     def set_address(self, address):
         self.maxusb_app.set_address(address)
@@ -211,7 +211,7 @@ class USBDevice:
     def handle_set_address_request(self, req):
         self.address = req.value
         self.state = USB.state_address
-        self.ack_status_stage()
+        self.ack_status_stage(blocking=True)
 
         if self.verbose > 2:
             print(self.name, "received SET_ADDRESS request for address",

@@ -89,7 +89,7 @@ class GreatDancerApp(FacedancerApp):
 
     def init_commands(self):
         """
-        API compatibility fucntion; not necessary for GreatDancer. 
+        API compatibility fucntion; not necessary for GreatDancer.
         """
         pass
 
@@ -103,7 +103,7 @@ class GreatDancerApp(FacedancerApp):
         raise NotImplementedError()
 
 
-    def ack_status_stage(self, direction=HOST_TO_DEVICE, endpoint_number=0):
+    def ack_status_stage(self, direction=HOST_TO_DEVICE, endpoint_number=0, blocking=False):
         """
             Handles the status stage of a correctly completed control request,
             by priming the appropriate endpint to handle the status phase.
@@ -111,12 +111,15 @@ class GreatDancerApp(FacedancerApp):
             direction: Determines if we're ACK'ing an IN or OUT vendor request.
                 (This should match the direcion of the DATA stage.)
             endpoint_number: The endpoint number on which the control request
-            occurred.
+                occurred.
+            blocking: True if we should wait for the ACK to be fully issued
+                before returning.
         """
         if direction == self.HOST_TO_DEVICE:
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
-            self.send_on_endpoint(endpoint_number, data=[])
+            self.send_on_endpoint(endpoint_number, data=[], blocking=blocking)
+
         else:
             # If this was an IN request, we'll need to set up a transfer descriptor
             # so the status phase can operate correctly. This effectively reads the
@@ -186,17 +189,24 @@ class GreatDancerApp(FacedancerApp):
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_DISCONNECT)
 
 
-    def send_on_endpoint(self, ep_num, data):
+    def send_on_endpoint(self, ep_num, data, blocking=False):
         """
         Sends a collection of USB data on a given endpoint.
 
         ep_num: The number of the IN endpoint on which data should be sent.
         data: The data to be sent.
+        blocking: If true, this function will wait for the transfer to complete.
         """
         if self.verbose > 3:
             print("sending on {}: {}".format(ep_num, data))
 
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
+
+        # If we're blocking, wait until the transfer completes.
+        if blocking:
+            while not self._transfer_is_complete(ep_num, self.DEVICE_TO_HOST):
+                pass
+
 
 
     def read_from_endpoint(self, ep_num):

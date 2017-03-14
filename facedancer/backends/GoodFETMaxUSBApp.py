@@ -72,7 +72,7 @@ class GoodfetMaxUSBApp(MAXUSBApp):
         if self.verbose > 0:
             print(self.app_name, "enabled")
 
-    def ack_status_stage(self):
+    def ack_status_stage(self, blocking=False):
         if self.verbose > 5:
             print(self.app_name, "sending ack!")
 
