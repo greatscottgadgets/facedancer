@@ -144,7 +144,10 @@ class USBDevice:
             if index < len(self.configuration.interfaces):
                 recipient = self.configuration.interfaces[index]
         elif recipient_type == USB.request_recipient_endpoint:
-            recipient = self.endpoints.get(index, None)
+            if index == 0:
+                recipient = self
+            else:
+                recipient = self.endpoints.get(index, None)
 
         if not recipient:
             print(self.name, "invalid recipient, stalling")
@@ -202,6 +205,7 @@ class USBDevice:
     def handle_clear_feature_request(self, req):
         print(self.name, "received CLEAR_FEATURE request with type 0x%02x and value 0x%02x" \
                 % (req.request_type, req.value))
+        self.ack_status_stage()
 
     # USB 2.0 specification, section 9.4.9 (p 286 of pdf)
     def handle_set_feature_request(self, req):
@@ -283,8 +287,17 @@ class USBDevice:
 
     # USB 2.0 specification, section 9.4.2 (p 281 of pdf)
     def handle_get_configuration_request(self, req):
-        print(self.name, "received GET_CONFIGURATION request with data 0x%02x" \
-                % req.value)
+        if self.verbose > 2:
+            print(self.name, "received GET_CONFIGURATION request with data 0x%02x" \
+                    % req.value)
+
+        # If we haven't yet been configured, send back a zero configuration value.
+        if self.configuration is None:
+            self.send_control_message(b'\x00')
+        # Otherwise, return the index for our configuration.
+        else:
+            config_index = self.configuration.configuration_index
+            self.send_control_message(config_index.to_bytes(1, byteorder='little'))
 
     # USB 2.0 specification, section 9.4.7 (p 285 of pdf)
     def handle_set_configuration_request(self, req):
