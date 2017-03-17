@@ -189,6 +189,22 @@ class GreatDancerApp(FacedancerApp):
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_DISCONNECT)
 
 
+    def _wait_until_ready_to_send(self, ep_num):
+
+        # If we're already ready, we don't need to do anything. Abort.
+        if self._is_ready_for_priming(ep_num, self.DEVICE_TO_HOST):
+            return
+
+        # Otherwise, wait until we're ready to send...
+        while not self._is_ready_for_priming(ep_num, self.DEVICE_TO_HOST):
+            pass
+
+        # ... and since we've blocked the app from cleaning up any transfer
+        # descriptors automatically by spinning in this thread, we'll clean up
+        # the relevant transfers here.
+        self._clean_up_transfers_for_endpoint(ep_num, self.DEVICE_TO_HOST)
+
+
     def send_on_endpoint(self, ep_num, data, blocking=False):
         """
         Sends a collection of USB data on a given endpoint.
@@ -200,13 +216,13 @@ class GreatDancerApp(FacedancerApp):
         if self.verbose > 3:
             print("sending on {}: {}".format(ep_num, data))
 
+        self._wait_until_ready_to_send(ep_num)
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
 
         # If we're blocking, wait until the transfer completes.
         if blocking:
             while not self._transfer_is_complete(ep_num, self.DEVICE_TO_HOST):
                 pass
-
 
 
     def read_from_endpoint(self, ep_num):
@@ -387,7 +403,7 @@ class GreatDancerApp(FacedancerApp):
         Handles any outstanding setup events on the USB controller.
         """
 
-        # Determine if we have setup packets on any of our endpoints.
+        # Determine if we have ready packets on any of our endpoints.
         status = self._fetch_transfer_status()
 
         # If we don't, abort.
