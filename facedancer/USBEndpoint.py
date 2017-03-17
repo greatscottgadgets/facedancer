@@ -65,9 +65,21 @@ class USBEndpoint:
 
         return d
 
-    def send(self, data):
+    def send_packet(self, data):
         dev = self.interface.configuration.device
         dev.maxusb_app.send_on_endpoint(self.number, data)
+
+    def send(self, data):
+
+        # Send the relevant data one packet at a time,
+        # chunking if we're larger than the max packet size.
+        # This matches the behavior of the MAX3420E.
+        while data:
+            packet = data[0:self.max_packet_size]
+            data = data[self.max_packet_size:]
+
+            self.send_packet(packet)
+
 
     def recv(self):
         dev = self.interface.configuration.device

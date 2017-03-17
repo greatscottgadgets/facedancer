@@ -205,7 +205,7 @@ class GreatDancerApp(FacedancerApp):
         self._clean_up_transfers_for_endpoint(ep_num, self.DEVICE_TO_HOST)
 
 
-    def send_on_endpoint(self, ep_num, data, blocking=False):
+    def send_on_endpoint(self, ep_num, data, blocking=True):
         """
         Sends a collection of USB data on a given endpoint.
 
@@ -223,6 +223,8 @@ class GreatDancerApp(FacedancerApp):
         if blocking:
             while not self._transfer_is_complete(ep_num, self.DEVICE_TO_HOST):
                 pass
+
+        self._clean_up_transfers_for_endpoint(ep_num, self.DEVICE_TO_HOST)
 
 
     def read_from_endpoint(self, ep_num):

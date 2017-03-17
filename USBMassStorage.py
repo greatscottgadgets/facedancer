@@ -139,9 +139,11 @@ class USBMassStorageInterface(USBInterface):
             name    = command['name']
             handler = command['handler']
             direction_name = 'IN' if direction else 'OUT'
+            direction_arrow = "<--" if direction else "-->"
+            expected_length = cbw.data_transfer_length
 
             if self.verbose > 0:
-                print("{}: handling {} ({}) [{}]".format(self.name, name.upper(), direction_name, bytes_as_hex(cbw.cb[1:])))
+                print("{} handling {} ({}) {}:[{}]".format(direction_arrow, name.upper(), direction_name, expected_length, bytes_as_hex(cbw.cb[1:])))
 
             # Delegate to its handler funciton.
             return handler(cbw)
@@ -257,13 +259,15 @@ class USBMassStorageInterface(USBInterface):
                    | cbw.cb[8]
 
         if self.verbose > 0:
-            print(self.name, "got SCSI Read (10), lba", base_lba, "+", num_blocks, "block(s)")
+            print("<-- performing READ (10), lba", base_lba, "+", num_blocks, "block(s)")
 
         # Note that here we send the data directly rather than putting
         # something in 'response' and letting the end of the switch send
         for block_num in range(num_blocks):
             data = self.disk_image.get_sector_data(base_lba + block_num)
             self.ep_to_host.send(data)
+
+        print("--> responded with {} bytes".format(cbw.data_transfer_length))
 
         return self.STATUS_OKAY, None
 
@@ -292,7 +296,7 @@ class USBMassStorageInterface(USBInterface):
         return self.STATUS_INCOMPLETE, None
 
 
-    def continue_write(self, cbw):
+    def continue_write(self, cbw, data):
         if self.verbose > 0:
             print(self.name, "got more", len(data), "bytes of SCSI write data")
 
@@ -303,7 +307,6 @@ class USBMassStorageInterface(USBInterface):
             return self.STATUS_INCOMPLETE, None
 
         self.disk_image.put_sector_data(self.write_base_lba, self.write_data)
-        cbw = self.write_cbw
 
         self.is_write_in_progress = False
         self.write_data = b''
@@ -312,14 +315,12 @@ class USBMassStorageInterface(USBInterface):
 
 
     def handle_data_available(self, data):
-        if self.verbose > 0:
-            print("--", len(data), "bytes of SCSI data")
-
-        cbw = CommandBlockWrapper(data)
 
         if self.is_write_in_progress:
-            status, response = self.continue_write(cbw)
+            cbw = self.write_cbw
+            status, response = self.continue_write(cbw, data)
         else:
+            cbw = CommandBlockWrapper(data)
             status, response = self.handle_scsi_command(cbw)
 
         # If we weren't able to complete the operation, return without
@@ -330,10 +331,10 @@ class USBMassStorageInterface(USBInterface):
         # If we have a response payload to transmit, transmit it.
         if response:
             if self.verbose > 2:
-                print(self.name, "responding with", len(response),
+                print("--> responding with", len(response),
                       "bytes [{}], status={}".format(bytes_as_hex(response), status))
 
-            self.ep_to_host.send(response, blocking=True)
+            self.ep_to_host.send(response)
 
         # Otherwise, respond with our status.
         csw = bytes([
@@ -344,38 +345,6 @@ class USBMassStorageInterface(USBInterface):
         ])
 
         self.ep_to_host.send(csw)
-
-
-class DiskImage:
-    def __init__(self, filename, block_size):
-        self.filename = filename
-        self.block_size = block_size
-
-        statinfo = os.stat(self.filename)
-        self.size = statinfo.st_size
-
-        self.file = open(self.filename, 'r+b')
-        self.image = mmap(self.file.fileno(), 0)
-
-    def close(self):
-        self.image.flush()
-        self.image.close()
-
-    def get_sector_count(self):
-        return int(self.size / self.block_size) - 1
-
-    def get_sector_data(self, address):
-        block_start = address * self.block_size
-        block_end   = (address + 1) * self.block_size   # slices are NON-inclusive
-
-        return self.image[block_start:block_end]
-
-    def put_sector_data(self, address, data):
-        block_start = address * self.block_size
-        block_end   = (address + 1) * self.block_size   # slices are NON-inclusive
-
-        self.image[block_start:block_end] = data[:self.block_size]
-        self.image.flush()
 
 
 class CommandBlockWrapper:
@@ -407,8 +376,8 @@ class CommandBlockWrapper:
 class USBMassStorageDevice(USBDevice):
     name = "USB mass storage device"
 
-    def __init__(self, maxusb_app, disk_image_filename, verbose=0):
-        self.disk_image = DiskImage(disk_image_filename, 512)
+    def __init__(self, maxusb_app, disk_image, verbose=0):
+        self.disk_image = disk_image
 
         interface = USBMassStorageInterface(self.disk_image, verbose=verbose)
 
