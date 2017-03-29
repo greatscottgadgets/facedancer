@@ -56,7 +56,7 @@ class MAXUSBApp(FacedancerApp):
 
 
     # HACK: but given the limitations of the MAX chips, it seems necessary
-    def send_on_endpoint(self, ep_num, data):
+    def send_on_endpoint(self, ep_num, data, blocking=False):
         if ep_num == 0:
             fifo_reg = self.reg_ep0_fifo
             bc_reg = self.reg_ep0_byte_count

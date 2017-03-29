@@ -119,7 +119,7 @@ class USBMassStorageInterface(USBInterface):
         self._register_scsi_command(0x23, "Get Format Capacity", self.handle_get_format_capacity)
         self._register_scsi_command(0x25, "Get Read Capacity", self.handle_get_read_capacity)
         self._register_scsi_command(0x28, "Read", self.handle_read)
-        self._register_scsi_command(0x2a, "Write", self.handle_write)
+        self._register_scsi_command(0x2a, "Write (10)", self.handle_write)
         self._register_scsi_command(0x36, "Synchronize Cache", self.handle_ignored_event)
 
 
@@ -267,23 +267,23 @@ class USBMassStorageInterface(USBInterface):
             data = self.disk_image.get_sector_data(base_lba + block_num)
             self.ep_to_host.send(data)
 
-        print("--> responded with {} bytes".format(cbw.data_transfer_length))
+        if self.verbose > 3:
+            print("--> responded with {} bytes".format(cbw.data_transfer_length))
 
         return self.STATUS_OKAY, None
 
 
     def handle_write(self, cbw):
-        base_lba = cbw.cb[1] << 24 \
-                 | cbw.cb[2] << 16 \
-                 | cbw.cb[3] <<  8 \
-                 | cbw.cb[4]
+        base_lba = cbw.cb[2] << 24 \
+                 | cbw.cb[3] << 16 \
+                 | cbw.cb[4] <<  8 \
+                 | cbw.cb[5]
 
         num_blocks = cbw.cb[7] << 8 \
                    | cbw.cb[8]
 
         if self.verbose > 0:
-            print(self.name, "got SCSI Write (10), lba", base_lba, "+",
-                    num_blocks, "block(s)")
+            print("--> performing WRITE (10), lba", base_lba, "+", num_blocks, "block(s)")
 
         # save for later
         self.write_cbw = cbw
@@ -297,8 +297,8 @@ class USBMassStorageInterface(USBInterface):
 
 
     def continue_write(self, cbw, data):
-        if self.verbose > 0:
-            print(self.name, "got more", len(data), "bytes of SCSI write data")
+        if self.verbose > 3:
+            print("--> continue write with {} more bytes of data".format(len(data)))
 
         self.write_data += data
 
@@ -306,7 +306,7 @@ class USBMassStorageInterface(USBInterface):
             # more yet to read, don't send the CSW
             return self.STATUS_INCOMPLETE, None
 
-        self.disk_image.put_sector_data(self.write_base_lba, self.write_data)
+        self.disk_image.put_data(self.write_base_lba, self.write_data)
 
         self.is_write_in_progress = False
         self.write_data = b''
@@ -409,3 +409,57 @@ class USBMassStorageDevice(USBDevice):
         self.disk_image.close()
         USBDevice.disconnect(self)
 
+
+class DiskImage:
+    """
+        Class representing an arbitrary disk image, which can be procedurally generated,
+        or which can be rendered from e.g. a file.
+
+        Currently limited to representing disk with 512-byte sectors.
+    """
+
+    def close(self):
+        """ Closes and cleans up any resources held by the disk image. """
+        pass
+
+    def get_sector_size(self):
+        return 512
+
+    def get_sector_count(self):
+        """ Returns the disk's sector count. """
+        raise NotImplementedError()
+
+    def get_data(self, address, length):
+        data_to_read = length
+        sector_size  = self.get_sector_size()
+        data         = bytes()
+
+        while data_to_read > 0:
+            data.extend(self.get_sector_data(address))
+            data_to_read -= sector_size
+
+            address += 1
+
+        return data
+
+
+    def get_sector_data(self, address):
+        """ Returns the raw binary data for a given sector. """
+        raise NotImplementedError()
+
+
+    def put_data(self, address, data):
+        sector_size   = self.get_sector_size()
+
+        while data:
+            sector = data[:sector_size]
+            data   = data[sector_size:]
+
+            self.put_sector_data(address, sector)
+            address += 1
+
+        return data
+
+    def put_sector_data(self, address, data):
+        """ Sets the raw binary data for a given disk sector. """
+        sys.stderr.write("WARNING: UMS write ignored; this type of image does not support writing.\n")
