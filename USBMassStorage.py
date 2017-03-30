@@ -5,6 +5,7 @@
 from mmap import mmap
 
 import os
+import sys
 import struct
 import time
 
@@ -288,7 +289,7 @@ class USBMassStorageInterface(USBInterface):
         # save for later
         self.write_cbw = cbw
         self.write_base_lba = base_lba
-        self.write_length = num_blocks * self.disk_image.block_size
+        self.write_length = num_blocks * self.disk_image.get_sector_size()
         self.is_write_in_progress = True
 
         # because we need to snarf up the data from wire before we reply

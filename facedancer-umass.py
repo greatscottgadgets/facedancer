@@ -96,9 +96,9 @@ if len(sys.argv)==1:
     print("Usage: facedancer-umass.py disk.img");
     sys.exit(1);
 
-u = FacedancerUSBApp(verbose=0)
-i = RawDiskImage(sys.argv[1], 512, verbose=0)
-d = USBMassStorageDevice(u, i, verbose=0)
+u = FacedancerUSBApp(verbose=3)
+i = RawDiskImage(sys.argv[1], 512, verbose=3)
+d = USBMassStorageDevice(u, i, verbose=3)
 
 d.connect()
 
