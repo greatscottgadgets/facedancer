@@ -15,7 +15,7 @@ setup(
     tests_require=[''],
     install_requires=['pyusb'],
     description='Python library for emulating USB devices',
-    long_description=read('../README.md'),
+    long_description=read('README.md'),
     packages=find_packages(),
     include_package_data=True,
     platforms='any',
