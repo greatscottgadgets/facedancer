@@ -1,18 +1,33 @@
 #!/usr/bin/env python3
 #
-# facedancer-serial.py
+# facedancer-usbproxy.py
 
 from facedancer import FacedancerUSBApp
-from USBProxy import *
+from USBProxy import USBProxyDevice
+import argparse
 
-u = FacedancerUSBApp(verbose=4)
-print(u)
-d = USBProxyDevice(u, idVendor=0x1d50, idProduct=0x6089, verbose=4)
+def vid_pid(x):
+    return int(x, 16)
 
-d.connect()
+def main():
+    parser = argparse.ArgumentParser(description="FaceDancer USB Proxy")
+    parser.add_argument('-v', dest='vendorid', metavar='<VendorID>',
+                        type=vid_pid, help="Vendor ID of device",
+                        required=True)
+    parser.add_argument('-p', dest='productid', metavar='<ProductID>',
+                        type=vid_pid, help="Product ID of device",
+                        required=True)
+    args = parser.parse_args()
+    u = FacedancerUSBApp(verbose=4)
+    d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, verbose=4)
 
-try:
-    d.run()
-# SIGINT raises KeyboardInterrupt
-except KeyboardInterrupt:
-    d.disconnect()
+    d.connect()
+
+    try:
+        d.run()
+    # SIGINT raises KeyboardInterrupt
+    except KeyboardInterrupt:
+        d.disconnect()
+
+if __name__ == "__main__":
+    main()
