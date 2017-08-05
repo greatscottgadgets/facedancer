@@ -3,8 +3,21 @@
 # facedancer-usbproxy.py
 
 from facedancer import FacedancerUSBApp
-from USBProxy import USBProxyDevice
+from USBProxy import USBProxyDevice, USBProxyFilter
 import argparse
+
+class USBProxySetupFilters(USBProxyFilter):
+
+    def __init__(self, device):
+        self.device = device
+
+    def filter_control_out(self, req, data):
+        # Special case: if this is a SET_ADDRESS request,
+        # handle it ourself, and absorb it.
+        if req.request == self.device.SET_ADDRESS_REQUEST:
+            self.device.handle_set_address_request(req)
+        return req, data
+
 
 def vid_pid(x):
     return int(x, 16)
@@ -20,6 +33,8 @@ def main():
     args = parser.parse_args()
     u = FacedancerUSBApp(verbose=4)
     d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, verbose=4)
+    filters = USBProxySetupFilters(d)
+    d.add_filter(filters)
 
     d.connect()
 

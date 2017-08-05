@@ -1,4 +1,4 @@
-# USBFtdi.py
+# USBProxy.py
 
 # Contains class definitions to implement a simple USB Serial chip,
 # such as the one in the HP48G+ and HP50G graphing calculators.  See
@@ -17,10 +17,27 @@ from facedancer.errors import *
 import usb
 from usb.core import USBError
 
+
+class USBProxyFilter:
+
+    def filter_control_in(self, req, data):
+        return req, data
+
+    def filter_control_out(self, req, data):
+        return req, data
+
+    def filter_in(self, data):
+        return data
+
+    def filter_out(self, data):
+        return data
+
+
 class USBProxyDevice(USBDevice):
     name = "Base class for proxied USB devices"
 
     SET_ADDRESS_REQUEST = 5
+    filter_list = []
 
     def __init__(self, maxusb_app, idVendor, idProduct, verbose=0):
 
@@ -33,6 +50,12 @@ class USBProxyDevice(USBDevice):
         # We'll do almost nothing, as we'll be proxying packets by default to the device.
         USBDevice.__init__(self,maxusb_app,verbose=verbose)
 
+
+    def add_filter(self, filter_object, head=False):
+        if head:
+            self.filter_list.insert(0, filter_object)
+        else:
+            self.filter_list.append(filter_object)
 
     def handle_request(self, req):
         if self.verbose > 3:
@@ -51,12 +74,6 @@ class USBProxyDevice(USBDevice):
         if req.get_direction() == 1:
             self._proxy_in_request(req)
         else:
-            # Special case: if this is a SET_ADDRESS request,
-            # handle it ourself, and absorb it.
-            if req.request == self.SET_ADDRESS_REQUEST:
-                self.handle_set_address_request(req)
-                return
-             
             self._proxy_out_request(req)
 
 
@@ -90,6 +107,9 @@ class USBProxyDevice(USBDevice):
             data = []
 
         # TODO: Run filters here.
+        for f in self.filter_list:
+            req, data = f.filter_control_out(req, data)
+        print(req)
         print(">", data)
 
         # ... forward the request to the real device.
