@@ -5,7 +5,7 @@
 from facedancer import FacedancerUSBApp
 from USBProxy import *
 
-u = FacedancerUSBApp(verbose=1)
+u = FacedancerUSBApp(verbose=4)
 print(u)
 d = USBProxyDevice(u, idVendor=0x1d50, idProduct=0x6002, verbose=4)
 
