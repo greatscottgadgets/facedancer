@@ -10,10 +10,10 @@ import time
 class USBDevice:
     name = "generic device"
 
-    def __init__(self, maxusb_app, device_class, device_subclass,
-            protocol_rel_num, max_packet_size_ep0, vendor_id, product_id,
-            device_rev, manufacturer_string, product_string,
-            serial_number_string, configurations=[], descriptors={},
+    def __init__(self, maxusb_app, device_class=0, device_subclass=0,
+            protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
+            device_rev=0, manufacturer_string="", product_string="",
+            serial_number_string="", configurations=[], descriptors={},
             verbose=0):
         self.maxusb_app = maxusb_app
         self.verbose = verbose
