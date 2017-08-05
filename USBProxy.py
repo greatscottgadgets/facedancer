@@ -36,7 +36,6 @@ class USBProxyFilter:
 class USBProxyDevice(USBDevice):
     name = "Base class for proxied USB devices"
 
-    SET_ADDRESS_REQUEST = 5
     filter_list = []
 
     def __init__(self, maxusb_app, idVendor, idProduct, verbose=0):
@@ -113,8 +112,9 @@ class USBProxyDevice(USBDevice):
         print(">", data)
 
         # ... forward the request to the real device.
-        self.libusb_device.ctrl_transfer(req.request_type, req.request,
-            req.value, req.index, data)
+        if req:
+            self.libusb_device.ctrl_transfer(req.request_type, req.request,
+                req.value, req.index, data)
 
 
     def handle_data_available(self, ep_num, data):

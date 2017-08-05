@@ -8,14 +8,17 @@ import argparse
 
 class USBProxySetupFilters(USBProxyFilter):
 
+    SET_ADDRESS_REQUEST = 5
+
     def __init__(self, device):
         self.device = device
 
     def filter_control_out(self, req, data):
         # Special case: if this is a SET_ADDRESS request,
         # handle it ourself, and absorb it.
-        if req.request == self.device.SET_ADDRESS_REQUEST:
+        if req.request == self.SET_ADDRESS_REQUEST:
             self.device.handle_set_address_request(req)
+            return None, None
         return req, data
 
 
