@@ -169,7 +169,7 @@ class GreatDancerApp(FacedancerApp):
         return command
 
 
-    def connect(self, usb_device):
+    def connect(self, usb_device, max_ep0_packet_size=64):
         """
         Prepares the GreatDancer to connect to the target host and emulate
         a given device.
@@ -177,7 +177,7 @@ class GreatDancerApp(FacedancerApp):
         usb_device: The USBDevice object that represents the device to be
             emulated.
         """
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT)
+        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT, value=max_ep0_packet_size)
         self.connected_device = usb_device
 
         if self.verbose > 0:
