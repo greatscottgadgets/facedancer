@@ -45,6 +45,9 @@ class USBProxyDevice(USBDevice):
         if self.libusb_device is None:
             raise DeviceNotFoundError("Could not find device to proxy!")
 
+        # TODO: Do this thing
+        # self.libusb_device.detach_kernel_driver(0)
+
         # ... and initialize our base class with a minimal set of parameters.
         # We'll do almost nothing, as we'll be proxying packets by default to the device.
         USBDevice.__init__(self,maxusb_app,verbose=verbose)
@@ -62,7 +65,9 @@ class USBProxyDevice(USBDevice):
 
         try:
             self._proxy_request(req)
-        except USBError:
+        except USBError as e:
+            print("STALLING")
+            print(e)
             self.maxusb_app.stall_ep0()
 
 
@@ -86,7 +91,9 @@ class USBProxyDevice(USBDevice):
         data = self.libusb_device.ctrl_transfer(req.request_type, req.request,
                                      req.value, req.index, req.length)
 
-        # TODO: Run filters here.
+        # Run filters here.
+        for f in self.filter_list:
+            req, data = f.filter_control_in(req, data)
         print("<", data)
 
         #... and proxy it to our victim.
@@ -105,16 +112,18 @@ class USBProxyDevice(USBDevice):
         else:
             data = []
 
-        # TODO: Run filters here.
+        # Run filters here.
+        print("OUT ", req)
         for f in self.filter_list:
             req, data = f.filter_control_out(req, data)
-        print(req)
-        print(">", data)
+        if data:
+            print(">", data)
 
         # ... forward the request to the real device.
         if req:
             self.libusb_device.ctrl_transfer(req.request_type, req.request,
                 req.value, req.index, data)
+            self.ack_status_stage()
 
 
     def handle_data_available(self, ep_num, data):
