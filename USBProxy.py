@@ -53,6 +53,14 @@ class USBProxyDevice(USBDevice):
         USBDevice.__init__(self,maxusb_app,verbose=verbose)
 
 
+    def connect(self):
+        max_ep0_packet_size = self.libusb_device.bMaxPacketSize0
+        self.maxusb_app.connect(self, max_ep0_packet_size)
+
+        # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
+        self.state = USB.state_powered
+
+
     def add_filter(self, filter_object, head=False):
         if head:
             self.filter_list.insert(0, filter_object)
