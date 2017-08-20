@@ -41,6 +41,7 @@ export BACKEND=goodfet
  * All GoodFET-based facedancers, including the common FaceDancer21 (```BACKEND=goodfet```)
  * The [GreatFET One](http://greatscottgadgets.com/greatfet/) (```BACKEND=greatfet```)
  * The NXP LPC4330 Xplorer board (```BACKEND=greatfet```)
+ * The CCCamp 2015 rad1o badge with GreatFET l0adable (```BACKEND=greatfet```)
  * RPi + Max3241 Raspdancer boards (```BACKEND=raspdancer```)
 
 Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulating
