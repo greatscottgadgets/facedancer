@@ -66,7 +66,7 @@ There are a lot of people to blame for the awesomeness that is this repo,
 including:
 
  * Travis Goodspeed (@travisgoodspeed)
- * Sergey Bratus (@sergeybratus
+ * Sergey Bratus (@sergeybratus)
  * ktemkin (@ktemkin)
  * Dominic Spill (@dominicgs)
  * Michael Ossmann (@michaelossmann)
