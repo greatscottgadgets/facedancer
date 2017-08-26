@@ -19,6 +19,9 @@ from usb.core import USBError
 
 
 class USBProxyFilter:
+    """
+    Base class for filters that modify USB data.
+    """
 
     def filter_control_in(self, req, data):
         return req, data
@@ -26,15 +29,15 @@ class USBProxyFilter:
     def filter_control_out(self, req, data):
         return req, data
 
-    def filter_in(self, data):
-        return data
+    def filter_in(self, ep_num, data):
+        return ep_num, data
 
-    def filter_out(self, data):
-        return data
+    def filter_out(self, ep_num, data):
+        return ep_num, data
 
 
 class USBProxyDevice(USBDevice):
-    name = "Base class for proxied USB devices"
+    name = "Proxy'd USB Device"
 
     filter_list = []
 
@@ -74,7 +77,7 @@ class USBProxyDevice(USBDevice):
         try:
             self._proxy_request(req)
         except USBError as e:
-            print("STALLING")
+            print("!!!! STALLING request: {}".format(req))
             print(e)
             self.maxusb_app.stall_ep0()
 
@@ -113,19 +116,15 @@ class USBProxyDevice(USBDevice):
         Proxy OUT requests, which sends a request from the victim to the
         target device.
         """
-       
-        # If the victim is trying to send data with the request, read it...
-        if req.length:
-            data = self.maxusb_app.read_from_endpoint(0)
-        else:
-            data = []
+
+        data = req.data
 
         # Run filters here.
-        print("OUT ", req)
+        print("CONTROL OUT ", req)
         for f in self.filter_list:
             req, data = f.filter_control_out(req, data)
-        if data:
-            print(">", data)
+        if req:# and req.data:
+            print(">", req.data)
 
         # ... forward the request to the real device.
         if req:
@@ -135,8 +134,23 @@ class USBProxyDevice(USBDevice):
 
 
     def handle_data_available(self, ep_num, data):
-        print("FAIL! data available and we didn't do anything about it")
-    
+        """
+        Handles the case where data is ready from the Facedancer device
+        that needs to be proxied to the target device.
+        """
+
+        print("PROXYING DATA on ep {}".format(ep_num))
+
+        # Run the data through all of our filters.
+        for f in self.filter_list:
+            ep_num, data = f.filter_out(ep_num, data)
+        if data:
+            print(">", data)
+
+        # If the data wasn't filtered out, communicate it to the target device.
+        if data:
+            self.libusb_device.write(ep_num, data)
+
 
     def handle_buffer_available(self, ep_num):
         print("FAIL! buffer available and we didn't do anything about it")
