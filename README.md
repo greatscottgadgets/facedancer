@@ -65,11 +65,11 @@ eventually will be home to some cool new features, such as:
 There are a lot of people to blame for the awesomeness that is this repo,
 including:
 
- * Travis Goodspeed
- * Sergey Bratus
- * Kyle Temkin
- * Dominic Spill
- * Michael Ossmann
+ * Travis Goodspeed (@travisgoodspeed)
+ * Sergey Bratus (@sergeybratus
+ * ktemkin (@ktemkin)
+ * Dominic Spill (@dominicgs)
+ * Michael Ossmann (@michaelossmann)
  * anyone whose name appears in the git history :)
 
 ## Contributions?
