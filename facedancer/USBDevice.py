@@ -349,6 +349,7 @@ class USBDeviceRequest:
         self.value          = (raw_bytes[3] << 8) | raw_bytes[2]
         self.index          = (raw_bytes[5] << 8) | raw_bytes[4]
         self.length         = (raw_bytes[7] << 8) | raw_bytes[6]
+        self.data           = raw_bytes[8:]
 
     def __str__(self):
         s = "dir=%d, type=%x, rec=%x, r=%x, v=%x, i=%x, l=%d" \

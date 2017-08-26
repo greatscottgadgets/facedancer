@@ -82,6 +82,10 @@ class GreatDancerApp(FacedancerApp):
         for i in range(self.SUPPORTED_ENDPOINTS):
             self.endpoint_stalled[i] = False
 
+        # Start off by assuming we're not waiting for an OUT control transfer's
+        # data stage.  # See _handle_setup_complete_on_endpoint for details.
+        self.pending_control_packet_data = None
+
         # Store a reference to the device's active configuration,
         # which we'll use to know which endpoints we'll need to check
         # for data transfer readiness.
@@ -352,13 +356,17 @@ class GreatDancerApp(FacedancerApp):
         # and add it to the request.
         is_out   = request.get_direction() == self.HOST_TO_DEVICE
         has_data = (request.length > 0)
+
+        # Special case: if this is an OUT request with a data stage, we won't
+        # handle the request until the data stage has been complete. Instead,
+        # we'll stash away the data recieved in the setup stage, prime the
+        # endpoint for the data stage, and then wait for the data stage to
+        # complete, triggering a corresponding code path in
+        # in _handle_transfer_complete_on_endpoint.
         if is_out and has_data:
-            # TODO: Test this and make sure it's okay. It _should_ prime a
-            # new transfer and then wait for it to complete, but it's only been
-            # minimally tested. If this doesn't work, we can abort here and
-            # fire off the handle_request from _handle_transfer_complete_on_endpoint.
-            new_data = self.read_from_endpoint(endpoint_number)
-            data.extend(new_data)
+            self._prime_out_endpoint(endpoint_number)
+            self.pending_control_packet_data = data
+            return
 
         request = USBDeviceRequest(data)
         self.connected_device.handle_request(request)
@@ -492,18 +500,54 @@ class GreatDancerApp(FacedancerApp):
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CLEAN_UP_TRANSFER, index=endpoint_number, value=direction)
 
 
+    def _is_control_endpoint(self, endpoint_number):
+        """
+        Returns true iff the given endpoint number corresponds to a control endpoint.
+        """
+
+        # FIXME: Support control endpoints other than EP0.
+        return endpoint_number == 0
+
+
     def _handle_transfer_complete_on_endpoint(self, endpoint_number, direction):
         """
-        Handles a known-compelted transfer  on a given endpoint.
+        Handles a known-compelted transfer on a given endpoint.
 
         endpoint_number: The endpoint number for which a setup event should be serviced.
         """
 
-        # If a transfer has just completed on an OUT endpoint, we've just received data!
+        # If a transfer has just completed on an OUT endpoint, we've just received data
+        # that we need to handle.
         if direction == self.HOST_TO_DEVICE:
 
-            # TODO: support control endpoints other than zero
-            if (endpoint_number != 0):
+            # Special case: if we've just recieved data on a control endpoint,
+            # we're completing a control request.
+            if self._is_control_endpoint(endpoint_number):
+
+                # If we recieved a setup packet to handle, handle it.
+                if self.pending_control_packet_data:
+                    print("handling pending data")
+
+                    # Read the rest of the data from the endpoint, completing
+                    # the control request.
+                    new_data = self._finish_primed_read_on_endpoint(endpoint_number)
+                    data     = self.pending_control_packet_data[:]
+
+                    # Build a new control request packet from the setup data
+                    # and the request body.
+                    data.extend(new_data)
+                    request = USBDeviceRequest(data)
+
+                    # Handle the setup request...
+                    self.connected_device.handle_request(request)
+
+                    # And clear our pending setup data.
+                    self.pending_control_packet_data = None
+
+            # Typical case: this isn't a control endpoint, so we don't have a
+            # defined packet format. Read the data and issue the corresponding
+            # callback.
+            else:
                 data = self._finish_primed_read_on_endpoint(endpoint_number)
                 self.connected_device.handle_data_available(endpoint_number, data)
 
