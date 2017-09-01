@@ -14,9 +14,12 @@ class USBDevice:
             protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
-            spec_version=0x0002, verbose=0):
+            spec_version=0x0002, verbose=0, quirks=[]):
         self.maxusb_app = maxusb_app
         self.verbose = verbose
+
+        self.quirks = quirks[:]
+        self.correct_set_address = ('fast_set_address' not in quirks)
 
         self.strings = [ ]
 
@@ -30,7 +33,12 @@ class USBDevice:
         self.device_rev                 = device_rev
         self.manufacturer_string_id     = self.get_string_id(manufacturer_string)
         self.product_string_id          = self.get_string_id(product_string)
-        self.serial_number_string_id    = self.get_string_id(serial_number_string)
+
+        if serial_number_string is not None:
+            self.serial_number_string_id = self.get_string_id(serial_number_string)
+        else:
+            self.serial_number_string_id = 0
+
 
         # maps from USB.desc_type_* to bytearray OR callable
         self.descriptors = descriptors
@@ -43,7 +51,9 @@ class USBDevice:
         self.configurations = configurations
 
         for c in self.configurations:
-            csi = self.get_string_id(c.configuration_string)
+            csi = 0
+            if c.configuration_string:
+                csi = self.get_string_id(c.configuration_string)
             c.set_configuration_string_index(csi)
             c.set_device(self)
 
@@ -97,8 +107,8 @@ class USBDevice:
     def ack_status_stage(self, blocking=False):
         self.maxusb_app.ack_status_stage(blocking=blocking)
 
-    def set_address(self, address):
-        self.maxusb_app.set_address(address)
+    def set_address(self, address, defer=False):
+        self.maxusb_app.set_address(address, defer)
 
     def get_descriptor(self, n):
         d = bytearray([
@@ -132,7 +142,7 @@ class USBDevice:
 
     def handle_request(self, req):
         if self.verbose > 3:
-            print(self.name, "received request", req)
+            print(self.name, "received request", repr(req))
 
         # figure out the intended recipient
         recipient_type = req.get_recipient()
@@ -215,11 +225,16 @@ class USBDevice:
     def handle_set_address_request(self, req):
         self.address = req.value
         self.state = USB.state_address
-        self.ack_status_stage(blocking=True)
 
-        if self.verbose > 2:
-            print(self.name, "received SET_ADDRESS request for address",
-                    self.address)
+        # Quirk: if the "fast_set_address" quirk is on, don't enforce
+        # correct set_address ordering. This speeds up set_address for
+        # targets that need it.
+        self.ack_status_stage(blocking=self.correct_set_address)
+
+        # This print really shouldn't be here-- this is the critical path!
+        #if self.verbose > 2:
+        #    print(self.name, "received SET_ADDRESS request for address",
+        #            self.address)
 
         self.set_address(self.address)
 
@@ -341,6 +356,49 @@ class USBDevice:
 
 
 class USBDeviceRequest:
+
+    _type_descriptions = {
+        0:  'standard',
+        1:  'class',
+        2:  'vendor',
+        3:  'INVALID',
+    }
+
+    _recipent_descriptions = {
+        0: 'device',
+        1: 'interface',
+        2: 'endpoint',
+        3: 'other',
+    }
+
+    # TODO: split me up by recipient
+    _standard_req_descriptions = {
+        0: 'GET_STATUS',
+        1: 'CLEAR_FEATURE',
+        2: 'SET_FEATURE',
+        5: 'SET_ADDRESS',
+        6: 'GET_DESCRIPTOR',
+        7: 'SET_DESCRIPTOR',
+        8: 'GET_CONFIGRUATION',
+        9: 'SET_CONFIGURATION',
+        10: 'GET_INTERFACE',
+        11: 'SET_INTERFACE',
+        12: 'SYNCH_FRAME'
+    }
+
+    _descriptor_number_description = {
+        1: 'DEVICE',
+        2: 'CONFIGURATION',
+        3: 'STRING',
+        4: 'INTERFACE',
+        5: 'ENDPOINT',
+        6: 'DEVICE_QUALIFIER',
+        7: 'OTHER_SPEED_CONFIG',
+        8: 'POWER',
+        33: 'HID',
+        34: 'REPORT',
+    }
+
     def __init__(self, raw_bytes):
         """Expects raw 8-byte setup data request packet"""
 
@@ -356,6 +414,53 @@ class USBDeviceRequest:
                 % (self.get_direction(), self.get_type(), self.get_recipient(),
                    self.request, self.value, self.index, self.length)
         return s
+
+
+    def __repr__(self):
+        direction_marker = "<" if self.get_direction() == 1 else ">"
+
+        # Pretty print, where possible.
+        type = self.get_type_string()
+        recipient = self.get_recipient_string()
+        request = self.get_request_number_string()
+        value = self.get_value_string()
+
+        s = "%s, %s request to %s (%s: value=%s, index=%x, length=%d)" \
+                % (direction_marker, type, recipient, request,
+                   value, self.index, self.length)
+        return s
+
+
+    def get_type_string(self):
+        return self._type_descriptions[self.get_type()]
+
+    def get_recipient_string(self):
+        return self._recipent_descriptions[self.get_type()]
+
+    def get_request_number_string(self):
+        if self.get_type() == 0:
+            return self._get_standard_request_number_string()
+        else:
+            type = self.get_type_string()
+            return "{} request {}".format(type, self.request)
+
+    def _get_standard_request_number_string(self):
+        return self._standard_req_descriptions[self.request]
+
+    def get_value_string(self):
+        # If this is a GET_DESCRIPTOR request, parse it.
+        if self.get_type() == 0 and self.request == 6:
+            description = self._get_descriptor_number_string()
+            return "{} descriptor".format(description)
+        else:
+            return "%x" % self.value
+
+    def _get_descriptor_number_string(self):
+        try:
+            descriptor_index = self.value >> 8
+            return self._descriptor_number_description[descriptor_index]
+        except KeyError:
+            return "unknown descriptor 0x%x" % self.value
 
     def raw(self):
         """returns request as bytes"""

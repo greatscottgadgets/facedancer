@@ -266,14 +266,16 @@ class GreatDancerApp(FacedancerApp):
         self.stall_endpoint(0)
 
 
-    def set_address(self, address):
+    def set_address(self, address, defer=False):
         """
         Sets the device address of the GreatDancer. Usually only used during
         initial configuration.
 
         address: The address that the GreatDancer should assume.
+        defer: True iff the set_addres request should wait for an active transaction to finish.
         """
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SET_ADDRESS, value=address)
+        index = 1 if defer else 0
+        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SET_ADDRESS, value=address, index=index)
 
 
     @staticmethod
@@ -526,7 +528,6 @@ class GreatDancerApp(FacedancerApp):
 
                 # If we recieved a setup packet to handle, handle it.
                 if self.pending_control_packet_data:
-                    print("handling pending data")
 
                     # Read the rest of the data from the endpoint, completing
                     # the control request.
@@ -628,6 +629,10 @@ class GreatDancerApp(FacedancerApp):
         """
         Triggers the GreatDancer to perform its side of a bus reset.
         """
+
+        if self.verbose > 0:
+            print("-- Reset requested! --")
+
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_BUS_RESET)
 
 

@@ -3,14 +3,14 @@
 # Contains class definition for USBConfiguration.
 
 class USBConfiguration:
-    def __init__(self, configuration_index, configuration_string, interfaces):
+    def __init__(self, configuration_index, configuration_string, interfaces, attributes=0xe0, max_power=250):
         self.configuration_index        = configuration_index
         self.configuration_string       = configuration_string
         self.configuration_string_index = 0
         self.interfaces                 = interfaces
 
-        self.attributes = 0xe0
-        self.max_power = 0x01
+        self.attributes = attributes
+        self.max_power = max_power
 
         self.device = None
 
