@@ -14,13 +14,13 @@ class USBDevice:
             protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
-            verbose=0):
+            spec_version=0x0002, verbose=0):
         self.maxusb_app = maxusb_app
         self.verbose = verbose
 
         self.strings = [ ]
 
-        self.usb_spec_version           = 0x0001
+        self.usb_spec_version           = spec_version
         self.device_class               = device_class
         self.device_subclass            = device_subclass
         self.protocol_rel_num           = protocol_rel_num
