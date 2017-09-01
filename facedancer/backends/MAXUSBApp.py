@@ -173,7 +173,7 @@ class MAXUSBApp(FacedancerApp):
 
 
 
-    def set_address(self, address):
+    def set_address(self, address, defer=False):
         """
         Sets the device address of the Facedancer. Usually only used during
         initial configuration.

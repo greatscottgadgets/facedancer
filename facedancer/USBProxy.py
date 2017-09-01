@@ -23,8 +23,8 @@ class USBProxyFilter:
     Base class for filters that modify USB data.
     """
 
-    def filter_control_in(self, req, data):
-        return req, data
+    def filter_control_in(self, req, data, stalled):
+        return req, data, stalled
 
     def filter_control_out(self, req, data):
         return req, data
@@ -35,25 +35,40 @@ class USBProxyFilter:
     def filter_out(self, ep_num, data):
         return ep_num, data
 
+    def handle_out_request_stall(self, req, data, stalled):
+        """
+        Handles an OUT request that was stalled by the target.
+
+        req: The request header for the request that stalled.
+        data: The data stage for the request that stalled, if appropriate.
+        stalled: True iff the request is still considered stalled. This can
+            be overridden by previous filters, so it's possible for this to
+            be false.
+        """
+        return req, data, stalled
+
 
 class USBProxyDevice(USBDevice):
     name = "Proxy'd USB Device"
 
     filter_list = []
 
-    def __init__(self, maxusb_app, idVendor, idProduct, verbose=0):
+    def __init__(self, maxusb_app, idVendor, idProduct, verbose=0, quirks=[]):
 
         # Open a connection to the proxied device...
         self.libusb_device = usb.core.find(idVendor=idVendor, idProduct=idProduct)
         if self.libusb_device is None:
             raise DeviceNotFoundError("Could not find device to proxy!")
 
-        # TODO: Do this thing
-        # self.libusb_device.detach_kernel_driver(0)
+        # TODO: detach the right kernel driver every time
+        try:
+            self.libusb_device.detach_kernel_driver(0)
+        except:
+            pass
 
         # ... and initialize our base class with a minimal set of parameters.
         # We'll do almost nothing, as we'll be proxying packets by default to the device.
-        USBDevice.__init__(self,maxusb_app,verbose=verbose)
+        USBDevice.__init__(self, maxusb_app, verbose=verbose, quirks=quirks)
 
 
     def connect(self):
@@ -71,16 +86,7 @@ class USBProxyDevice(USBDevice):
             self.filter_list.append(filter_object)
 
     def handle_request(self, req):
-        if self.verbose > 3:
-            print(self.name, "received request", req)
-
-        try:
             self._proxy_request(req)
-        except USBError as e:
-            print("!!!! STALLING request: {}".format(req))
-            print(e)
-            self.maxusb_app.stall_ep0()
-
 
     def _proxy_request(self, req):
         """
@@ -98,17 +104,26 @@ class USBProxyDevice(USBDevice):
         forward it to the victim.
         """
 
+        data = []
+        stalled = False
+
         # Read any data from the real device...
-        data = self.libusb_device.ctrl_transfer(req.request_type, req.request,
-                                     req.value, req.index, req.length)
+        try:
+            data = self.libusb_device.ctrl_transfer(req.request_type, req.request,
+                                         req.value, req.index, req.length)
+        except USBError as e:
+            stalled = True
 
         # Run filters here.
         for f in self.filter_list:
-            req, data = f.filter_control_in(req, data)
-        print("<", data)
+            req, data, stalled = f.filter_control_in(req, data, stalled)
 
         #... and proxy it to our victim.
-        self.send_control_message(data)
+        if stalled:
+            # TODO: allow stalling of eps other than 0!
+            self.maxusb_app.stall_ep0()
+        else:
+            self.send_control_message(data)
 
 
     def _proxy_out_request(self, req):
@@ -119,18 +134,24 @@ class USBProxyDevice(USBDevice):
 
         data = req.data
 
-        # Run filters here.
-        print("CONTROL OUT ", req)
         for f in self.filter_list:
             req, data = f.filter_control_out(req, data)
-        if req:# and req.data:
-            print(">", req.data)
 
         # ... forward the request to the real device.
         if req:
-            self.libusb_device.ctrl_transfer(req.request_type, req.request,
-                req.value, req.index, data)
-            self.ack_status_stage()
+            try:
+                self.libusb_device.ctrl_transfer(req.request_type, req.request,
+                    req.value, req.index, data)
+                self.ack_status_stage()
+
+            # Special case: we've stalled, allow the filters to decide what to do.
+            except USBError as e:
+                stalled = True
+
+                for f in self.filter_list:
+                    req, data, stalled = f.handle_out_request_stall(req, data, stalled)
+
+                self.maxusb_app.stall_ep0()
 
 
     def handle_data_available(self, ep_num, data):
@@ -139,13 +160,9 @@ class USBProxyDevice(USBDevice):
         that needs to be proxied to the target device.
         """
 
-        print("PROXYING DATA on ep {}".format(ep_num))
-
         # Run the data through all of our filters.
         for f in self.filter_list:
             ep_num, data = f.filter_out(ep_num, data)
-        if data:
-            print(">", data)
 
         # If the data wasn't filtered out, communicate it to the target device.
         if data:
