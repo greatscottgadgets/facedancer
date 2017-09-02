@@ -57,7 +57,11 @@ class USBInterface:
                     % (dtype, dindex, lang, n))
 
         # TODO: handle KeyError
-        response = self.descriptors[dtype]
+        try:
+            response = self.descriptors[dtype]
+        except KeyError:
+            self.configuration.device.maxusb_app.stall_ep0()
+
         if callable(response):
             response = response(dindex)
 
@@ -96,6 +100,7 @@ class USBInterface:
 
         for e in self.endpoints:
             d += e.get_descriptor()
+
 
         return d
 

@@ -528,7 +528,6 @@ class GreatDancerApp(FacedancerApp):
 
                 # If we recieved a setup packet to handle, handle it.
                 if self.pending_control_packet_data:
-                    print("handling pending data")
 
                     # Read the rest of the data from the endpoint, completing
                     # the control request.

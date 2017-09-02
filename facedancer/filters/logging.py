@@ -29,7 +29,8 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
             print("{} {}< --STALLED-- ".format(self.timestamp(), self.decoration))
 
         if self.verbose > 4 and data:
-            self._pretty_print_data(data, '<', self.decoration)
+            is_string = (req.request == 6) and (req.value >> 8 == 3)
+            self._pretty_print_data(data, '<', self.decoration, is_string)
 
         return req, data, stalled
 
@@ -64,14 +65,14 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
     def filter_in(self, ep_num, data):
 
         if self.verbose > 4:
-            print(ep_num, data)
+            print("IN", ep_num, data)
 
         return ep_num, data
 
     def filter_out(self, ep_num, data):
 
         if self.verbose > 4:
-            print(ep_num, data)
+            print("OUT", ep_num, data)
 
         return ep_num, data
 
@@ -79,8 +80,16 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
     def timestamp(self):
         return datetime.datetime.now().strftime("[%H:%M:%S]")
 
+    def _magic_decode(self, data):
+        try:
+            return bytes(data).decode('utf-16le')
+        except:
+            return bytes(data)
 
-    def _pretty_print_data(self, data, direction_marker, decoration=''):
+
+    def _pretty_print_data(self, data, direction_marker, decoration='', is_string=False):
+        data = self._magic_decode(data) if is_string else bytes(data)
         print("{} {}{}: {}".format(self.timestamp(), decoration, direction_marker, data))
+
 
 

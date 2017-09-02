@@ -33,7 +33,12 @@ class USBDevice:
         self.device_rev                 = device_rev
         self.manufacturer_string_id     = self.get_string_id(manufacturer_string)
         self.product_string_id          = self.get_string_id(product_string)
-        self.serial_number_string_id    = self.get_string_id(serial_number_string)
+
+        if serial_number_string is not None:
+            self.serial_number_string_id = self.get_string_id(serial_number_string)
+        else:
+            self.serial_number_string_id = 0
+
 
         # maps from USB.desc_type_* to bytearray OR callable
         self.descriptors = descriptors
@@ -46,7 +51,9 @@ class USBDevice:
         self.configurations = configurations
 
         for c in self.configurations:
-            csi = self.get_string_id(c.configuration_string)
+            csi = 0
+            if c.configuration_string:
+                csi = self.get_string_id(c.configuration_string)
             c.set_configuration_string_index(csi)
             c.set_device(self)
 
@@ -135,7 +142,7 @@ class USBDevice:
 
     def handle_request(self, req):
         if self.verbose > 3:
-            print(self.name, "received request", req)
+            print(self.name, "received request", repr(req))
 
         # figure out the intended recipient
         recipient_type = req.get_recipient()
@@ -435,7 +442,7 @@ class USBDeviceRequest:
             return self._get_standard_request_number_string()
         else:
             type = self.get_type_string()
-            return "{} request {}".format(type, self.get_request)
+            return "{} request {}".format(type, self.request)
 
     def _get_standard_request_number_string(self):
         return self._standard_req_descriptions[self.request]

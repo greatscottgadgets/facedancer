@@ -24,9 +24,16 @@ def main():
     parser.add_argument('-p', dest='productid', metavar='<ProductID>',
                         type=vid_pid, help="Product ID of device",
                         required=True)
+    parser.add_argument('-f', dest='fastsetaddr', action='store_true', 
+                        help="Use fast set_addr quirk")
     args = parser.parse_args()
+    quirks = []
+
+    if args.fastsetaddr:
+        quirks.append('fast_set_addr')
+
     u = FacedancerUSBApp(verbose=0)
-    d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, verbose=2, quirks='fast_set_address')
+    d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, verbose=2, quirks=quirks)
 
     d.add_filter(USBProxyPrettyPrintFilter(verbose=5))
     d.add_filter(USBProxySetupFilters(d, verbose=0))
