@@ -170,4 +170,4 @@ class USBProxyDevice(USBDevice):
 
 
     def handle_buffer_available(self, ep_num):
-        print("FAIL! buffer available and we didn't do anything about it")
+        pass #print("FAIL! buffer available and we didn't do anything about it")
