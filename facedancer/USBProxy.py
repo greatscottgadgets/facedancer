@@ -171,3 +171,7 @@ class USBProxyDevice(USBDevice):
 
     def handle_buffer_available(self, ep_num):
         pass #print("FAIL! buffer available and we didn't do anything about it")
+
+
+    def handle_nak(self, ep_num):
+        print("FAIL! we need to do something when a NAK happens")

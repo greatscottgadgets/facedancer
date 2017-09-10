@@ -21,7 +21,7 @@ class USBEndpoint:
     usage_type_implicit_feedback = 0x02
 
     def __init__(self, number, direction, transfer_type, sync_type,
-            usage_type, max_packet_size, interval, handler):
+            usage_type, max_packet_size, interval, handler, nak_callback=None):
 
         self.number             = number
         self.direction          = direction
@@ -31,6 +31,7 @@ class USBEndpoint:
         self.max_packet_size    = max_packet_size
         self.interval           = interval
         self.handler            = handler
+        self.nak_callback       = nak_callback
 
         self.interface          = None
 
