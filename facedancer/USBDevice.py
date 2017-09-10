@@ -329,12 +329,12 @@ class USBDevice:
             for e in i.endpoints:
                 self.endpoints[e.number] = e
 
+        # HACK: blindly acknowledge request
+        self.ack_status_stage()
+
         # notify the device of the recofiguration, in case
         # it needs to e.g. set up endpoints accordingly
         self.maxusb_app.configured(self.configuration)
-
-        # HACK: blindly acknowledge request
-        self.ack_status_stage()
 
     # USB 2.0 specification, section 9.4.4 (p 282 of pdf)
     def handle_get_interface_request(self, req):
