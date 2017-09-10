@@ -20,62 +20,40 @@ class USBProxySetupFilters(USBProxyFilter):
     GET_DESCRIPTOR_REQUEST = 6
     RECIPIENT_DEVICE = 0
 
+    DESCRIPTOR_CONFIRGUATION = 0x02
+
     def __init__(self, device, verbose=0):
         self.device = device
-        self.configuration = None
+        self.configurations = {}
         self.verbose = verbose
 
     def filter_control_in(self, req, data, stalled):
 
-        # FIXME: replace Dominic's wonderful shotgun parser :)
-
         if stalled:
             return req, data, stalled
 
-        if req.request == self.GET_DESCRIPTOR_REQUEST and \
-           req.value == 0x0200 and req.length >= 32:
-            cfg = data[:data[0]]
-            rest = data[data[0]:]
-            iface = rest[:rest[0]]
-            rest = rest[rest[0]:]
-            x = iface[4]
-            eps = []
-            while x:
-                eps.append(rest[:rest[0]])
-                rest = rest[rest[0]:]
-                x -= 1
-            endpoints = [
-                USBEndpoint(
-                    ep[2],
-                    (ep[2]&0x80)>>7,
-                    ep[3]&0x03,
-                    (ep[3]>>2)&0x03,
-                    (ep[3]>>4)&0x03,
-                    ep[4] | ep[5]<<8,
-                    ep[6],
-                    None
-                )
-                for ep in eps
-            ]
-            interface = USBInterface(
-                iface[2],
-                iface[3],
-                iface[5],
-                iface[6],
-                iface[7],
-                iface[8],
-                endpoints = endpoints
-            )
 
-            self.configuration = USBConfiguration(
-                cfg[5],
-                "",
-                [interface]
-            )
-            if self.verbose > 1:
-                print("-- Storing configuration: {} --".format(self.configuration))
+        # If this is a read of a valid configuration descriptor (and subordinate
+        # descriptors, parse them and store the results for late).
+        if req.request == self.GET_DESCRIPTOR_REQUEST:
+
+            # Get the descriptor type and index.
+            descriptor_type  = req.value >> 8
+            descriptor_index = req.value & 0xFF
+
+            # If this is a configuration descriptor, store information relevant
+            # to the configuration. We'll need this to set up the endpoint
+            # hardware on the facedancer device.
+            if descriptor_type == self.DESCRIPTOR_CONFIRGUATION and req.length >= 32:
+                configuration = USBDescribable.from_binary_descriptor(data)
+                self.configurations[configuration.configuration_index] = configuration
+
+                if self.verbose > 1:
+                    print("-- Storing configuration {} --".format(configuration))
+
 
         return req, data, stalled
+
 
     def filter_control_out(self, req, data):
         # Special case: if this is a SET_ADDRESS request,
@@ -85,13 +63,25 @@ class USBProxySetupFilters(USBProxyFilter):
             self.device.handle_set_address_request(req)
             return None, None
 
+        # Special case: if this is a SET_CONFIGURATION_REQUEST,
+        # pass it through, but also set up the Facedancer hardware
+        # in response.
         if req.get_recipient() == self.RECIPIENT_DEVICE and \
            req.request == self.SET_CONFIGURATION_REQUEST:
-            if self.configuration and self.verbose > 1:
-                print("-- Applying configuration {} --".format(self.configuration))
-            elif self.verbose > 0:
-                print("-- WARNING: no configuration to apply! --")
+            configuration_index = req.value
 
-            if self.configuration:
-                self.device.maxusb_app.configured(self.configuration)
+            # If we have a known configuration for this index, apply it.
+            if configuration_index in self.configurations:
+                configuration = self.configurations[configuration_index]
+
+                if self.verbose > 0:
+                    print("-- Applying configuration {} --".format(configuration))
+
+                self.device.configured(configuration)
+
+            # Otherwise, the host has applied a configruation without ever reading
+            # its descriptor. This is mighty strange behavior!
+            elif self.verbose > 0:
+                print("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
+
         return req, data

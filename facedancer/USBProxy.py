@@ -54,6 +54,9 @@ class USBProxyDevice(USBDevice):
     filter_list = []
 
     def __init__(self, maxusb_app, idVendor, idProduct, verbose=0, quirks=[]):
+        """
+        Sets up a new USBProxy instance.
+        """
 
         # Open a connection to the proxied device...
         self.libusb_device = usb.core.find(idVendor=idVendor, idProduct=idProduct)
@@ -61,6 +64,7 @@ class USBProxyDevice(USBDevice):
             raise DeviceNotFoundError("Could not find device to proxy!")
 
         # TODO: detach the right kernel driver every time
+        # TODO: do this on configuration so we detach the same interfaces
         try:
             self.libusb_device.detach_kernel_driver(0)
         except:
@@ -72,6 +76,11 @@ class USBProxyDevice(USBDevice):
 
 
     def connect(self):
+        """
+        Initialize this device. We perform a reduced initilaization, as we really
+        only want to proxy data.
+        """
+
         max_ep0_packet_size = self.libusb_device.bMaxPacketSize0
         self.maxusb_app.connect(self, max_ep0_packet_size)
 
@@ -79,16 +88,37 @@ class USBProxyDevice(USBDevice):
         self.state = USB.state_powered
 
 
+    def configured(self, configuration):
+        """
+        Callback that handles when the target device becomes configured.
+        If you're using the standard filters, this will be called automatically;
+        if not, you'll have to call it once you know the device has been configured.
+
+        configuration: The configuration to be applied.
+        """
+
+        # Gather the configuration's endpoints for easy access, later...
+        self.endpoints = {}
+        for interface in configuration.interfaces:
+            for endpoint in interface.endpoints:
+                self.endpoints[endpoint.number] = endpoint
+
+        # ... and pass our configuration on to the core device.
+        self.maxusb_app.configured(configuration)
+        configuration.set_device(self)
+
+
     def add_filter(self, filter_object, head=False):
+        """
+        Adds a filter to the USBProxy filter stack.
+        """
         if head:
             self.filter_list.insert(0, filter_object)
         else:
             self.filter_list.append(filter_object)
 
-    def handle_request(self, req):
-            self._proxy_request(req)
 
-    def _proxy_request(self, req):
+    def handle_request(self, req):
         """
         Proxies EP0 requests between the victim and the target. 
         """
@@ -169,5 +199,43 @@ class USBProxyDevice(USBDevice):
             self.libusb_device.write(ep_num, data)
 
 
-    def handle_buffer_available(self, ep_num):
-        pass #print("FAIL! buffer available and we didn't do anything about it")
+    def handle_nak(self, ep_num):
+        """
+        Handles a NAK, which means that the target asked the proxied device
+        to participate in a transfer. We use this as our cue to participate
+        in communications.
+        """
+
+        # TODO: Currently, we use this for _all_ non-control transfers, as we
+        # don't e.g. periodically schedule isochronous or interrupt transfers.
+        # We probably should set up those to be independently scheduled and
+        # then limit this to only bulk endpoints.
+
+        # Get the endpoint object we reference.
+        endpoint = self.endpoints[ep_num]
+
+        # Skip handling OUT endpoints, as we handle those in handle_data_available.
+        if not endpoint.direction:
+            return
+
+        self._proxy_in_transfer(endpoint)
+
+
+    def _proxy_in_transfer(self, endpoint):
+        """
+        Proxy OUT requests, which sends a request from the target device to the
+        victim, at the target's request.
+        """
+
+        # Read the target data from the target device.
+        endpoint_address = endpoint.number | 0x80
+        data = self.libusb_device.read(endpoint_address, endpoint.max_packet_size)
+
+        # Run the data through all of our filters.
+        for f in self.filter_list:
+            ep_num, data = f.filter_in(endpoint.number, data)
+
+        # If our data wasn't filtered out, transmit it to the target!
+        if data:
+            endpoint.send_packet(data)
+

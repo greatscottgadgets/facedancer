@@ -17,8 +17,9 @@ class GreatDancerApp(FacedancerApp):
     app_num = 0x00 # This doesn't have any meaning for us.
 
     # Interrupt register (USBSTS) bits masks.
-    USBSTS_D_UI  = (1 << 0)
-    USBSTS_D_URI = (1 << 6)
+    USBSTS_D_UI   = (1 <<  0)
+    USBSTS_D_URI  = (1 <<  6)
+    USBSTS_D_NAKI = (1 << 16)
 
     # Number of supported USB endpoints.
     # TODO: bump this up when we develop support using USB0 (cables flipped)
@@ -33,6 +34,7 @@ class GreatDancerApp(FacedancerApp):
     GET_ENDPTSETUPSTAT = 1
     GET_ENDPTCOMPLETE  = 2
     GET_ENDPTSTATUS    = 3
+    GET_ENDPTNAK       = 4
 
     # Quirk flags
     QUIRK_MANUAL_SET_ADDRESS = 0x01
@@ -583,6 +585,14 @@ class GreatDancerApp(FacedancerApp):
         return self._fetch_status_register(self.GET_ENDPTSTATUS)
 
 
+    def _fetch_endpoint_nak_status(self):
+        """
+        Queries the GreatFET for a bitmap describing the endpoints that have issued
+        a NAK since the last time this was checked.
+        """
+        return self._fetch_status_register(self.GET_ENDPTNAK)
+
+
     def _prime_out_endpoint(self, endpoint_number):
         """
         Primes an out endpoint, allowing it to recieve data the next time the host chooses to send it.
@@ -647,6 +657,26 @@ class GreatDancerApp(FacedancerApp):
             return ready_for_in
 
 
+    @classmethod
+    def _has_issued_nak(cls, ep_nak, ep_num, direction):
+        """
+        Interprets an ENDPTNAK status result to determine
+        whether a given endpoint has NAK'd.
+
+        ep_nak: The status work read from the ENDPTNAK register
+        ep_num: The endpoint number in question.
+        direction: The endpoint direction in question.
+        """
+
+        in_nak  = (ep_nak & (1 << (ep_num + 16)))
+        out_nak = (ep_nak & (1 << (ep_num)))
+
+        if direction == cls.HOST_TO_DEVICE:
+            return out_nak
+        else:
+            return in_nak
+
+
     def _bus_reset(self):
         """
         Triggers the GreatDancer to perform its side of a bus reset.
@@ -656,6 +686,30 @@ class GreatDancerApp(FacedancerApp):
             print("-- Reset requested! --")
 
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_BUS_RESET)
+
+
+    def _handle_nak_events(self):
+        """
+        Handles an event in which the GreatDancer has NAK'd an IN token.
+        """
+
+        # If we haven't been configured yet, we can't have any
+        # endpoints other than the control endpoint, and we don't need to
+        # handle any NAKs.
+        if not self.configuration:
+            return
+
+        # Fetch the endpoint status.
+        status = self._fetch_endpoint_nak_status()
+
+        # Iterate over each usable endpoint.
+        for interface in self.configuration.interfaces:
+            for endpoint in interface.endpoints:
+
+                # If the endpoint has NAK'd, issued the relevant callback.
+                if self._has_issued_nak(status, endpoint.number, endpoint.direction):
+                    self.connected_device.handle_nak(endpoint.number)
+
 
 
     def _configure_endpoints(self, configuration):
@@ -684,8 +738,9 @@ class GreatDancerApp(FacedancerApp):
         self.configuration = configuration
 
         # If we've just set up endpoints, check to see if any of them
-        # need to be primed.
+        # need to be primed, or have NAKs waiting.
         self._handle_transfer_readiness()
+        self._handle_nak_events()
 
 
     def service_irqs(self):
@@ -710,4 +765,7 @@ class GreatDancerApp(FacedancerApp):
 
             if status & self.USBSTS_D_URI:
                 self._bus_reset()
+
+            if status & self.USBSTS_D_NAKI:
+                self._handle_nak_events()
 

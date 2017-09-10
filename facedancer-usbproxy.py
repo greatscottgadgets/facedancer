@@ -11,12 +11,13 @@ from facedancer.filters.standard import USBProxySetupFilters
 from facedancer.filters.logging import USBProxyPrettyPrintFilter
 import argparse
 
-
-
 def vid_pid(x):
     return int(x, 16)
 
 def main():
+
+    # TODO: Accept arguments that specify a list of filters to apply,
+    # from the local directory or the filters directory.
     parser = argparse.ArgumentParser(description="FaceDancer USB Proxy")
     parser.add_argument('-v', dest='vendorid', metavar='<VendorID>',
                         type=vid_pid, help="Vendor ID of device",
@@ -24,19 +25,19 @@ def main():
     parser.add_argument('-p', dest='productid', metavar='<ProductID>',
                         type=vid_pid, help="Product ID of device",
                         required=True)
-    parser.add_argument('-f', dest='fastsetaddr', action='store_true', 
-                        help="Use fast set_addr quirk")
     args = parser.parse_args()
     quirks = []
 
-    if args.fastsetaddr:
-        quirks.append('fast_set_addr')
-
-    u = FacedancerUSBApp(verbose=0)
+    # Create a new USBProxy device.
+    u = FacedancerUSBApp(verbose=1)
     d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, verbose=2, quirks=quirks)
 
+    # Add our standard filters.
+    # TODO: Make the PrettyPrintFilter switchable?
     d.add_filter(USBProxyPrettyPrintFilter(verbose=5))
-    d.add_filter(USBProxySetupFilters(d, verbose=0))
+    d.add_filter(USBProxySetupFilters(d, verbose=2))
+
+    # TODO: Figure these out from the command line!
     d.connect()
 
     try:
