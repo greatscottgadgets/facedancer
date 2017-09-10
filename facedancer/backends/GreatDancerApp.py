@@ -34,6 +34,9 @@ class GreatDancerApp(FacedancerApp):
     GET_ENDPTCOMPLETE  = 2
     GET_ENDPTSTATUS    = 3
 
+    # Quirk flags
+    QUIRK_MANUAL_SET_ADDRESS = 0x01
+
     @classmethod
     def appropriate_for_environment(cls, backend_name):
         """
@@ -59,7 +62,7 @@ class GreatDancerApp(FacedancerApp):
             return False
 
 
-    def __init__(self, device=None, verbose=0):
+    def __init__(self, device=None, verbose=0, quirks=None):
         """
         Sets up a new GreatFET-backed Facedancer (GreatDancer) application.
 
@@ -90,6 +93,15 @@ class GreatDancerApp(FacedancerApp):
         # which we'll use to know which endpoints we'll need to check
         # for data transfer readiness.
         self.configuration = None
+
+        #
+        # Store our list of quirks to handle.
+        #
+        if quirks:
+            self.quirks = quirks
+        else:
+            self.quirks = []
+
 
     def init_commands(self):
         """
@@ -181,7 +193,17 @@ class GreatDancerApp(FacedancerApp):
         usb_device: The USBDevice object that represents the device to be
             emulated.
         """
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT, value=max_ep0_packet_size)
+
+        quirks = 0
+
+        # Compute our quirk flags.
+        if 'manual_set_address' in self.quirks:
+            if self.verbose > 0:
+                print("Handling SET_ADDRESS on the host side!")
+
+            quirks |= self.QUIRK_MANUAL_SET_ADDRESS
+
+        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT, value=max_ep0_packet_size, index=quirks)
         self.connected_device = usb_device
 
         if self.verbose > 0:
@@ -540,7 +562,7 @@ class GreatDancerApp(FacedancerApp):
                     request = USBDeviceRequest(data)
 
                     # Handle the setup request...
-                    self.connected_device.handle_request(request)
+                    self.connected_device.handle_request(request  )
 
                     # And clear our pending setup data.
                     self.pending_control_packet_data = None
@@ -659,7 +681,6 @@ class GreatDancerApp(FacedancerApp):
         configuration: The configruation applied by the SET_CONFIG request.
         """
         self._configure_endpoints(configuration)
-
         self.configuration = configuration
 
         # If we've just set up endpoints, check to see if any of them

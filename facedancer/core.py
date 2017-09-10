@@ -8,7 +8,7 @@ import os
 
 from .errors import *
 
-def FacedancerUSBApp(verbose=0):
+def FacedancerUSBApp(verbose=0, quirks=None):
     """
     Convenience function that automatically creates a FacedancerApp
     based on the BOARD environment variable and some crude internal
@@ -17,7 +17,7 @@ def FacedancerUSBApp(verbose=0):
     verbose: Sets the verbosity level of the relevant app. Increasing
         this from zero yields progressively more output.
     """
-    return FacedancerApp.autodetect(verbose)
+    return FacedancerApp.autodetect(verbose, quirks)
 
 
 class FacedancerApp:
@@ -25,7 +25,7 @@ class FacedancerApp:
     app_num = 0x00
 
     @classmethod
-    def autodetect(cls, verbose=0):
+    def autodetect(cls, verbose=0, quirks=None):
         """
         Convenience function that automatically creates the apporpriate
         sublass based on the BOARD environment variable and some crude internal
@@ -48,7 +48,7 @@ class FacedancerApp:
             if verbose > 0:
                 print("Using {} backend.".format(subclass.app_name))
 
-            return subclass(verbose=verbose)
+            return subclass(verbose=verbose, quirks=quirks)
         else:
             raise DeviceNotFoundError()
 
