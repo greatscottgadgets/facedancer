@@ -38,7 +38,7 @@ class GoodfetMaxUSBApp(MAXUSBApp):
             return False
 
 
-    def __init__(self, device=None, verbose=0):
+    def __init__(self, device=None, verbose=0, quirks=None):
 
         if device is None:
             serial = GoodFETSerialPort()
