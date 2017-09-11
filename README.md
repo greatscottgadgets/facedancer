@@ -1,9 +1,9 @@
-# FaceDancer pre-2.0
+# FaceDancer 2.2
 
-This repository houses what will hopefully be the next generation of FaceDancer
-software. Descended from the original GoodFET-based Facedancer, this repository
-provides a python module that provides expanded facedancer support-- including
-support for multiple boards and a variety of new features.
+This repository houses the next generation of FaceDancer software. Descended from
+the original GoodFET-based FaceDancer, this repository provides a python module 
+that provides expanded FaceDancer support-- including support for multiple boards 
+and some pretty significant new features.
 
 ## What is a FaceDancer?
 
@@ -18,7 +18,18 @@ kinds of USB misbehaviors. :)
 For more information, see:
 
  * [Travis Goodspeed's blog post on FaceDancer](http://travisgoodspeed.blogspot.com/2012/07/emulating-usb-devices-with-python.html)
- * [The FaceDancer 21, a supported board](http://goodfet.sourceforge.net/hardware/facedancer21/)
+ * [The FaceDancer 21, the original supported board](http://goodfet.sourceforge.net/hardware/facedancer21/)
+
+## USBProxy 'Nouveau' and Protocol Analysis
+
+A major new feature of the newer FaceDancer codebase is the ability to man-in-the
+middle USB connections-- replacing one of the authors' original [USBProxy](https://github.com/dominicgs/usbproxy)
+project. This opens up a whole new realm of applications-- including protocol analysis
+and live manipulation of USB packets-- and is especially useful when you don't control
+the software running on the target device (e.g. on embedded systems or games consoles).
+
+This feature is complete, but could use more documentation. Pull requests are welcome. :)
+
 
 ## How do I use this repository?
 
@@ -57,8 +68,6 @@ The roadmap is hazy, but in addition to multi-board support, this repository
 eventually will be home to some cool new features, such as:
 
  * High-speed ("USB 2.0") device emulation on devices with USB 2.0 PHYS
- * [USBProxy](https://github.com/dominicgs/USBProxy)-like USB-packet MITM'ing.
- * Limited USB protocol analysis capabilities
 
 ## Whose fault _is_ this?
 
