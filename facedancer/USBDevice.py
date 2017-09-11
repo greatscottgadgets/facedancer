@@ -203,7 +203,7 @@ class USBDevice:
     def handle_nak(self, ep_num):
         if self.state == USB.state_configured and ep_num in self.endpoints:
             endpoint = self.endpoints[ep_num]
-            if callable(endpoint.handler):
+            if callable(endpoint.nak_callback):
                 endpoint.nak_callback()
 
 

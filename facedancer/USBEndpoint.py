@@ -2,7 +2,13 @@
 #
 # Contains class definition for USBEndpoint.
 
-class USBEndpoint:
+import struct
+from .USB import *
+
+class USBEndpoint(USBDescribable):
+
+    DESCRIPTOR_TYPE_NUMBER      = 0x05
+
     direction_out               = 0x00
     direction_in                = 0x01
 
@@ -21,7 +27,7 @@ class USBEndpoint:
     usage_type_implicit_feedback = 0x02
 
     def __init__(self, number, direction, transfer_type, sync_type,
-            usage_type, max_packet_size, interval, handler, nak_callback=None):
+            usage_type, max_packet_size, interval, handler=None, nak_callback=None):
 
         self.number             = number
         self.direction          = direction
@@ -38,6 +44,43 @@ class USBEndpoint:
         self.request_handlers   = {
                 1 : self.handle_clear_feature_request
         }
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+        Creates an endpoint object from a description of that endpoint.
+        """
+
+        # Parse the core descriptor into its components...
+        address, attributes, max_packet_size, interval = struct.unpack("xxBBHB", data)
+
+        # ... and break down the packed fields.
+        number        = address & 0x7F
+        direction     = address >> 7
+        transfer_type = attributes & 0b11
+        sync_type     = attributes >> 2 & 0b1111
+        usage_type    = attributes >> 4 & 0b11
+
+        return cls(number, direction, transfer_type, sync_type, usage_type,
+                   max_packet_size, interval)
+
+
+    def set_handler(self, handler):
+        self.handler = handler
+
+    def __repr__(self):
+        # TODO: make these nice string representations
+        transfer_type = self.transfer_type
+        sync_type = self.sync_type
+        usage_type = self.usage_type
+        direction = "IN" if self.direction else "OUT"
+
+        # TODO: handle high/superspeed; don't assume 1ms frames
+        interval = self.interval
+
+        return "<USBEndpoint number={} direction={} transfer_type={} sync_type={} usage_type={} max_packet_size={} inderval={}ms>".format(
+            self.number, direction, transfer_type, sync_type, usage_type, self.max_packet_size, interval
+        )
 
     def handle_clear_feature_request(self, req):
         print("received CLEAR_FEATURE request for endpoint", self.number,
@@ -70,7 +113,12 @@ class USBEndpoint:
         dev = self.interface.configuration.device
         dev.maxusb_app.send_on_endpoint(self.number, data)
 
+
     def send(self, data):
+
+        # If we're sending something that's exactly divisible by the
+        # max packet size, we'll have to send a ZLP once the packet is complete.
+        send_zlp = (len(data) % self.max_packet_size == 0) and (len(data) > 0)
 
         # Send the relevant data one packet at a time,
         # chunking if we're larger than the max packet size.
@@ -80,6 +128,9 @@ class USBEndpoint:
             data = data[self.max_packet_size:]
 
             self.send_packet(packet)
+
+        if self.send_zlp:
+            self.send_packet([])
 
 
     def recv(self):

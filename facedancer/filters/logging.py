@@ -3,11 +3,12 @@
 #
 
 import datetime
-
 from ..USBProxy import USBProxyFilter
 
 class USBProxyPrettyPrintFilter(USBProxyFilter):
-    pass
+    """
+    Filter that pretty prints USB transactions according to log levels.
+    """
 
     def __init__(self, verbose, decoration=''):
         """
@@ -16,9 +17,14 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
         self.verbose = verbose
         self.decoration = decoration
 
-    def filter_control_in(self, req, data, stalled):
 
-        if req is None:
+
+    def filter_control_in(self, req, data, stalled):
+        """
+        Log IN control requests without modification.
+        """
+
+        if self.verbose > 3 and req is None:
             print("{} {}< --filtered out-- ".format(self.timestamp(), self.decoration))
             return req, data, stalled
 
@@ -36,6 +42,9 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
 
     def filter_control_out(self, req, data):
+        """
+        Log OUT control requests without modification.
+        """
 
         # TODO: just call control_in, it's the same:
 
@@ -53,6 +62,9 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
 
     def handle_out_request_stall(self, req, data, stalled):
+        """
+        Handles cases where OUT requests are stalled (and thus we don't get data).
+        """
         if self.verbose > 3 and req is None:
             if stalled:
                 print("{} {}> --STALLED-- ".format(self.timestamp(), self.decoration))
@@ -63,33 +75,41 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
 
     def filter_in(self, ep_num, data):
+        """
+        Log IN transfers without modification.
+        """
 
-        if self.verbose > 4:
-            print("IN", ep_num, data)
+        if self.verbose > 4 and data:
+            self._pretty_print_data(data, '<', self.decoration, ep_marker=ep_num)
 
         return ep_num, data
 
     def filter_out(self, ep_num, data):
+        """
+        Log OUT transfers without modification.
+        """
 
-        if self.verbose > 4:
-            print("OUT", ep_num, data)
+        if self.verbose > 4 and data:
+            self._pretty_print_data(data, '>', self.decoration, ep_marker=ep_num)
 
         return ep_num, data
 
 
     def timestamp(self):
+        """ Generate a quick timestamp for printing. """
         return datetime.datetime.now().strftime("[%H:%M:%S]")
 
     def _magic_decode(self, data):
+        """ Simple decode function that attempts to find a nice string represetation for the console."""
         try:
             return bytes(data).decode('utf-16le')
         except:
             return bytes(data)
 
 
-    def _pretty_print_data(self, data, direction_marker, decoration='', is_string=False):
+    def _pretty_print_data(self, data, direction_marker, decoration='', is_string=False, ep_marker=''):
         data = self._magic_decode(data) if is_string else bytes(data)
-        print("{} {}{}: {}".format(self.timestamp(), decoration, direction_marker, data))
+        print("{} {}{}{}: {}".format(self.timestamp(), ep_marker, decoration, direction_marker, data))
 
 
 

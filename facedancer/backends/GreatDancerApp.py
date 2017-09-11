@@ -657,24 +657,24 @@ class GreatDancerApp(FacedancerApp):
             return ready_for_in
 
 
-    @staticmethod
-    def _has_issued_nak(ep_nak, ep_num, direction):
+    @classmethod
+    def _has_issued_nak(cls, ep_nak, ep_num, direction):
         """
         Interprets an ENDPTNAK status result to determine
         whether a given endpoint has NAK'd.
 
-        ep_nak: The status work read from the ENDPTNAK register.
+        ep_nak: The status work read from the ENDPTNAK register
         ep_num: The endpoint number in question.
         direction: The endpoint direction in question.
         """
 
-        in_nak  = (not ep_nak & (1 << (ep_num + 16)))
-        out_nak = (not ep_nak & (1 << (ep_num)))
+        in_nak  = (ep_nak & (1 << (ep_num + 16)))
+        out_nak = (ep_nak & (1 << (ep_num)))
 
-        if direction == self.HOST_TO_DEVICE:
-            return in_nak
-        else:
+        if direction == cls.HOST_TO_DEVICE:
             return out_nak
+        else:
+            return in_nak
 
 
     def _bus_reset(self):
@@ -700,7 +700,7 @@ class GreatDancerApp(FacedancerApp):
             return
 
         # Fetch the endpoint status.
-        status = self._fetch_endpoint_nak_status() >> 16
+        status = self._fetch_endpoint_nak_status()
 
         # Iterate over each usable endpoint.
         for interface in self.configuration.interfaces:
@@ -738,8 +738,9 @@ class GreatDancerApp(FacedancerApp):
         self.configuration = configuration
 
         # If we've just set up endpoints, check to see if any of them
-        # need to be primed.
+        # need to be primed, or have NAKs waiting.
         self._handle_transfer_readiness()
+        self._handle_nak_events()
 
 
     def service_irqs(self):

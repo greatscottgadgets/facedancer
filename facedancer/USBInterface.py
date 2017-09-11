@@ -2,14 +2,17 @@
 #
 # Contains class definition for USBInterface.
 
+import struct
 from .USB import *
 
-class USBInterface:
+class USBInterface(USBDescribable):
+    DESCRIPTOR_TYPE_NUMBER = 0x4
+
     name = "generic USB interface"
 
     def __init__(self, interface_number, interface_alternate, interface_class,
             interface_subclass, interface_protocol, interface_string_index,
-            verbose=0, endpoints=[], descriptors={}):
+            verbose=0, endpoints=None, descriptors=None):
 
         self.number = interface_number
         self.alternate = interface_alternate
@@ -18,8 +21,8 @@ class USBInterface:
         self.protocol = interface_protocol
         self.string_index = interface_string_index
 
-        self.endpoints = endpoints
-        self.descriptors = descriptors
+        self.endpoints = []
+        self.descriptors = descriptors if descriptors else {}
 
         self.verbose = verbose
 
@@ -32,11 +35,39 @@ class USBInterface:
 
         self.configuration = None
 
-        for e in self.endpoints:
-            e.set_interface(self)
+        if endpoints:
+            for endpoint in endpoints:
+                self.add_endpoint(endpoint)
 
         self.device_class = None
         self.device_vendor = None
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+            Generates an interface object from a descriptor.
+        """
+        interface_number, alternate_setting, num_endpoints, interface_class, \
+                interface_subclass, interface_protocol, interface_string_index \
+                = struct.unpack("xxBBBBBBB", data)
+        return cls(interface_number, alternate_setting, interface_class,
+                   interface_subclass, interface_protocol, interface_string_index)
+
+
+    def __repr__(self):
+        endpoints = [endpoint.number for endpoint in self.endpoints]
+
+        return "<USBInterface number={} alternate={} class={} subclass={} protocol={} string_index={} endpoints={}>".format(
+                self.number, self.alternate, self.iclass, self.subclass, self.protocol, self.string_index, endpoints
+        )
+
+
+    def add_endpoint(self, endpoint):
+        """
+            Adds
+        """
+        self.endpoints.append(endpoint)
+        endpoint.set_interface(self)
 
     def set_configuration(self, config):
         self.configuration = config
