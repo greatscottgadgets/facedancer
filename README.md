@@ -59,7 +59,12 @@ Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulatin
 more complex devices-- there's limitation on the number/type of endpoints that can be
 set up. The LPC4330 boards-- such as the GreatFET-- don't suffer these limitations.
 
+For a similar reason, the MAX3420/MAX3421 boards (`BACKEND=goodfet` or `BACKEND=raspdancer`)
+currently cannot be used as USBProxy-nv MITM devices. All modern boards (`BACKEND=greatfet`)
+should be fully functional.
+
 ## What boards could be supported soon?
+
  * Any Linux computer with gadgetfs support (e.g. the Pi Zero or Beaglebone Black)
 
 ## What features do you plan on adding?
