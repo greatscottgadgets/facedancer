@@ -28,6 +28,7 @@ project. This opens up a whole new realm of applications-- including protocol an
 and live manipulation of USB packets-- and is especially useful when you don't control
 the software running on the target device (e.g. on embedded systems or games consoles).
 
+```
                  +-----------------------------------------------------------------------+
 +------------+   |  +--------------------------------+   +---------------------------+   |  +--------------+
 |            |   |  |                                |   |                           |   |  |              |
@@ -39,6 +40,7 @@ the software running on the target device (e.g. on embedded systems or games con
                  |                                                                       |
                  |                    MITM Setup (HOST + FACEDANCER)                     |
                  +-----------------------------------------------------------------------+
+```
 
 
 This feature is complete, but could use more documentation. Pull requests are welcome. :)
