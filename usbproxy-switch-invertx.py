@@ -23,7 +23,10 @@ class SwitchControllerInvertXFilter(USBProxyFilter):
     def filter_in(self, ep_num, data):
 
         # Invert the X axis...
-        data[4] = 0xff - data[4]
+        try:
+            data[3] = 0xff - data[3]
+        except:
+            pass
 
         return ep_num, data
 

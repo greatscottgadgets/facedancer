@@ -129,7 +129,7 @@ class USBEndpoint(USBDescribable):
 
             self.send_packet(packet)
 
-        if self.send_zlp:
+        if send_zlp:
             self.send_packet([])
 
 

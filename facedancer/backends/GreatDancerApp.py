@@ -273,14 +273,19 @@ class GreatDancerApp(FacedancerApp):
         return self._finish_primed_read_on_endpoint(ep_num)
 
 
-    def stall_endpoint(self, ep_num):
+    def stall_endpoint(self, ep_num, direction=0):
         """
         Stalls the provided endpoint, as defined in the USB spec.
 
         ep_num: The number of the endpoint to be stalled.
         """
+
+        if self.verbose > 2:
+            in_vs_out = "IN" if direction else "OUT"
+            print("Stalling EP{} {}".format(ep_num, in_vs_out))
+
         self.endpoint_stalled[ep_num] = True
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_STALL_ENDPOINT, index=ep_num)
+        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_STALL_ENDPOINT, index=ep_num, value=direction)
 
 
     def stall_ep0(self):

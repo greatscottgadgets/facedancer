@@ -46,6 +46,9 @@ class MAXUSBApp(FacedancerApp):
     # bitmask values for reg_pin_control = 0x11
     interrupt_level                 = 0x08
     full_duplex                     = 0x10
+    ep0_in_nak                      = (1 << 5)
+    ep2_in_nak                      = (1 << 6)
+    ep3_in_nak                      = (1 << 7)
 
     # TODO: Support a generic MaxUSB interface that doesn't
     # depend on any GoodFET details.
@@ -100,11 +103,30 @@ class MAXUSBApp(FacedancerApp):
 
         return data
 
-    def stall_ep0(self):
-        if self.verbose > 0:
-            print(self.app_name, "stalling endpoint 0")
 
-        self.write_register(self.reg_ep_stalls, 0x23)
+    def stall_endpoint(self, ep_number, direction=0):
+        """
+        Stalls an arbitrary endpoint.
+
+        ep_number: The endpoint number to be stalled
+        direction: 0 for out, 1 for in
+        """
+        if self.verbose > 0:
+            print(self.app_name, "stalling endpoint {}".format(ep_number))
+
+        # TODO: Verify our behavior, here. The original facedancer code stalls
+        # EP0 both _in_ and out, as well as uses the special STALL SETUP bit.
+        # Is this really what we want?
+        if ep_number == 0:
+            self.write_register(self.reg_ep_stalls, 0x23)
+        elif ep_number < 4:
+            self.write_writer(self.reg_ep_stalls, 1 << (ep_num + 1))
+        else:
+            raise ValueError("Invalid endpoint for MAXUSB device!")
+
+
+    def stall_ep0(self):
+        return self.stall_endpoint(0)
 
 
     def get_version(self):
@@ -140,9 +162,11 @@ class MAXUSBApp(FacedancerApp):
     def service_irqs(self):
         while True:
             irq = self.read_register(self.reg_endpoint_irq)
+            in_nak = self.read_register(self.reg_pin_control)
 
             if self.verbose > 3:
                 print(self.app_name, "read endpoint irq: 0x%02x" % irq)
+                print(self.app_name, "read pin control: 0x%02x" % in_nak)
 
             if self.verbose > 2:
                 if irq & ~ (self.is_in0_buffer_avail \
@@ -170,6 +194,17 @@ class MAXUSBApp(FacedancerApp):
 
             if irq & self.is_in3_buffer_avail:
                 self.connected_device.handle_buffer_available(3)
+
+            # Check to see if we've NAK'd on either of our IN endpoints,
+            # and generate the relevant events.
+
+            if in_nak & self.ep2_in_nak:
+                self.connected_device.handle_nak(2)
+                self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep2_in_nak)
+
+            if in_nak & self.ep3_in_nak:
+                self.connected_device.handle_nak(3)
+                self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep3_in_nak)
 
 
 

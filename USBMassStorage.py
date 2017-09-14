@@ -23,6 +23,14 @@ def bytes_as_hex(b, delim=" "):
 class USBMassStorageClass(USBClass):
     name = "USB mass storage class"
 
+    UMS_CLASS_NUMBER            = 8
+    DESCRIPTOR_TYPE_NUMBER      = 0
+
+    def __init__(self):
+        self.class_number = self.UMS_CLASS_NUMBER
+        self.class_descriptor_number = self.DESCRIPTOR_TYPE_NUMBER
+        self.descriptor = None
+
     def setup_request_handlers(self):
         self.request_handlers = {
             0xFF : self.handle_bulk_only_mass_storage_reset_request,
@@ -68,12 +76,15 @@ class USBMassStorageInterface(USBInterface):
                 None        # handler function
         )
 
+        dclass = USBMassStorageClass()
+
+
         # TODO: un-hardcode string index (last arg before "verbose")
         USBInterface.__init__(
                 self,
                 0,          # interface number
                 0,          # alternate setting
-                8,          # interface class: Mass Storage
+                dclass,     # interface class: Mass Storage
                 6,          # subclass: SCSI transparent command set
                 0x50,       # protocol: bulk-only (BBB) transport
                 0,          # string index
@@ -82,7 +93,7 @@ class USBMassStorageInterface(USBInterface):
                 descriptors
         )
 
-        self.device_class = USBMassStorageClass()
+        self.device_class = dclass
         self.device_class.set_interface(self)
 
         self.is_write_in_progress = False

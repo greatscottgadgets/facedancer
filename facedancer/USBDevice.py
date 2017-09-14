@@ -24,6 +24,8 @@ class USBDevice:
         self.strings = [ ]
 
         self.usb_spec_version           = spec_version
+
+        # FIXME: Accept Class objects rather than raw numbers!!
         self.device_class               = device_class
         self.device_subclass            = device_subclass
         self.protocol_rel_num           = protocol_rel_num
@@ -175,14 +177,14 @@ class USBDevice:
             handler_entity = recipient.device_vendor
 
         if not handler_entity:
-            print(self.name, "invalid handler entity, stalling")
+            print(self.name, "invalid handler entity, stalling: {}".format(req))
             self.maxusb_app.stall_ep0()
             return
 
         handler = handler_entity.request_handlers.get(req.request, None)
 
         if not handler:
-            print(self.name, "invalid handler, stalling")
+            print(self.name, "invalid handler, stalling: {}/{}".format(req, handler))
             self.maxusb_app.stall_ep0()
             return
 
@@ -382,7 +384,7 @@ class USBDeviceRequest:
     _standard_req_descriptions = {
         0: 'GET_STATUS',
         1: 'CLEAR_FEATURE',
-        2: 'SET_FEATURE',
+        3: 'SET_FEATURE',
         5: 'SET_ADDRESS',
         6: 'GET_DESCRIPTOR',
         7: 'SET_DESCRIPTOR',

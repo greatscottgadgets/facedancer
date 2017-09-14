@@ -8,6 +8,10 @@ from .USB import USBDescribable
 from .USBInterface import USBInterface
 from .USBEndpoint import USBEndpoint
 
+# TODO: Section these out into their own folder?
+from .USBClass import USBClass
+from .HIDClass import HIDClass
+
 class USBConfiguration(USBDescribable):
 
     DESCRIPTOR_TYPE_NUMBER    = 0x02
@@ -76,6 +80,8 @@ class USBConfiguration(USBDescribable):
                 interfaces.append(descriptor)
             elif isinstance(descriptor, USBEndpoint):
                 interfaces[-1].add_endpoint(descriptor)
+            elif isinstance(descriptor, USBClass):
+                interfaces[-1].set_class(descriptor)
 
             # Move on to the next descriptor.
             data = data[length:]

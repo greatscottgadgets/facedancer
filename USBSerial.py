@@ -67,7 +67,7 @@ class USBSerialInterface(USBInterface):
                 self,
                 0,          # interface number
                 0,          # alternate setting
-                0xff,       # interface class: vendor-specific
+                USBClass(), # interface class: vendor-specific
                 0xff,       # subclass: vendor-specific
                 0xff,       # protocol: vendor-specific
                 0,          # string index
