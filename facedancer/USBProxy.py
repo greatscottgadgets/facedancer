@@ -146,16 +146,17 @@ class USBProxyDevice(USBDevice):
 
     filter_list = []
 
-    def __init__(self, maxusb_app, idVendor, idProduct, verbose=0, quirks=[]):
+    def __init__(self, maxusb_app, verbose=0, index=0, quirks=[], **kwargs):
         """
         Sets up a new USBProxy instance.
         """
 
         # Open a connection to the proxied device...
-        self.libusb_device = usb.core.find(idVendor=idVendor, idProduct=idProduct)
-        if self.libusb_device is None:
+        usb_devices = list(usb.core.find(find_all=True, **kwargs))
+        if len(usb_devices) < index:
             raise DeviceNotFoundError("Could not find device to proxy!")
-
+        self.libusb_device = usb_devices[index]
+ 
         # TODO: detach the right kernel driver every time
         # TODO: do this on configuration so we detach the same interfaces
         try:
