@@ -153,7 +153,7 @@ class USBProxyDevice(USBDevice):
 
         # Open a connection to the proxied device...
         usb_devices = list(usb.core.find(find_all=True, **kwargs))
-        if len(usb_devices) < index:
+        if len(usb_devices) <= index:
             raise DeviceNotFoundError("Could not find device to proxy!")
         self.libusb_device = usb_devices[index]
  
