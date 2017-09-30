@@ -160,51 +160,50 @@ class MAXUSBApp(FacedancerApp):
 
 
     def service_irqs(self):
-        while True:
-            irq = self.read_register(self.reg_endpoint_irq)
-            in_nak = self.read_register(self.reg_pin_control)
+        irq = self.read_register(self.reg_endpoint_irq)
+        in_nak = self.read_register(self.reg_pin_control)
 
-            if self.verbose > 3:
-                print(self.app_name, "read endpoint irq: 0x%02x" % irq)
-                print(self.app_name, "read pin control: 0x%02x" % in_nak)
+        if self.verbose > 3:
+            print(self.app_name, "read endpoint irq: 0x%02x" % irq)
+            print(self.app_name, "read pin control: 0x%02x" % in_nak)
 
-            if self.verbose > 2:
-                if irq & ~ (self.is_in0_buffer_avail \
-                        | self.is_in2_buffer_avail | self.is_in3_buffer_avail):
-                    print(self.app_name, "notable irq: 0x%02x" % irq)
+        if self.verbose > 2:
+            if irq & ~ (self.is_in0_buffer_avail \
+                    | self.is_in2_buffer_avail | self.is_in3_buffer_avail):
+                print(self.app_name, "notable irq: 0x%02x" % irq)
 
-            if irq & self.is_setup_data_avail:
-                self.clear_irq_bit(self.reg_endpoint_irq, self.is_setup_data_avail)
+        if irq & self.is_setup_data_avail:
+            self.clear_irq_bit(self.reg_endpoint_irq, self.is_setup_data_avail)
 
-                b = self.read_bytes(self.reg_setup_data_fifo, 8)
-                if (irq & self.is_out0_data_avail) and (b[0] & 0x80 == 0x00):
-                    data_bytes_len = b[6] + (b[7] << 8)
-                    b += self.read_bytes(self.reg_ep0_fifo, data_bytes_len)
-                req = USBDeviceRequest(b)
-                self.connected_device.handle_request(req)
+            b = self.read_bytes(self.reg_setup_data_fifo, 8)
+            if (irq & self.is_out0_data_avail) and (b[0] & 0x80 == 0x00):
+                data_bytes_len = b[6] + (b[7] << 8)
+                b += self.read_bytes(self.reg_ep0_fifo, data_bytes_len)
+            req = USBDeviceRequest(b)
+            self.connected_device.handle_request(req)
 
-            if irq & self.is_out1_data_avail:
-                data = self.read_from_endpoint(1)
-                if data:
-                    self.connected_device.handle_data_available(1, data)
-                self.clear_irq_bit(self.reg_endpoint_irq, self.is_out1_data_avail)
+        if irq & self.is_out1_data_avail:
+            data = self.read_from_endpoint(1)
+            if data:
+                self.connected_device.handle_data_available(1, data)
+            self.clear_irq_bit(self.reg_endpoint_irq, self.is_out1_data_avail)
 
-            if irq & self.is_in2_buffer_avail:
-                self.connected_device.handle_buffer_available(2)
+        if irq & self.is_in2_buffer_avail:
+            self.connected_device.handle_buffer_available(2)
 
-            if irq & self.is_in3_buffer_avail:
-                self.connected_device.handle_buffer_available(3)
+        if irq & self.is_in3_buffer_avail:
+            self.connected_device.handle_buffer_available(3)
 
-            # Check to see if we've NAK'd on either of our IN endpoints,
-            # and generate the relevant events.
+        # Check to see if we've NAK'd on either of our IN endpoints,
+        # and generate the relevant events.
 
-            if in_nak & self.ep2_in_nak:
-                self.connected_device.handle_nak(2)
-                self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep2_in_nak)
+        if in_nak & self.ep2_in_nak:
+            self.connected_device.handle_nak(2)
+            self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep2_in_nak)
 
-            if in_nak & self.ep3_in_nak:
-                self.connected_device.handle_nak(3)
-                self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep3_in_nak)
+        if in_nak & self.ep3_in_nak:
+            self.connected_device.handle_nak(3)
+            self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep3_in_nak)
 
 
 

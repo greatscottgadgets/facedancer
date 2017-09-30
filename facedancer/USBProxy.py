@@ -146,7 +146,7 @@ class USBProxyDevice(USBDevice):
 
     filter_list = []
 
-    def __init__(self, maxusb_app, verbose=0, index=0, quirks=[], **kwargs):
+    def __init__(self, maxusb_app, verbose=0, index=0, quirks=[], scheduler=None, **kwargs):
         """
         Sets up a new USBProxy instance.
         """
@@ -166,7 +166,7 @@ class USBProxyDevice(USBDevice):
 
         # ... and initialize our base class with a minimal set of parameters.
         # We'll do almost nothing, as we'll be proxying packets by default to the device.
-        USBDevice.__init__(self, maxusb_app, verbose=verbose, quirks=quirks)
+        USBDevice.__init__(self, maxusb_app, verbose=verbose, quirks=quirks, scheduler=scheduler)
 
 
     def connect(self):

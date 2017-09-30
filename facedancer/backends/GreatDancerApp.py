@@ -750,27 +750,26 @@ class GreatDancerApp(FacedancerApp):
 
     def service_irqs(self):
         """
-        Core Facedancer execution/event loop. Continuously monitors the 
+        Core routine of the Facedancer execution/event loop. Continuously monitors the
         GreatDancer's execution status, and reacts as events occur.
         """
 
-        while True:
-            status = self._fetch_irq_status()
+        status = self._fetch_irq_status()
 
-            # Other bits that may be of interest:
-            # D_SRI = start of frame received
-            # D_PCI = port change detect (switched between low, full, high speed state)
-            # D_SLI = device controller suspend
-            # D_UEI = USB error; completion of transaction caused error, see usb1_isr in firmware
-            # D_NAKI = both the tx/rx NAK bit and corresponding endpoint NAK enable are set
+        # Other bits that may be of interest:
+        # D_SRI = start of frame received
+        # D_PCI = port change detect (switched between low, full, high speed state)
+        # D_SLI = device controller suspend
+        # D_UEI = USB error; completion of transaction caused error, see usb1_isr in firmware
+        # D_NAKI = both the tx/rx NAK bit and corresponding endpoint NAK enable are set
 
-            if status & self.USBSTS_D_UI:
-                self._handle_setup_events()
-                self._handle_transfer_events()
+        if status & self.USBSTS_D_UI:
+            self._handle_setup_events()
+            self._handle_transfer_events()
 
-            if status & self.USBSTS_D_URI:
-                self._bus_reset()
+        if status & self.USBSTS_D_URI:
+            self._bus_reset()
 
-            if status & self.USBSTS_D_NAKI:
-                self._handle_nak_events()
+        if status & self.USBSTS_D_NAKI:
+            self._handle_nak_events()
 

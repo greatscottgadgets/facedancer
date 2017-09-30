@@ -4,17 +4,25 @@
 
 from .USB import *
 from .USBClass import *
+from .USBConfiguration import USBConfiguration
+
+from .core import FacedancerBasicScheduler
+
 
 import time
+import struct
 
-class USBDevice:
+class USBDevice(USBDescribable):
     name = "generic device"
+
+    DESCRIPTOR_TYPE_NUMBER    = 0x01
+    DESCRIPTOR_LENGTH         = 0x12
 
     def __init__(self, maxusb_app, device_class=0, device_subclass=0,
             protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
-            spec_version=0x0002, verbose=0, quirks=[]):
+            spec_version=0x0002, verbose=0, quirks=[], scheduler=None):
         self.maxusb_app = maxusb_app
         self.verbose = verbose
 
@@ -66,7 +74,56 @@ class USBDevice:
 
         self.setup_request_handlers()
 
+        # If we don't have a scheduler, create a basic scheduler.
+        if scheduler:
+            self.scheduler = scheduler
+        else:
+            self.scheduler = FacedancerBasicScheduler()
+
+        # Add our IRQ-servicing task to the scheduler's list of tasks to be serviced.
+        self.scheduler.add_task(lambda : self.maxusb_app.service_irqs())
+
+
+
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+        Creates a USBDevice object from its descriptor.
+        """
+
+        # Pad the descriptor out with zeroes to the full length of a configuration descriptor.
+        if len(data) < cls.DESCRIPTOR_LENGTH:
+            padding_necessary = cls.DESCRIPTOR_LENGTH - len(data)
+            data.extend([0] * padding_necessary)
+
+        # Parse the core descriptor into its components...
+        spec_version_msb, spec_version_lsb, device_class, device_subclass, device_protocol, \
+                max_packet_size_ep0, vendor_id, product_id, device_rev_msb, device_rev_lsb, \
+                manufacturer_string_index, product_string_index, \
+                serial_number_string_index, num_configurations = struct.unpack("<xxBBBBBBHHBBBBBB", data)
+
+        # FIXME: generate better placeholder configurations
+        configurations  = [USBConfiguration()] * num_configurations
+
+        # Generate our BCD arguments.
+        spec_version = (spec_version_msb << 8) | spec_version_lsb
+        device_rev = (device_rev_msb << 8) | device_rev_lsb
+
+        return cls(None, device_class, device_subclass, device_protocol, max_packet_size_ep0,
+                   vendor_id, product_id, device_rev, manufacturer_string_index, product_string_index,
+                   serial_number_string_index, configurations, spec_version=spec_version)
+
+
+
     def get_string_id(self, s):
+
+        # If we already have an index, leave it alone...
+        if isinstance(s, int):
+            return s
+
+        # Otherwise, add the string to our list of strings and
+        # report the index we assigned it.
         try:
             i = self.strings.index(s)
         except ValueError:
@@ -104,7 +161,7 @@ class USBDevice:
         self.state = USB.state_detached
 
     def run(self):
-        self.maxusb_app.service_irqs()
+        self.scheduler.run()
 
     def ack_status_stage(self, blocking=False):
         self.maxusb_app.ack_status_stage(blocking=blocking)
@@ -112,7 +169,7 @@ class USBDevice:
     def set_address(self, address, defer=False):
         self.maxusb_app.set_address(address, defer)
 
-    def get_descriptor(self, n):
+    def get_descriptor(self, n=0x12):
         d = bytearray([
             18,         # length of descriptor in bytes
             1,          # descriptor type 1 == device
@@ -126,15 +183,15 @@ class USBDevice:
             (self.vendor_id >> 8) & 0xff,
             self.product_id & 0xff,
             (self.product_id >> 8) & 0xff,
-            self.device_rev & 0xff,
             (self.device_rev >> 8) & 0xff,
+            self.device_rev & 0xff,
             self.manufacturer_string_id,
             self.product_string_id,
             self.serial_number_string_id,
             len(self.configurations)
         ])
 
-        return d
+        return d[:n]
 
     def send_control_message(self, data):
         self.maxusb_app.send_on_endpoint(0, data)
@@ -459,8 +516,9 @@ class USBDeviceRequest:
     def get_value_string(self):
         # If this is a GET_DESCRIPTOR request, parse it.
         if self.get_type() == 0 and self.request == 6:
+            descriptor_index = self.value & 0xff
             description = self._get_descriptor_number_string()
-            return "{} descriptor".format(description)
+            return "{} descriptor (index=0x{:02x})".format(description, descriptor_index)
         else:
             return "%x" % self.value
 
@@ -497,4 +555,5 @@ class USBDeviceRequest:
             return self.index
         elif rec == 2:              # endpoint
             return self.index & 0x0f
+
 

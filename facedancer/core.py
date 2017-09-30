@@ -105,3 +105,37 @@ class FacedancerApp:
 
     def enable(self):
         pass
+
+
+
+class FacedancerBasicScheduler(object):
+    """
+    Most basic scheduler for Facedancer decivices-- and the schedule which is
+    created implicitly if no other scheduler is provided. Executes each of its
+    tasks in order, over and over.
+    """
+
+    def __init__(self):
+        self.tasks = []
+
+
+    def add_task(self, callback):
+        """
+        Adds a facedancer task to the scheduler, which will be called
+        repeatedly according to the internal scheduling algorithm
+
+        callback: The callback to be scheduled.
+        """
+        self.tasks.append(callback)
+
+
+    def run(self):
+        """
+        Run the main scheduler stack.
+        """
+
+        while True:
+            for task in self.tasks:
+                task()
+
+

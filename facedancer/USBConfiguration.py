@@ -16,7 +16,7 @@ class USBConfiguration(USBDescribable):
 
     DESCRIPTOR_TYPE_NUMBER    = 0x02
 
-    def __init__(self, configuration_index, configuration_string_or_index, interfaces, attributes=0xe0, max_power=250):
+    def __init__(self, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=0xe0, max_power=250):
         self.configuration_index        = configuration_index
 
         if isinstance(configuration_string_or_index, str):
@@ -24,9 +24,9 @@ class USBConfiguration(USBDescribable):
             self.configuration_string_index = 0
         else:
             self.configuration_string_index = configuration_string_or_index
-            self.configuration_stirng       = None
+            self.configuration_string       = None
 
-        self.interfaces                 = interfaces
+        self.interfaces                 = interfaces if interfaces else []
 
         self.attributes = attributes
         self.max_power = max_power
