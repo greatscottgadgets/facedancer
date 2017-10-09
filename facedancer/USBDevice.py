@@ -52,7 +52,7 @@ class USBDevice(USBDescribable):
 
         # maps from USB.desc_type_* to bytearray OR callable
         self.descriptors = descriptors
-        self.descriptors[USB.desc_type_device] = self.get_descriptor
+        self.descriptors[USB.desc_type_device] = lambda _ : self.get_descriptor()
         self.descriptors[USB.desc_type_configuration] = self.handle_get_configuration_descriptor_request
         self.descriptors[USB.desc_type_string] = self.handle_get_string_descriptor_request
 
@@ -190,7 +190,6 @@ class USBDevice(USBDescribable):
             self.serial_number_string_id,
             len(self.configurations)
         ])
-
         return d[:n]
 
     def send_control_message(self, data):
