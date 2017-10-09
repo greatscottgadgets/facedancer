@@ -28,9 +28,7 @@ class USBMassStorageClass(USBClass):
     DESCRIPTOR_TYPE_NUMBER      = 0
 
     def __init__(self):
-        self.class_number = self.UMS_CLASS_NUMBER
-        self.class_descriptor_number = self.DESCRIPTOR_TYPE_NUMBER
-        self.descriptor = None
+        super().__init__(self.UMS_CLASS_NUMBER, None, self.DESCRIPTOR_TYPE_NUMBER)
 
     def setup_request_handlers(self):
         self.request_handlers = {
@@ -78,7 +76,6 @@ class USBMassStorageInterface(USBInterface):
         )
 
         dclass = USBMassStorageClass()
-
 
         # TODO: un-hardcode string index (last arg before "verbose")
         USBInterface.__init__(
