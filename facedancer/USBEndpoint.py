@@ -115,11 +115,6 @@ class USBEndpoint(USBDescribable):
 
 
     def send(self, data):
-
-        # If we're sending something that's exactly divisible by the
-        # max packet size, we'll have to send a ZLP once the packet is complete.
-        send_zlp = (len(data) % self.max_packet_size == 0) and (len(data) > 0)
-
         # Send the relevant data one packet at a time,
         # chunking if we're larger than the max packet size.
         # This matches the behavior of the MAX3420E.
@@ -128,10 +123,6 @@ class USBEndpoint(USBDescribable):
             data = data[self.max_packet_size:]
 
             self.send_packet(packet)
-
-        if send_zlp:
-            self.send_packet([])
-
 
     def recv(self):
         dev = self.interface.configuration.device
