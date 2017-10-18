@@ -9,8 +9,6 @@ import re
 import sys
 import math
 
-from serial import Serial, PARITY_NONE
-
 from facedancer import FacedancerUSBApp
 from USBMassStorage import *
 
