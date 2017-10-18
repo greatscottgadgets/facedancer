@@ -659,7 +659,7 @@ class FAT32DiskImage(DiskImage):
         if len(long_filename) != 11:
             return False
 
-        return all([is_valid_83_char(c) for c in long_filename])
+        return all([self._is_valid_83_char(c) for c in long_filename])
 
 
     def _short_filename_from_long(self, long_filename):
