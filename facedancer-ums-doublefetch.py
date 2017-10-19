@@ -188,7 +188,7 @@ class DoubleFetchImage(FAT32DiskImage):
         result = super().get_sector_data(address)
 
         # If this is a handled sector, print how many times it's been read.
-        if self.verbose > 0 and self._find_sector_handler(address):
+        if self.verbose > 1 and self._find_sector_handler(address):
             print("    [sector has been read {} times]".format(self.sector_read_counts[address]))
 
         return result
