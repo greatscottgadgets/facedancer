@@ -109,9 +109,9 @@ class USBEndpoint(USBDescribable):
 
         return d
 
-    def send_packet(self, data):
+    def send_packet(self, data, blocking=False):
         dev = self.interface.configuration.device
-        dev.maxusb_app.send_on_endpoint(self.number, data)
+        dev.maxusb_app.send_on_endpoint(self.number, data, blocking=blocking)
 
 
     def send(self, data):
