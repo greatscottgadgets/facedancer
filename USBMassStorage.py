@@ -275,7 +275,7 @@ class USBMassStorageInterface(USBInterface):
         # something in 'response' and letting the end of the switch send
         for block_num in range(num_blocks):
             data = self.disk_image.get_sector_data(base_lba + block_num)
-            self.ep_to_host.send(data)
+            self.ep_to_host.send_packet(data, blocking=True)
 
         if self.verbose > 3:
             print("--> responded with {} bytes".format(cbw.data_transfer_length))
@@ -344,7 +344,7 @@ class USBMassStorageInterface(USBInterface):
                 print("--> responding with", len(response),
                       "bytes [{}], status={}".format(bytes_as_hex(response), status))
 
-            self.ep_to_host.send(response)
+            self.ep_to_host.send_packet(response, blocking=True)
 
         # Otherwise, respond with our status.
         csw = bytes([
@@ -354,7 +354,7 @@ class USBMassStorageInterface(USBInterface):
             status
         ])
 
-        self.ep_to_host.send(csw)
+        self.ep_to_host.send_packet(csw, blocking=True)
 
 
 class CommandBlockWrapper:
