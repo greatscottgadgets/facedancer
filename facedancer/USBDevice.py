@@ -240,7 +240,7 @@ class USBDevice(USBDescribable):
         handler = handler_entity.request_handlers.get(req.request, None)
 
         if not handler:
-            print(self.name, "invalid handler, stalling: {}/{}".format(req, handler))
+            print(self.name, "received unhandled EP0 control request; stallling:\n {}".format(repr(req)))
             self.maxusb_app.stall_ep0()
             return
 
@@ -510,7 +510,10 @@ class USBDeviceRequest:
             return "{} request {}".format(type, self.request)
 
     def _get_standard_request_number_string(self):
-        return self._standard_req_descriptions[self.request]
+        if self.request in self._standard_req_descriptions:
+            return self._standard_req_descriptions[self.request]
+        else:
+            return "unknown request {}".format(self.request)
 
     def get_value_string(self):
         # If this is a GET_DESCRIPTOR request, parse it.
