@@ -38,7 +38,8 @@ class USBEndpoint(USBDescribable):
         self.interval           = interval
         self.handler            = handler
         self.nak_callback       = nak_callback
-
+        self.address = (self.number & 0x0f) | (self.direction << 7)
+        self.cs_endpoints=[]
         self.interface          = None
 
         self.request_handlers   = {
@@ -91,23 +92,34 @@ class USBEndpoint(USBDescribable):
         self.interface = interface
 
     # see Table 9-13 of USB 2.0 spec (pdf page 297)
-    def get_descriptor(self):
-        address = (self.number & 0x0f) | (self.direction << 7) 
+    def get_descriptor(self, usb_type='fullspeed', valid=False): 
         attributes = (self.transfer_type & 0x03) \
                    | ((self.sync_type & 0x03) << 2) \
                    | ((self.usage_type & 0x03) << 4)
 
-        d = bytearray([
-                7,          # length of descriptor in bytes
-                5,          # descriptor type 5 == endpoint
-                address,
-                attributes,
-                self.max_packet_size & 0xff,
-                (self.max_packet_size >> 8) & 0xff,
-                self.interval
-        ])
-
+        bLength = 7
+        bDescriptorType = 5
+        wMaxPacketSize = self._get_max_packet_size(usb_type) 
+        
+        d = struct.pack(
+            '<BBBBHB',
+            bLength,
+            bDescriptorType,
+            self.address,
+            attributes,
+            wMaxPacketSize,
+            self.interval
+        ) 
+        
+        for cs in self.cs_endpoints:
+            d += cs.get_descriptor() 
+            
         return d
+
+    def _get_max_packet_size(self, usb_type):
+        if usb_type == 'highspeed':
+            return 512
+        return self.max_packet_size 
 
     def send_packet(self, data, blocking=False):
         dev = self.interface.configuration.device
