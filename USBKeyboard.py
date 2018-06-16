@@ -28,7 +28,7 @@ class USBKeyboardInterface(USBInterface):
                 USBEndpoint.transfer_type_interrupt,
                 USBEndpoint.sync_type_none,
                 USBEndpoint.usage_type_data,
-                512,       # max packet size
+                64,       # max packet size
                 10,         # polling interval, see USB 2.0 spec Table 9-13
                 self.handle_buffer_available    # handler function
         )

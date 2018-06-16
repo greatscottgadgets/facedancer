@@ -102,8 +102,8 @@ class USBEndpoint(USBDescribable):
                 5,          # descriptor type 5 == endpoint
                 address,
                 attributes,
-                (self.max_packet_size >> 8) & 0xff,
                 self.max_packet_size & 0xff,
+                (self.max_packet_size >> 8) & 0xff,
                 self.interval
         ])
 
