@@ -6,50 +6,62 @@
 # TODO: would be nice if this module could re-export the other USB* classes so
 # one need import only USB to get all the functionality
 
-class USB:
-    state_detached                      = 0
-    state_attached                      = 1
-    state_powered                       = 2
-    state_default                       = 3
-    state_address                       = 4
-    state_configured                    = 5
-    state_suspended                     = 6
+class DescriptorType(object):
+    device = 0x01
+    configuration = 0x02
+    string = 0x03
+    interface = 0x04
+    endpoint = 0x05
+    device_qualifier = 0x06
+    other_speed_configuration = 0x07
+    interface_power = 0x08
+    bos = 0x0f
+    device_capability = 0x10
+    hid = 0x21
+    report = 0x22
+    cs_interface = 0x24
+    cs_endpoint = 0x25
+    hub = 0x29
 
-    request_direction_host_to_device    = 0
-    request_direction_device_to_host    = 1
 
-    request_type_standard               = 0
-    request_type_class                  = 1
-    request_type_vendor                 = 2
-
-    request_recipient_device            = 0
-    request_recipient_interface         = 1
-    request_recipient_endpoint          = 2
-    request_recipient_other             = 3
-
-    feature_endpoint_halt               = 0
-    feature_device_remote_wakeup        = 1
-    feature_test_mode                   = 2
-
-    desc_type_device                    = 1
-    desc_type_configuration             = 2
-    desc_type_string                    = 3
-    desc_type_interface                 = 4
-    desc_type_endpoint                  = 5
-    desc_type_device_qualifier          = 6
-    desc_type_other_speed_configuration = 7
-    desc_type_interface_power           = 8
-    desc_type_hid                       = 33
-    desc_type_report                    = 34
+class USB(object):
+    feature_endpoint_halt = 0
+    feature_device_remote_wakeup = 1
+    feature_test_mode = 2
 
     # while this holds for HID, it may not be a correct model for the USB
     # ecosystem at large
     if_class_to_desc_type = {
-            3 : desc_type_hid
+        0x03: DescriptorType.hid,
+        0x0b: DescriptorType.hid
     }
-
+    
     def interface_class_to_descriptor_type(interface_class):
         return USB.if_class_to_desc_type.get(interface_class, None)
+
+
+class State(object):
+    detached = 0
+    attached = 1
+    powered = 2
+    default = 3
+    address = 4
+    configured = 5
+    suspended = 6
+
+
+class Request(object):
+    direction_host_to_device = 0
+    direction_device_to_host = 1
+
+    type_standard = 0
+    type_class = 1
+    type_vendor = 2
+
+    recipient_device = 0
+    recipient_interface = 1
+    recipient_endpoint = 2
+    recipient_other = 3 
 
 
 class USBDescribable(object):
@@ -60,6 +72,9 @@ class USBDescribable(object):
     # Override me!
     DESCRIPTOR_TYPE_NUMBER = None
 
+    def __init__(self, phy):
+        self.phy = phy
+        
     @classmethod
     def handles_binary_descriptor(cls, data):
         """

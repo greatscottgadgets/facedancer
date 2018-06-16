@@ -52,9 +52,9 @@ class USBDevice(USBDescribable):
 
         # maps from USB.desc_type_* to bytearray OR callable
         self.descriptors = descriptors
-        self.descriptors[USB.desc_type_device] = lambda _ : self.get_descriptor()
-        self.descriptors[USB.desc_type_configuration] = self.handle_get_configuration_descriptor_request
-        self.descriptors[USB.desc_type_string] = self.handle_get_string_descriptor_request
+        self.descriptors[DescriptorType.device] = lambda _ : self.get_descriptor()
+        self.descriptors[DescriptorType.configuration] = self.handle_get_configuration_descriptor_request
+        self.descriptors[DescriptorType.string] = self.handle_get_string_descriptor_request
 
         self.config_num = -1
         self.configuration = None
@@ -67,7 +67,7 @@ class USBDevice(USBDescribable):
             c.set_configuration_string_index(csi)
             c.set_device(self)
 
-        self.state = USB.state_detached
+        self.state = State.detached
         self.ready = False
 
         self.address = 0
@@ -152,13 +152,13 @@ class USBDevice(USBDescribable):
     def connect(self):
         self.maxusb_app.connect(self)
 
-        # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
-        self.state = USB.state_powered
+        # skipping State.attached may not be strictly correct (9.1.1.{1,2})
+        self.state = State.powered
 
     def disconnect(self):
         self.maxusb_app.disconnect()
 
-        self.state = USB.state_detached
+        self.state = State.detached
 
     def run(self):
         self.scheduler.run()
@@ -206,12 +206,12 @@ class USBDevice(USBDescribable):
         recipient_type = req.get_recipient()
         recipient = None
         index = req.get_index()
-        if recipient_type == USB.request_recipient_device:
+        if recipient_type == Request.recipient_device:
             recipient = self
-        elif recipient_type == USB.request_recipient_interface:
+        elif recipient_type == Request.recipient_interface:
             if index < len(self.configuration.interfaces):
                 recipient = self.configuration.interfaces[index]
-        elif recipient_type == USB.request_recipient_endpoint:
+        elif recipient_type == Request.recipient_endpoint:
             if index == 0:
                 recipient = self
             else:
@@ -225,11 +225,11 @@ class USBDevice(USBDescribable):
         # and then the type
         req_type = req.get_type()
         handler_entity = None
-        if req_type == USB.request_type_standard:
+        if req_type == Request.type_standard:
             handler_entity = recipient
-        elif req_type == USB.request_type_class:
+        elif req_type == Request.type_class:
             handler_entity = recipient.device_class
-        elif req_type == USB.request_type_vendor:
+        elif req_type == Request.type_vendor:
             handler_entity = recipient.device_vendor
 
         if not handler_entity:
@@ -247,19 +247,19 @@ class USBDevice(USBDescribable):
         handler(req)
 
     def handle_data_available(self, ep_num, data):
-        if self.state == USB.state_configured and ep_num in self.endpoints:
+        if self.state == State.configured and ep_num in self.endpoints:
             endpoint = self.endpoints[ep_num]
             if callable(endpoint.handler):
                 endpoint.handler(data)
 
     def handle_buffer_available(self, ep_num):
-        if self.state == USB.state_configured and ep_num in self.endpoints:
+        if self.state == State.configured and ep_num in self.endpoints:
             endpoint = self.endpoints[ep_num]
             if callable(endpoint.handler):
                 endpoint.handler()
 
     def handle_nak(self, ep_num):
-        if self.state == USB.state_configured and ep_num in self.endpoints:
+        if self.state == State.configured and ep_num in self.endpoints:
             endpoint = self.endpoints[ep_num]
             if callable(endpoint.nak_callback):
                 endpoint.nak_callback()
@@ -289,7 +289,7 @@ class USBDevice(USBDescribable):
     # USB 2.0 specification, section 9.4.6 (p 284 of pdf)
     def handle_set_address_request(self, req):
         self.address = req.value
-        self.state = USB.state_address
+        self.state = State.address
 
         # Quirk: if the "fast_set_address" quirk is on, don't enforce
         # correct set_address ordering. This speeds up set_address for
@@ -386,7 +386,7 @@ class USBDevice(USBDescribable):
         # configs are one-based
         self.config_num = req.value - 1
         self.configuration = self.configurations[self.config_num]
-        self.state = USB.state_configured
+        self.state = State.configured
 
         # collate endpoint numbers
         self.endpoints = { }

@@ -6,55 +6,24 @@ import struct
 from .USB import *
 from .USBClass import USBClass
 
-class USBInterface(USBDescribable):
+class USBCSInterface(USBDescribable):
     DESCRIPTOR_TYPE_NUMBER = 0x4
 
-    name = "generic USB interface"
+    name = "CSinterface"
 
-    def __init__(self, interface_number, interface_alternate, interface_class,
-            interface_subclass, interface_protocol, interface_string_index,
-            verbose=0, endpoints=None, descriptors=None):
+    def __init__(self, name, cs_config, verbose=0):
 
-        self.number = interface_number
-        self.alternate = interface_alternate
-
-        # Legacy support: if interface_class is an integer, rather than a
-        # USBClass object, create a wrapper object for it.
-        if isinstance(interface_class, int):
-            self.iclass = self._handle_legacy_interface_class(interface_class, descriptors)
-        else:
-            self.iclass = interface_class
-
-        self.subclass = interface_subclass
-        self.protocol = interface_protocol
-        self.string_index = interface_string_index
-
-        self.endpoints = []
-        self.descriptors = descriptors if descriptors else {}
-
+        self.name = name
         self.verbose = verbose
-
-        self.descriptors[DescriptorType.interface] = self.get_descriptor
-
-        if self.iclass and self.iclass.class_descriptor_number:
-            descriptor = self.iclass.get_descriptor()
-
-            if descriptor:
-                self.descriptors[self.iclass.class_descriptor_number] = descriptor
+        self.cs_config = cs_config
+        self.descriptors = descriptors if descriptors else {}
+        self.descriptors[USB.desc_type_interface] = self.get_descriptor
 
         self.request_handlers = {
              6 : self.handle_get_descriptor_request,
             11 : self.handle_set_interface_request
         }
 
-        self.configuration = None
-
-        if endpoints:
-            for endpoint in endpoints:
-                self.add_endpoint(endpoint)
-
-        self.device_class = None
-        self.device_vendor = None
 
 
     def _handle_legacy_interface_class(self, interface_class, descriptors):
@@ -146,28 +115,8 @@ class USBInterface(USBDescribable):
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     def get_descriptor(self):
-
-        d = bytearray([
-                9,          # length of descriptor in bytes
-                4,          # descriptor type 4 == interface
-                self.number,
-                self.alternate,
-                len(self.endpoints),
-                self.iclass.class_number,
-                self.subclass,
-                self.protocol,
-                self.string_index
-        ])
-
-        # If we have a class object, append its class descriptor...
-        if self.iclass:
-            descriptor = self.iclass.get_descriptor()
-            if descriptor:
-                d += descriptor
-
-        # ... append each endpoint's endpoint descriptor.
-        for e in self.endpoints:
-            d += e.get_descriptor()
-
-        return d
+        descriptor_type = DescriptorType.cs_interface
+        length = len(self.cs_config) + 2
+        response = struct.pack('BB', length & 0xff, descriptor_type) + self.cs_config
+        return response
 
