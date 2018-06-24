@@ -386,7 +386,7 @@ class CommandBlockWrapper:
 class USBMassStorageDevice(USBDevice):
     name = "USB mass storage device"
 
-    def __init__(self, maxusb_app, disk_image, verbose=0):
+    def __init__(self, phy, disk_image, verbose=0):
         self.disk_image = disk_image
 
         interface = USBMassStorageInterface(self.disk_image, verbose=verbose)
@@ -399,7 +399,7 @@ class USBMassStorageDevice(USBDevice):
 
         USBDevice.__init__(
                 self,
-                maxusb_app,
+                phy,
                 0,                      # device class
                 0,                      # device subclass
                 0,                      # protocol release number

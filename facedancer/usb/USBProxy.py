@@ -146,7 +146,7 @@ class USBProxyDevice(USBDevice):
 
     filter_list = []
 
-    def __init__(self, maxusb_app, verbose=0, index=0, quirks=[], scheduler=None, **kwargs):
+    def __init__(self, phy, verbose=0, index=0, quirks=[], scheduler=None, **kwargs):
         """
         Sets up a new USBProxy instance.
         """
@@ -166,7 +166,7 @@ class USBProxyDevice(USBDevice):
 
         # ... and initialize our base class with a minimal set of parameters.
         # We'll do almost nothing, as we'll be proxying packets by default to the device.
-        USBDevice.__init__(self, maxusb_app, verbose=verbose, quirks=quirks, scheduler=scheduler)
+        USBDevice.__init__(self, phy, verbose=verbose, quirks=quirks, scheduler=scheduler)
 
 
     def connect(self):
@@ -176,7 +176,7 @@ class USBProxyDevice(USBDevice):
         """
 
         max_ep0_packet_size = self.libusb_device.bMaxPacketSize0
-        self.maxusb_app.connect(self, max_ep0_packet_size)
+        self.phy.connect(self, max_ep0_packet_size)
 
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
         self.state = USB.state_powered
@@ -198,7 +198,7 @@ class USBProxyDevice(USBDevice):
                 self.endpoints[endpoint.number] = endpoint
 
         # ... and pass our configuration on to the core device.
-        self.maxusb_app.configured(configuration)
+        self.phy.configured(configuration)
         configuration.set_device(self)
 
 
@@ -239,7 +239,7 @@ class USBProxyDevice(USBDevice):
 
         # If we stalled immediately, handle the stall and return without proxying.
         if stalled:
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
             return
 
         # If we filtered out the setup request, NAK.
@@ -260,7 +260,7 @@ class USBProxyDevice(USBDevice):
         #... and proxy it to our victim.
         if stalled:
             # TODO: allow stalling of eps other than 0!
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
         else:
             self.send_control_message(data)
 
@@ -291,7 +291,7 @@ class USBProxyDevice(USBDevice):
                     req, data, stalled = f.handle_out_request_stall(req, data, stalled)
 
                 if stalled:
-                    self.maxusb_app.stall_ep0()
+                    self.phy.stall_ep0()
 
 
     def handle_data_available(self, ep_num, data):
@@ -315,7 +315,7 @@ class USBProxyDevice(USBDevice):
                     req, data, stalled = f.handle_out_request_stall(req, data, stalled)
 
                 if stalled:
-                    self.maxusb_app.stall_ep0()
+                    self.phy.stall_ep0()
 
 
 

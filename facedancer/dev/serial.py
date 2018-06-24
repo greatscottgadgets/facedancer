@@ -86,13 +86,13 @@ class USBSerialInterface(USBInterface):
 
         reply = s
 
-        self.configuration.device.maxusb_app.send_on_endpoint(3, reply)
+        self.configuration.device.phy.send_on_endpoint(3, reply)
 
 
 class USBSerialDevice(USBDevice):
     name = "USB Serial device"
 
-    def __init__(self, maxusb_app, verbose=0):
+    def __init__(self, phy, verbose=0):
         interface = USBSerialInterface(verbose=verbose)
 
         config = USBConfiguration(
@@ -103,7 +103,7 @@ class USBSerialDevice(USBDevice):
 
         USBDevice.__init__(
                 self,
-                maxusb_app,
+                phy,
                 0,                      # device class
                 0,                      # device subclass
                 0,                      # protocol release number
@@ -118,6 +118,6 @@ class USBSerialDevice(USBDevice):
                 verbose=verbose
         )
 
-        self.device_vendor = USBSerialVendor(maxusb_app)
+        self.device_vendor = USBSerialVendor(phy)
         self.device_vendor.set_device(self)
 

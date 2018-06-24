@@ -95,7 +95,7 @@ class USBSwitchTASInterface(USBInterface):
 class USBSwitchTASDevice(USBDevice):
     name = "USB keyboard device"
 
-    def __init__(self, maxusb_app, verbose=0):
+    def __init__(self, phy, verbose=0):
         config = USBConfiguration(
                 1,                                          # index
                 None,                                       # string desc
@@ -106,7 +106,7 @@ class USBSwitchTASDevice(USBDevice):
 
         USBDevice.__init__(
                 self,
-                maxusb_app,
+                phy,
                 0,                      # device class
                 0,                      # device subclass
                 0,                      # protocol release number

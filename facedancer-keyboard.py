@@ -3,7 +3,7 @@
 # facedancer-keyboard.py
 
 from facedancer import FacedancerUSBApp
-from facedancer.dev.USBKeyboard import *
+from facedancer.dev.keyboard import *
 
 u = FacedancerUSBApp(verbose=1)
 d = USBKeyboardDevice(u, verbose=5)

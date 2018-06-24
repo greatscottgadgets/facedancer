@@ -7,8 +7,6 @@ from .USB import *
 from .USBClass import USBClass
 
 class USBInterface(USBDescribable):
-    DESCRIPTOR_TYPE_NUMBER = 0x4
-
     name = "generic USB interface"
 
     def __init__(self, interface_number, interface_alternate, interface_class,
@@ -144,20 +142,20 @@ class USBInterface(USBDescribable):
         try:
             response = self.descriptors[dtype]
         except KeyError:
-            self.configuration.device.maxusb_app.stall_ep0()
+            self.configuration.device.phy.stall_ep0()
 
         if callable(response):
             response = response(dindex)
 
         if response:
             n = min(n, len(response))
-            self.configuration.device.maxusb_app.send_on_endpoint(0, response[:n])
+            self.configuration.device.phy.send_on_endpoint(0, response[:n])
 
             if self.verbose > 5:
                 print(self.name, "sent", n, "bytes in response")
 
     def handle_set_interface_request(self, req):
-        self.configuration.device.maxusb_app.stall_ep0()
+        self.configuration.device.phy.stall_ep0()
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     def get_descriptor(self, usb_type='fullspeed', valid=False):
