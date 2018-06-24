@@ -27,7 +27,7 @@ class USBEndpoint(USBDescribable):
     usage_type_implicit_feedback = 0x02
 
     def __init__(self, number, direction, transfer_type, sync_type,
-            usage_type, max_packet_size, interval, handler=None, nak_callback=None):
+            usage_type, max_packet_size, interval, handler=None, nak_callback=None, cs_endpoints=None):
 
         self.number             = number
         self.direction          = direction
@@ -39,11 +39,12 @@ class USBEndpoint(USBDescribable):
         self.handler            = handler
         self.nak_callback       = nak_callback
         self.address = (self.number & 0x0f) | (self.direction << 7)
-        self.cs_endpoints=[]
+        self.cs_endpoints = cs_endpoints if cs_endpoints else []
         self.interface          = None
 
         self.request_handlers   = {
-                1 : self.handle_clear_feature_request
+                 0: self.handle_get_status,
+                 1: self.handle_clear_feature_request,
         }
 
     @classmethod
@@ -83,6 +84,10 @@ class USBEndpoint(USBDescribable):
             self.number, direction, transfer_type, sync_type, usage_type, self.max_packet_size, interval
         )
 
+    def handle_get_status(self, req):
+        print(self.name,'in GET_STATUS of endpoint %d' % self.number)
+        self.interface.configuration.device.phy.send_on_endpoint(0, b'\x00\x00')
+        
     def handle_clear_feature_request(self, req):
         print("received CLEAR_FEATURE request for endpoint", self.number,
                 "with value", req.value)

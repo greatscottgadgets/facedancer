@@ -177,18 +177,6 @@ class USBInterface(USBDescribable):
             self.string_index
         ) 
 
-        '''
-        # If we have a class object, append its class descriptor...
-        if self.iclass:
-            descriptor = self.iclass.get_descriptor()
-            if descriptor:
-                d += descriptor
-
-        # ... append each endpoint's endpoint descriptor.
-        for e in self.endpoints:
-            d += e.get_descriptor()
-        '''
-        
         #if self.iclass:
         if self.iclass.class_number:
             #iclass_desc_num = USB.interface_class_to_descriptor_type(self.iclass)

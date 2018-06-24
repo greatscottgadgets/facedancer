@@ -112,7 +112,7 @@ class USBCSInterface(USBDescribable):
         self.configuration.device.phy.stall_ep0()
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
-    def get_descriptor(self):
+    def get_descriptor(self, usb_type='fullspeed', valid=False):
         descriptor_type = DescriptorType.cs_interface
         length = len(self.cs_config) + 2
         response = struct.pack('BB', length & 0xff, descriptor_type) + self.cs_config

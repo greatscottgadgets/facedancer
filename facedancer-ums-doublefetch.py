@@ -10,7 +10,7 @@ import sys
 import math
 
 from facedancer import FacedancerUSBApp
-from facedancer.dev.USBMassStorage import *
+from facedancer.dev.mass_storage import *
 
 class DoubleFetchImage(FAT32DiskImage):
 

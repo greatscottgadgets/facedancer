@@ -320,7 +320,7 @@ class FunctionalDescriptor(USBCSInterface):
     def __init__(self, phy, subtype, cs_config):
         name = FunctionalDescriptor.get_subtype_name(subtype)
         cs_config = struct.pack('B', subtype) + cs_config
-        super(FunctionalDescriptor, self).__init__(name, phy, cs_config)
+        super(FunctionalDescriptor, self).__init__(name, cs_config)
 
     @classmethod
     def get_subtype_name(cls, subtype):
@@ -427,6 +427,6 @@ class USBCDCDevice(USBDevice):
         '''
         by default, send management notification endpoint
         '''
-        self.debug('sending network connection notification')
+        print(self.name,'sending network connection notification')
         resp = build_notification(0xa1, NotificationCodes.NetworkConnection, 1, self.bDataInterface)
         self.send_on_endpoint(3, resp)

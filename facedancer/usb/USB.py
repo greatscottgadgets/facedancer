@@ -74,6 +74,16 @@ class USBDescribable(object):
 
     def __init__(self, phy):
         self.phy = phy
+
+    def send_on_endpoint(self, ep, data):
+        '''
+        Send data on a given endpoint
+
+        :param ep: endpoint number
+        :param data: data to send
+        '''
+        self.phy.send_on_endpoint(ep, data)
+
         
     @classmethod
     def handles_binary_descriptor(cls, data):
