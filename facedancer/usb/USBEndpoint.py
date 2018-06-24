@@ -86,7 +86,7 @@ class USBEndpoint(USBDescribable):
     def handle_clear_feature_request(self, req):
         print("received CLEAR_FEATURE request for endpoint", self.number,
                 "with value", req.value)
-        self.interface.configuration.device.maxusb_app.send_on_endpoint(0, b'')
+        self.interface.configuration.device.phy.send_on_endpoint(0, b'')
 
     def set_interface(self, interface):
         self.interface = interface
@@ -123,7 +123,7 @@ class USBEndpoint(USBDescribable):
 
     def send_packet(self, data, blocking=False):
         dev = self.interface.configuration.device
-        dev.maxusb_app.send_on_endpoint(self.number, data, blocking=blocking)
+        dev.phy.send_on_endpoint(self.number, data, blocking=blocking)
 
 
     def send(self, data):
@@ -138,6 +138,6 @@ class USBEndpoint(USBDescribable):
 
     def recv(self):
         dev = self.interface.configuration.device
-        data = dev.maxusb_app.read_from_endpoint(self.number)
+        data = dev.phy.read_from_endpoint(self.number)
         return data
 

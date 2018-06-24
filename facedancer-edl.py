@@ -2,8 +2,8 @@
 #
 # facedancer-serial.py
 
-from facedancer import FacedancerUSBApp
-from USBQCEDL import *
+from facedancer.app.core import FacedancerUSBApp
+from facedancer.dev.qc_edl import *
 
 u = FacedancerUSBApp(verbose=1)
 print(u)

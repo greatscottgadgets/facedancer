@@ -3,10 +3,10 @@ import os
 import sys
 import time
 
-from ..core import FacedancerApp
+from ..app.core import FacedancerApp
 from ..backends.MAXUSBApp import MAXUSBApp
-from ..USB import *
-from ..USBDevice import USBDeviceRequest
+from ..usb.USB import *
+from ..usb.USBDevice import USBDeviceRequest
 
 
 class GoodfetMaxUSBApp(MAXUSBApp):

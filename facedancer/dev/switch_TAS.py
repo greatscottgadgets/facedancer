@@ -5,11 +5,11 @@
 import greatfet
 import random
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBInterface import *
+from facedancer.usb.USBEndpoint import *
 
 class USBSwitchTASInterface(USBInterface):
     name = "Switch TAS Interface"
@@ -29,8 +29,8 @@ class USBSwitchTASInterface(USBInterface):
 
     def __init__(self, verbose=0):
         descriptors = { 
-                USB.desc_type_hid    : self.hid_descriptor,
-                USB.desc_type_report : self.report_descriptor
+                DescriptorType.hid    : self.hid_descriptor,
+                DescriptorType.report : self.report_descriptor
         }
 
         self.out_endpoint = USBEndpoint(

@@ -2,12 +2,12 @@
 #
 # Contains class definitions to implement a USB FTDI chip.
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
-from facedancer.USBVendor import *
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBInterface import *
+from facedancer.usb.USBEndpoint import *
+from facedancer.usb.USBVendor import *
 
 class USBFtdiVendor(USBVendor):
     name = "USB FTDI vendor"

@@ -10,12 +10,12 @@ import sys
 import struct
 import time
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
-from facedancer.USBVendor import *
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBInterface import *
+from facedancer.usb.USBEndpoint import *
+from facedancer.usb.USBVendor import *
 
 
 def bytes_as_hex(b, delim=" "):

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 #
-# facedancer-keyboard.py
+# facedancer-cdc.py
 
 from facedancer import FacedancerUSBApp
-from facedancer.dev.USBKeyboard import *
+from facedancer.dev.cdc import *
 
 u = FacedancerUSBApp(verbose=1)
-d = USBKeyboardDevice(u, verbose=5)
+print(u)
+d = USBCDCDevice(u, verbose=4)
 
 d.connect()
 

@@ -1,5 +1,7 @@
 from __future__ import print_function
 
 # Alias objects to make them easier to import.
-from .core import FacedancerUSBApp, FacedancerBasicScheduler
+from .app.core import FacedancerUSBApp, FacedancerBasicScheduler
 from .backends import *
+from .dev import *
+from .usb import *

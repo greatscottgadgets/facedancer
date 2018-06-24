@@ -6,13 +6,13 @@
 
 import facedancer
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
-from facedancer.USBVendor import *
-from facedancer.errors import *
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBInterface import *
+from facedancer.usb.USBEndpoint import *
+from facedancer.usb.USBVendor import *
+from facedancer.app.errors import *
 
 import usb
 from usb.core import USBError

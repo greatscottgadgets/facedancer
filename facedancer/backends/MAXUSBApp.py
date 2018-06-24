@@ -4,9 +4,9 @@
 
 import time
 
-from ..core import FacedancerApp
-from ..USB import *
-from ..USBDevice import USBDeviceRequest
+from ..app.core import FacedancerApp
+from ..usb.USB import *
+from ..usb.USBDevice import USBDeviceRequest
 
 class MAXUSBApp(FacedancerApp):
     reg_ep0_fifo                    = 0x00

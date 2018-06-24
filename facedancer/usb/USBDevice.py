@@ -6,7 +6,7 @@ from .USB import *
 from .USBClass import *
 from .USBConfiguration import USBConfiguration
 
-from .core import FacedancerBasicScheduler
+from ..app.core import FacedancerBasicScheduler
 
 
 import time
@@ -18,12 +18,12 @@ class USBDevice(USBDescribable):
     DESCRIPTOR_TYPE_NUMBER    = 0x01
     DESCRIPTOR_LENGTH         = 0x12
 
-    def __init__(self, maxusb_app, device_class=0, device_subclass=0,
+    def __init__(self, phy, device_class=0, device_subclass=0,
             protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
             spec_version=0x0002, verbose=0, quirks=[], scheduler=None):
-        self.maxusb_app = maxusb_app
+        self.phy = phy
         self.verbose = verbose
 
         self.quirks = quirks[:]
@@ -81,7 +81,7 @@ class USBDevice(USBDescribable):
             self.scheduler = FacedancerBasicScheduler()
 
         # Add our IRQ-servicing task to the scheduler's list of tasks to be serviced.
-        self.scheduler.add_task(lambda : self.maxusb_app.service_irqs())
+        self.scheduler.add_task(lambda : self.phy.service_irqs())
 
 
 
@@ -150,13 +150,13 @@ class USBDevice(USBDescribable):
         }
 
     def connect(self):
-        self.maxusb_app.connect(self)
+        self.phy.connect(self)
 
         # skipping State.attached may not be strictly correct (9.1.1.{1,2})
         self.state = State.powered
 
     def disconnect(self):
-        self.maxusb_app.disconnect()
+        self.phy.disconnect()
 
         self.state = State.detached
 
@@ -164,10 +164,10 @@ class USBDevice(USBDescribable):
         self.scheduler.run()
 
     def ack_status_stage(self, blocking=False):
-        self.maxusb_app.ack_status_stage(blocking=blocking)
+        self.phy.ack_status_stage(blocking=blocking)
 
     def set_address(self, address, defer=False):
-        self.maxusb_app.set_address(address, defer)
+        self.phy.set_address(address, defer)
 
     def get_descriptor(self, n=0x12):
         d = bytearray([
@@ -193,7 +193,7 @@ class USBDevice(USBDescribable):
         return d[:n]
 
     def send_control_message(self, data):
-        self.maxusb_app.send_on_endpoint(0, data)
+        self.phy.send_on_endpoint(0, data)
 
     # IRQ handlers
     #####################################################
@@ -219,7 +219,7 @@ class USBDevice(USBDescribable):
 
         if not recipient:
             print(self.name, "invalid recipient, stalling")
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
             return
 
         # and then the type
@@ -234,14 +234,14 @@ class USBDevice(USBDescribable):
 
         if not handler_entity:
             print(self.name, "invalid handler entity, stalling: {}".format(req))
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
             return
 
         handler = handler_entity.request_handlers.get(req.request, None)
 
         if not handler:
             print(self.name, "received unhandled EP0 control request; stallling:\n {}".format(repr(req)))
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
             return
 
         handler(req)
@@ -323,15 +323,15 @@ class USBDevice(USBDescribable):
 
         if response:
             n = min(n, len(response))
-            self.maxusb_app.verbose += 1
+            self.phy.verbose += 1
             self.send_control_message(response[:n])
 
-            self.maxusb_app.verbose -= 1
+            self.phy.verbose -= 1
 
             if self.verbose > 5:
                 print(self.name, "sent", n, "bytes in response")
         else:
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
 
     def handle_get_configuration_descriptor_request(self, num):
         return self.configurations[num].get_descriptor()
@@ -399,7 +399,7 @@ class USBDevice(USBDescribable):
 
         # notify the device of the recofiguration, in case
         # it needs to e.g. set up endpoints accordingly
-        self.maxusb_app.configured(self.configuration)
+        self.phy.configured(self.configuration)
 
     # USB 2.0 specification, section 9.4.4 (p 282 of pdf)
     def handle_get_interface_request(self, req):
@@ -409,7 +409,7 @@ class USBDevice(USBDescribable):
             # HACK: currently only support one interface
             self.send_control_message(b'\x00')
         else:
-            self.maxusb_app.stall_ep0()
+            self.phy.stall_ep0()
 
     # USB 2.0 specification, section 9.4.10 (p 288 of pdf)
     def handle_set_interface_request(self, req):

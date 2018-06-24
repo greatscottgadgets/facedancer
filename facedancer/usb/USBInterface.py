@@ -26,17 +26,22 @@ class USBInterface(USBDescribable):
         else:
             self.iclass = interface_class
 
+        self.verbose = verbose
         self.subclass = interface_subclass
         self.protocol = interface_protocol
         self.string_index = interface_string_index
 
         self.endpoints = []
         self.descriptors = descriptors if descriptors else {}
-
-        self.verbose = verbose
-
+        self.cs_interfaces = cs_interfaces if cs_interfaces else []
+        
         self.descriptors[DescriptorType.interface] = self.get_descriptor
-        self.cs_interfaces = [] if cs_interfaces is None else cs_interfaces 
+        self.request_handlers = {
+             6 : self.handle_get_descriptor_request,
+            11 : self.handle_set_interface_request
+        } 
+        
+        self.configuration = None
         
         if self.iclass and self.iclass.class_descriptor_number:
             descriptor = self.iclass.get_descriptor()
@@ -44,13 +49,6 @@ class USBInterface(USBDescribable):
             if descriptor:
                 self.descriptors[self.iclass.class_descriptor_number] = descriptor
 
-        self.request_handlers = {
-             6 : self.handle_get_descriptor_request,
-            11 : self.handle_set_interface_request
-        }
-
-        self.configuration = None
- 
         if endpoints:
             for endpoint in endpoints:
                 self.add_endpoint(endpoint)
@@ -71,6 +69,8 @@ class USBInterface(USBDescribable):
         if self.usb_vendor:
             self.usb_vendor.interface = self 
         '''
+        self.device_class = None
+        self.device_vendor = None
 
     def _handle_legacy_interface_class(self, interface_class, descriptors):
         """

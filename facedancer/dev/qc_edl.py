@@ -11,12 +11,12 @@ import struct
 import binascii
 import time
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
-from facedancer.USBVendor import *
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBInterface import *
+from facedancer.usb.USBEndpoint import *
+from facedancer.usb.USBVendor import *
 
 class USBSaharaVendor(USBVendor):
     name = "QC Sahara EDL"
@@ -347,7 +347,7 @@ class USBSaharaInterface(USBInterface):
 class USBSaharaDevice(USBDevice):
     name = "USB QC Sahara EDL Device"
 
-    def __init__(self, maxusb_app, verbose=0):
+    def __init__(self, phy, verbose=0):
     
         #z ultra c 6833 msm8974_23_4_aid_4
         #hash = bytearray.fromhex("49109A8016C239CD8F76540FE4D5138C87B2297E49C6B30EC31852330BDDB177")
@@ -376,7 +376,7 @@ class USBSaharaDevice(USBDevice):
 
         USBDevice.__init__(
                 self,
-                maxusb_app,
+                phy,
                 0,                      # device class
                 0,                      # device subclass
                 0,                      # protocol release number
@@ -391,6 +391,6 @@ class USBSaharaDevice(USBDevice):
                 verbose=verbose
         )
 
-        self.device_vendor = USBSaharaVendor()
+        self.device_vendor = USBSaharaVendor(phy)
         self.device_vendor.set_device(self)
 

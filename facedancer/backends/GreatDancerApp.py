@@ -7,10 +7,10 @@ import time
 import codecs
 import traceback
 
-from ..core import *
-from ..USB import *
-from ..USBDevice import USBDeviceRequest
-from ..USBEndpoint import USBEndpoint
+from ..app.core import *
+from ..usb.USB import *
+from ..usb.USBDevice import USBDeviceRequest
+from ..usb.USBEndpoint import USBEndpoint
 
 class GreatDancerApp(FacedancerApp):
     app_name = "GreatDancer"

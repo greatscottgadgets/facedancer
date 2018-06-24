@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="f4cac016-4386-450f-893f-40ad8d28f073" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/USBFtdi.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/USBKeyboard.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/USBMassStorage.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/USBQCEDL.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/USBSerial.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/USBSwitchTAS.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-edl.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-edl.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-ftdi.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-ftdi.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-keyboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-keyboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-serial.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-serial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-switchtas.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-switchtas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-umass.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-umass.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-ums-doublefetch.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-ums-doublefetch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer-usbproxy.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-usbproxy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/HIDClass.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USB.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBCSInterface.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBClass.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBConfiguration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBDevice.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBEndpoint.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBInterface.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBProxy.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/USBVendor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/backends/GoodFETMaxUSBApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/backends/GoodFETMaxUSBApp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/backends/GreatDancerApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/backends/GreatDancerApp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/backends/MAXUSBApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/backends/MAXUSBApp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/backends/RaspdancerMaxUSBApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/backends/RaspdancerMaxUSBApp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/core.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/errors.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/filters/logging.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/filters/logging.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/filters/standard.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/filters/standard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/usbproxy-switch-flip-endpoints.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/usbproxy-switch-invertx.py" beforeDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf>
+      <file leaf-file-name="facedancer-keyboard.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer-keyboard.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="102">
+              <caret line="7" selection-start-line="7" selection-end-line="7" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="USBDevice.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/facedancer/usb/USBDevice.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="204">
+              <caret line="67" column="30" lean-forward="true" selection-start-line="67" selection-start-column="30" selection-end-line="67" selection-end-column="30" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-12" />
+    <option name="y" value="-12" />
+    <option name="width" value="2576" />
+    <option name="height" value="1732" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="Facedancer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Facedancer" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager">
+    <configuration name="facedancer-keyboard" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Facedancer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/facedancer-keyboard.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.facedancer-keyboard" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f4cac016-4386-450f-893f-40ad8d28f073" name="Default" comment="" />
+      <created>1529845119325</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1529845119325</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="-6" y="-6" width="1613" height="883" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24953096" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Version Control" />
+      <window_info anchor="bottom" id="Python Console" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Terminal" />
+      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.39040208" />
+      <window_info id="Favorites" side_tool="true" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+    </layout>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/facedancer/usb/USBDevice.py</url>
+          <line>230</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+      <option name="time" value="3" />
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/facedancer-keyboard.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="7" selection-start-line="7" selection-end-line="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBDevice.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="204">
+          <caret line="67" column="30" lean-forward="true" selection-start-line="67" selection-start-column="30" selection-end-line="67" selection-end-column="30" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

@@ -3,7 +3,7 @@
 # facedancer-ftdi.py
 
 from facedancer import FacedancerUSBApp
-from USBFtdi import *
+from facedancer.dev.ftdi import *
 
 u = FacedancerUSBApp(verbose=1)
 d = USBFtdiDevice(u, verbose=6)

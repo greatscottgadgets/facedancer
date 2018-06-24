@@ -20,7 +20,7 @@ import sys
 from serial import Serial, PARITY_NONE
 
 from facedancer import FacedancerUSBApp
-from USBMassStorage import *
+from facedancer.dev.USBMassStorage import *
 
 class RawDiskImage(DiskImage):
     """

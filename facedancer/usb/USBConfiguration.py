@@ -4,7 +4,7 @@
 
 import struct
 
-from .USB import USBDescribable
+from .USB import *
 from .USBInterface import USBInterface
 from .USBEndpoint import USBEndpoint
 
@@ -14,9 +14,11 @@ from .HIDClass import HIDClass
 
 class USBConfiguration(USBDescribable):
 
-    DESCRIPTOR_TYPE_NUMBER    = 0x02
-
-    def __init__(self, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=0xe0, max_power=250):
+    ATTR_BASE = 0x80
+    ATTR_SELF_POWERED = ATTR_BASE | 0x40
+    ATTR_REMOTE_WAKEUP = ATTR_BASE | 0x20
+    
+    def __init__(self, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=ATTR_SELF_POWERED, max_power=0x32):
         self.configuration_index        = configuration_index
 
         if isinstance(configuration_string_or_index, str):
@@ -106,24 +108,60 @@ class USBConfiguration(USBDescribable):
     def set_configuration_string_index(self, i):
         self.configuration_string_index = i
 
-    def get_descriptor(self):
+    def get_string(self):
+        return self.configuration_string
+
+    def get_string_by_id(self, str_id):
+        s = super(USBConfiguration, self).get_string_by_id(str_id)
+        if not s:
+            for iface in self.interfaces:
+                s = iface.get_string_by_id(str_id)
+                if s:
+                    break
+        return s
+
+        
+    def get_descriptor(self, usb_type='fullspeed', valid=False):
         interface_descriptors = bytearray()
         for i in self.interfaces:
-            interface_descriptors += i.get_descriptor()
+            interface_descriptors += i.get_descriptor(usb_type, valid)
 
-        total_len = len(interface_descriptors) + 9
-
-        d = bytes([
-                9,          # length of descriptor in bytes
-                2,          # descriptor type 2 == configuration
-                total_len & 0xff,
-                (total_len >> 8) & 0xff,
-                len(self.interfaces),
-                self.configuration_index,
-                self.configuration_string_index,
-                self.attributes,
-                self.max_power
-        ])
+        bLength = 9  # always 9
+        bDescriptorType = DescriptorType.configuration
+        wTotalLength = len(interface_descriptors) + 9
+        bNumInterfaces = len(self.interfaces)
+        d = struct.pack(
+            '<BBHBBBBB',
+            bLength,
+            bDescriptorType,
+            wTotalLength & 0xffff,
+            bNumInterfaces,
+            self.configuration_index,
+            self.configuration_string_index,
+            self.attributes,
+            self.max_power
+        )
 
         return d + interface_descriptors
-
+        
+    def get_other_speed_descriptor(self, usb_type='fullspeed', valid=False):
+        interface_descriptors = bytearray()
+        for i in self.interfaces:
+            interface_descriptors += i.get_descriptor(usb_type, valid)
+            
+        bLength = 9  # always 9
+        bDescriptorType = DescriptorType.other_speed_configuration
+        wTotalLength = len(interface_descriptors) + 9
+        bNumInterfaces = len(self.interfaces)
+        d = struct.pack(
+            '<BBHBBBBB',
+            bLength,
+            bDescriptorType,
+            wTotalLength & 0xffff,
+            bNumInterfaces,
+            self.configuration_index,
+            self.configuration_string_index,
+            self.attributes,
+            self.max_power
+        )
+        return d + interface_descriptors

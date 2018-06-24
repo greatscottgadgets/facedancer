@@ -3,7 +3,7 @@
 #
 
 import datetime
-from ..USBProxy import USBProxyFilter
+from ..usb.USBProxy import USBProxyFilter
 
 class USBProxyPrettyPrintFilter(USBProxyFilter):
     """

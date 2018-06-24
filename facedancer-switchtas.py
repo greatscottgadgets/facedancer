@@ -3,7 +3,7 @@
 # facedancer-keyboard.py
 
 from facedancer import FacedancerUSBApp
-from USBSwitchTAS import *
+from facedancer.dev.USBSwitchTAS import *
 
 u = FacedancerUSBApp(verbose=5)
 d = USBSwitchTASDevice(u, verbose=5)

@@ -2,15 +2,15 @@
 # Standard filters for USBProxy that should (almost) always be used
 #
 
-from ..USBProxy import USBProxyFilter
+from ..usb.USBProxy import USBProxyFilter
 
-from ..USB import *
-from ..USBDevice import *
-from ..USBConfiguration import *
-from ..USBInterface import *
-from ..USBEndpoint import *
-from ..USBVendor import *
-from ..errors import *
+from ..usb.USB import *
+from ..usb.USBDevice import *
+from ..usb.USBConfiguration import *
+from ..usb.USBInterface import *
+from ..usb.USBEndpoint import *
+from ..usb.USBVendor import *
+from ..app.errors import *
 
 
 class USBProxySetupFilters(USBProxyFilter):

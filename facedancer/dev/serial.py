@@ -6,12 +6,12 @@
 
 import facedancer
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
-from facedancer.USBVendor import *
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBInterface import *
+from facedancer.usb.USBEndpoint import *
+from facedancer.usb.USBVendor import *
 
 
 class USBSerialVendor(USBVendor):
@@ -118,6 +118,6 @@ class USBSerialDevice(USBDevice):
                 verbose=verbose
         )
 
-        self.device_vendor = USBSerialVendor()
+        self.device_vendor = USBSerialVendor(maxusb_app)
         self.device_vendor.set_device(self)
 

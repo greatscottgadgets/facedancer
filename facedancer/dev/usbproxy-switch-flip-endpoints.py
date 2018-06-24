@@ -3,10 +3,10 @@
 # facedancer-usbproxy.py
 
 from facedancer import FacedancerUSBApp
-from facedancer.USBConfiguration import USBConfiguration
-from facedancer.USBInterface import USBInterface
-from facedancer.USBEndpoint import USBEndpoint
-from facedancer.USBProxy import USBProxyDevice, USBProxyFilter
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
+from facedancer.usb.USBProxy import USBProxyDevice, USBProxyFilter
 from facedancer.filters.standard import USBProxySetupFilters
 from facedancer.filters.logging import USBProxyPrettyPrintFilter
 

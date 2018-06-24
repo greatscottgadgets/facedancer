@@ -16,8 +16,8 @@ class USBCSInterface(USBDescribable):
         self.name = name
         self.verbose = verbose
         self.cs_config = cs_config
-        self.descriptors = descriptors if descriptors else {}
-        self.descriptors[USB.desc_type_interface] = self.get_descriptor
+        self.descriptors = {}
+        self.descriptors[DescriptorType.interface] = self.get_descriptor
 
         self.request_handlers = {
              6 : self.handle_get_descriptor_request,

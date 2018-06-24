@@ -3,7 +3,7 @@
 # facedancer-serial.py
 
 from facedancer import FacedancerUSBApp
-from USBSerial import *
+from facedancer.dev.USBSerial import *
 
 u = FacedancerUSBApp(verbose=1)
 print(u)

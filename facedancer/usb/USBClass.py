@@ -8,6 +8,28 @@ class USBClass:
 
     name = "generic USB device class"
 
+    Unspecified = 0x00
+    Audio = 0x01
+    CDC = 0x02
+    HID = 0x03
+    PID = 0x05
+    Image = 0x06
+    Printer = 0x07
+    MassStorage = 0x08
+    Hub = 0x09
+    CDCData = 0x0a
+    SmartCard = 0x0b
+    ContentSecurity = 0x0d
+    Video = 0x0e
+    PHDC = 0x0f
+    AudioVideo = 0x10
+    Billboard = 0x11
+    DiagnosticDevice = 0xdc
+    WirelessController = 0xe0
+    Miscellaneous = 0xed
+    ApplicationSpecific = 0xfe
+    VendorSpecific = 0xff
+    
     # maps bRequest to handler function
     request_handlers = { }
 
