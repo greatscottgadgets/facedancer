@@ -1,0 +1,3 @@
+[submodule "greatfet"]
+	path = greatfet
+	url = https://github.com/greatscottgadgets/greatfet

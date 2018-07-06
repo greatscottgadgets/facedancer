@@ -6,7 +6,6 @@ Vagrant.configure("2") do |config|
      pip3 install --upgrade pip3
      git clone https://github.com/bkerler/Facedancer --recursive
      cd Facedancer
-     git clone https://github.com/greatscottgadgets/greatfet --recursive
      cd greatfet/host
      python3 setup.py install
      cd ..
