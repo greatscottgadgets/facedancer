@@ -1,13 +1,14 @@
 '''
 Contains class definitions to implement a Vendor Specific USB Device.
 '''
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_device import USBDevice, USBDeviceRequest, Request
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.core.usb_vendor import USBVendor
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb import interface_class_to_descriptor_type
+from facedancer.usb.USBClass import USBClass
+from facedancer.usb.USBDevice import USBDevice, USBDeviceRequest, Request
+from facedancer.usb.USBEndpoint import USBEndpoint
+from facedancer.usb.USBVendor import USBVendor
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USB import *
+
 import struct
 
 
@@ -38,10 +39,9 @@ class USBVendorSpecificClass(USBClass):
 class USBVendorSpecificInterface(USBInterface):
     name = 'VendorSpecificInterface'
 
-    def __init__(self, app, phy, num=0, interface_alternate=0, endpoints=[]):
+    def __init__(self, phy, num=0, interface_alternate=0, endpoints=[]):
         # TODO: un-hardcode string index
         super(USBVendorSpecificInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=num,
             interface_alternate=interface_alternate,
@@ -50,8 +50,8 @@ class USBVendorSpecificInterface(USBInterface):
             interface_protocol=1,
             interface_string_index=0,
             endpoints=[],
-            usb_class=USBVendorSpecificClass(app, phy),
-            usb_vendor=USBVendorSpecificVendor(app, phy)
+            usb_class=USBVendorSpecificClass(phy),
+            usb_vendor=USBVendorSpecificVendor(phy)
         )
         self.virtual_endpoints = endpoints
         self.endpoints = []
@@ -91,7 +91,7 @@ class USBVendorSpecificInterface(USBInterface):
         )
 
         if self.iclass:
-            iclass_desc_num = interface_class_to_descriptor_type(self.iclass)
+            iclass_desc_num = USB.interface_class_to_descriptor_type(self.iclass)
             if iclass_desc_num:
                 desc = self.descriptors[iclass_desc_num]
                 if callable(desc):
@@ -118,11 +118,9 @@ class USBVendorSpecificInterface(USBInterface):
 class USBVendorSpecificDevice(USBDevice):
     name = 'VendorSpecificDevice'
 
-    def __init__(self, app, phy, vid, pid, rev=1, **kwargs):
-        self.app = app
+    def __init__(self, phy, vid, pid, rev=1, **kwargs):
         self.phy = phy
         super(USBVendorSpecificDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.VendorSpecific,
             device_subclass=1,
@@ -136,7 +134,6 @@ class USBVendorSpecificDevice(USBDevice):
             serial_number_string='123456',
             configurations=[
                 USBConfiguration(
-                    app=app,
                     phy=phy,
                     index=1,
                     string='Vendor Specific Conf',
@@ -172,7 +169,6 @@ class USBVendorSpecificDevice(USBDevice):
 
     def get_endpoint(self, num, direction, transfer_type, max_packet_size=0x40):
         return USBEndpoint(
-            app=self.app,
             phy=self.phy,
             number=num,
             direction=direction,
@@ -182,12 +178,12 @@ class USBVendorSpecificDevice(USBDevice):
             max_packet_size=max_packet_size,
             interval=1,
             handler=self.global_handler,
-            usb_class=USBVendorSpecificClass(self.app, self.phy),
-            usb_vendor=USBVendorSpecificVendor(self.app, self.phy)
+            usb_class=USBVendorSpecificClass(self.phy),
+            usb_vendor=USBVendorSpecificVendor(self.phy)
         )
 
     def get_interfaces(self):
-        return [USBVendorSpecificInterface(self.app, self.phy, num=0,
+        return [USBVendorSpecificInterface(self.phy, num=0,
                 endpoints=[
                     self.get_endpoint(1, USBEndpoint.direction_in, USBEndpoint.transfer_type_interrupt),
                     self.get_endpoint(1, USBEndpoint.direction_out, USBEndpoint.transfer_type_interrupt),
@@ -206,7 +202,7 @@ class USBVendorSpecificDevice(USBDevice):
                     self.get_endpoint(8, USBEndpoint.direction_in, USBEndpoint.transfer_type_isochronous, max_packet_size=0xff),
                     self.get_endpoint(8, USBEndpoint.direction_out, USBEndpoint.transfer_type_bulk, max_packet_size=0xff),
                 ]),
-                USBVendorSpecificInterface(self.app, self.phy, num=1,
+                USBVendorSpecificInterface(self.phy, num=1,
                 endpoints=[
                     self.get_endpoint(1, USBEndpoint.direction_in, USBEndpoint.transfer_type_interrupt),
                     self.get_endpoint(1, USBEndpoint.direction_out, USBEndpoint.transfer_type_interrupt),

@@ -7,12 +7,11 @@ and then we get exception from Max342xPhy
 import time
 import struct
 
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.fuzz.helpers import mutable
+from facedancer.usb.USBClass import USBClass
+from facedancer.usb.USBDevice import USBDevice
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
 
 
 class USBPrinterClass(USBClass):
@@ -23,7 +22,7 @@ class USBPrinterClass(USBClass):
             0x00: self.handle_get_device_id,
         }
 
-    @mutable('get_device_id_response')
+    #@mutable('get_device_id_response')
     def handle_get_device_id(self, req):
         device_id_dict = {
             'MFG': 'Hewlett-Packard',
@@ -44,14 +43,13 @@ class USBPrinterClass(USBClass):
 class USBPrinterInterface(USBInterface):
     name = 'PrinterInterface'
 
-    def __init__(self, app, phy, int_num, usbclass, sub, proto):
+    def __init__(self, phy, int_num, usbclass, sub, proto):
         self.filename = time.strftime('%Y%m%d%H%M%S', time.localtime())
         self.filename += '.pcl'
         self.writing = False
 
         endpoints0 = [
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=1,          # endpoint address
                 direction=USBEndpoint.direction_out,
@@ -63,7 +61,6 @@ class USBPrinterInterface(USBInterface):
                 handler=self.handle_data_available    # handler function
             ),
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=2,          # endpoint address
                 direction=USBEndpoint.direction_in,
@@ -78,7 +75,6 @@ class USBPrinterInterface(USBInterface):
 
         endpoints1 = [
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=1,
                 direction=USBEndpoint.direction_out,
@@ -90,7 +86,6 @@ class USBPrinterInterface(USBInterface):
                 handler=self.handle_data_available
             ),
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=2,
                 direction=USBEndpoint.direction_in,
@@ -109,7 +104,6 @@ class USBPrinterInterface(USBInterface):
 
         # TODO: un-hardcode string index (last arg before 'verbose')
         super(USBPrinterInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=int_num,
             interface_alternate=0,
@@ -118,10 +112,10 @@ class USBPrinterInterface(USBInterface):
             interface_protocol=proto,
             interface_string_index=0,
             endpoints=endpoints,
-            usb_class=USBPrinterClass(app, phy),
+            usb_class=USBPrinterClass(phy),
         )
 
-    @mutable('handle_data_available')
+    #@mutable('handle_data_available')
     def handle_data_available(self, data):
         if not self.writing:
             self.info('Writing PCL file: %s' % self.filename)
@@ -142,11 +136,10 @@ class USBPrinterDevice(USBDevice):
     name = 'PrinterDevice'
 
     def __init__(
-        self, app, phy, vid=0x03f0, pid=0x4417, rev=0x0001,
+        self, phy, vid=0x03f0, pid=0x4417, rev=0x0001,
         usbclass=USBClass.Printer, subclass=1, proto=2
     ):
         super(USBPrinterDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.Unspecified,
             device_subclass=0,
@@ -160,13 +153,12 @@ class USBPrinterDevice(USBDevice):
             serial_number_string='00CNC2618971',
             configurations=[
                 USBConfiguration(
-                    app=app,
                     phy=phy,
                     index=1,
                     string='Printer',
                     interfaces=[
-                        USBPrinterInterface(app, phy, 0, usbclass, subclass, proto),
-                        # USBPrinterInterface(app, phy, 1, 0xff, 1, 1),
+                        USBPrinterInterface(phy, 0, usbclass, subclass, proto),
+                        # USBPrinterInterface(phy, 1, 0xff, 1, 1),
                     ]
                 )
             ],

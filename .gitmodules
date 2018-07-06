@@ -1,3 +1,6 @@
 [submodule "greatfet"]
 	path = greatfet
 	url = https://github.com/greatscottgadgets/greatfet
+[submodule "Mtp"]
+	path = Mtp
+	url = https://github.com/BinyaminSharet/Mtp

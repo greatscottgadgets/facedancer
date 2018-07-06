@@ -2,13 +2,13 @@
 #
 # Contains class definitions to implement a USB keyboard.
 import struct
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.core.usb_vendor import USBVendor
-from umap2.core.usb_class import USBClass
-from umap2.fuzz.helpers import mutable
+from facedancer.usb.USBDevice import USBDevice
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
+from facedancer.usb.USBVendor import USBVendor
+from facedancer.usb.USBClass import USBClass
+
 try:
     from mtpdevice.mtp_device import MtpDevice, MtpDeviceInfo
     from mtpdevice.mtp_object import MtpObject
@@ -25,12 +25,11 @@ except:
 class USBMtpInterface(USBInterface):
     name = 'MtpInterface'
 
-    def __init__(self, app, phy):
+    def __init__(self, phy):
         if not mtpdeviceloaded:
             raise Exception('You cannot use USBMtp until you install pymtpdevice')
         # TODO: un-hardcode string index (last arg before 'verbose')
         super(USBMtpInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=0,
             interface_alternate=0,
@@ -40,7 +39,6 @@ class USBMtpInterface(USBInterface):
             interface_string_index=0,
             endpoints=[
                 USBEndpoint(
-                    app=app,
                     phy=phy,
                     number=1,
                     direction=USBEndpoint.direction_out,
@@ -52,7 +50,6 @@ class USBMtpInterface(USBInterface):
                     handler=self.handle_ep1_data_available
                 ),
                 USBEndpoint(
-                    app=app,
                     phy=phy,
                     number=2,
                     direction=USBEndpoint.direction_in,
@@ -64,7 +61,6 @@ class USBMtpInterface(USBInterface):
                     handler=None
                 ),
                 USBEndpoint(
-                    app=app,
                     phy=phy,
                     number=3,
                     direction=USBEndpoint.direction_in,
@@ -110,7 +106,7 @@ class USBMtpInterface(USBInterface):
         ]
         self.dev = MtpDevice(self.dev_info, properties, self.logger)
         self.dev.add_storage(self.storage)
-        self.dev.set_fuzzer(app.fuzzer)
+        #self.dev.set_fuzzer(fuzzer)
         self.api = MtpApi(self.dev)
 
         # OS String descriptor
@@ -131,7 +127,7 @@ class USBMsosVendor(USBVendor):
             0x00: self.handle_msos_vendor_extended_config_descriptor,
         }
 
-    @mutable('msos_vendor_extended_config_descriptor')
+    #@mutable('msos_vendor_extended_config_descriptor')
     def handle_msos_vendor_extended_config_descriptor(self, req):
         '''
         Taken from OS_Desc_CompatID
@@ -160,9 +156,8 @@ class USBMsosVendor(USBVendor):
 class USBMtpDevice(USBDevice):
     name = 'MtpDevice'
 
-    def __init__(self, app, phy, vid=0x4e8, pid=0x685c, rev=0x0002, **kwargs):
+    def __init__(self, phy, vid=0x4e8, pid=0x685c, rev=0x0002, **kwargs):
         super(USBMtpDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.Unspecified,
             device_subclass=0,
@@ -176,16 +171,15 @@ class USBMtpDevice(USBDevice):
             serial_number_string='00001',
             configurations=[
                 USBConfiguration(
-                    app=app,
                     phy=phy,
                     index=1,
                     string='Android MTP Device',
                     interfaces=[
-                        USBMtpInterface(app, phy)
+                        USBMtpInterface(phy)
                     ]
                 )
             ],
-            usb_vendor=USBMsosVendor(app=app, phy=phy),
+            usb_vendor=USBMsosVendor(phy=phy),
         )
 
 

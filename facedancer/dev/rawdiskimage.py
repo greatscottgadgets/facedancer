@@ -1,28 +1,7 @@
-#!/usr/bin/env python3
-#
-# facedancer-umass.py
-#
-# Creating a disk image under linux:
-#
-#   # fallocate -l 100M disk.img
-#   # fdisk disk.img
-#   # losetup -f --show disk.img
-#   # kpartx -a /dev/loopX
-#   # mkfs.XXX /dev/mapper/loopXpY
-#   # mount /dev/mapper/loopXpY /mnt/point
-#       do stuff on /mnt/point
-#   # umount /mnt/point
-#   # kpartx -d /dev/loopX
-#   # losetup -d /dev/loopX
-
 import sys
-
 from serial import Serial, PARITY_NONE
 
-from facedancer import FacedancerUSBApp
-from facedancer.dev.mass_storage import *
-
-class RawDiskImage(DiskImage):
+class RawDiskImage():
     """
         Raw disk image backed by a file.
     """
@@ -89,20 +68,4 @@ class RawDiskImage(DiskImage):
                 print("--> writing sector {} [{}]".format(address, data))
 
         self.image[block_start:block_end] = data[:self.block_size]
-        self.image.flush()
-
-
-if len(sys.argv)==1:
-    print("Usage: facedancer-umass.py disk.img");
-    sys.exit(1);
-
-u = FacedancerUSBApp(verbose=3)
-i = RawDiskImage(sys.argv[1], 512, verbose=3)
-d = USBMassStorageDevice(u, i, verbose=3)
-
-d.connect()
-
-try:
-    d.run()
-except KeyboardInterrupt:
-    d.disconnect()
+        self.image.flush() 

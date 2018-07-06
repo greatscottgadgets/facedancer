@@ -3,19 +3,17 @@ Contains class definitions to implement a USB hub.
 '''
 import struct
 from umap2.core.usb import DescriptorType
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.fuzz.helpers import mutable
-
+from facedancer.usb.USBClass import USBClass
+from facedancer.usb.USBDevice import USBDevice
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
 
 class USBHubClass(USBClass):
     name = 'HubClass'
 
-    def __init__(self, app, phy):
-        super(USBHubClass, self).__init__(app, phy)
+    def __init__(self, phy):
+        super(USBHubClass, self).__init__(phy)
         self.num_ports = 7
         self.hub_chars = 0x0000
         self.pwr_on_2_pwr_good = 2
@@ -28,7 +26,7 @@ class USBHubClass(USBClass):
             0x06: self.handle_get_descriptor
         }
 
-    @mutable('hub_get_hub_status_response')
+    #@mutable('hub_get_hub_status_response')
     def handle_get_hub_status(self, req):
         i = req.index
         if i:
@@ -37,11 +35,11 @@ class USBHubClass(USBClass):
             self.info('GetHubStatus')
         return b'\x00\x00\x00\x00'
 
-    @mutable('hub_set_port_feature_response')
+    #@mutable('hub_set_port_feature_response')
     def handle_set_port_feature(self, req):
         return b'\x01'
 
-    @mutable('hub_descriptor')
+    #@mutable('hub_descriptor')
     def handle_get_descriptor(self, req):
         d = struct.pack(
             '<BBHBB',
@@ -63,10 +61,9 @@ class USBHubClass(USBClass):
 class USBHubInterface(USBInterface):
     name = 'HubInterface'
 
-    def __init__(self, app, phy, num=0):
+    def __init__(self, phy, num=0):
         # TODO: un-hardcode string index
         super(USBHubInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=num,
             interface_alternate=0,
@@ -76,7 +73,6 @@ class USBHubInterface(USBInterface):
             interface_string_index=0,
             endpoints=[
                 USBEndpoint(
-                    app=app,
                     phy=phy,
                     number=0x2,
                     direction=USBEndpoint.direction_in,
@@ -91,10 +87,10 @@ class USBHubInterface(USBInterface):
             descriptors={
                 DescriptorType.hub: self.get_hub_descriptor
             },
-            usb_class=USBHubClass(app, phy)
+            usb_class=USBHubClass(phy)
         )
 
-    @mutable('hub_descriptor')
+    #@mutable('hub_descriptor')
     def get_hub_descriptor(self, **kwargs):
         bLength = 9
         bDescriptorType = 0x29
@@ -124,9 +120,8 @@ class USBHubInterface(USBInterface):
 class USBHubDevice(USBDevice):
     name = 'HubDevice'
 
-    def __init__(self, app, phy, vid=0x05e3, pid=0x0610, rev=0x7732, **kwargs):
+    def __init__(self, phy, vid=0x05e3, pid=0x0610, rev=0x7732, **kwargs):
         super(USBHubDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.Hub,
             device_subclass=0,
@@ -140,12 +135,11 @@ class USBHubDevice(USBDevice):
             serial_number_string='1234',
             configurations=[
                 USBConfiguration(
-                    app=app,
                     phy=phy,
                     index=1,
                     string='Emulated Hub',
                     interfaces=[
-                        USBHubInterface(app, phy)
+                        USBHubInterface(phy)
                     ],
                     attributes=USBConfiguration.ATTR_SELF_POWERED,
                 )

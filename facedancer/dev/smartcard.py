@@ -9,16 +9,13 @@
 # This device doesn't work properly yet!!!!!
 
 import struct
-from six.moves.queue import Queue
 from binascii import hexlify
-from umap2.core.usb import DescriptorType
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.fuzz.helpers import mutable
-
+from facedancer.usb.USB import DescriptorType
+from facedancer.usb.USBClass import USBClass
+from facedancer.usb.USBDevice import USBDevice
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
 
 class ClassRequests(object):
     ABORT = 0x01
@@ -36,7 +33,7 @@ class USBSmartcardClass(USBClass):
             ClassRequests.GET_DATA_RATES: self.handle_get_data_rates,
         }
 
-    @mutable('get_clock_frequencies_response')
+    #@mutable('get_clock_frequencies_response')
     def handle_get_clock_frequencies(self, req):
         response = ''
         for frequency in self.interface.clock_frequencies:
@@ -44,7 +41,7 @@ class USBSmartcardClass(USBClass):
         response = struct.pack('<I', len(response)) + response
         return response
 
-    @mutable('get_data_rates_response')
+    #@mutable('get_data_rates_response')
     def handle_get_data_rates(self, req):
         response = ''
         for data_rate in self.interface.data_rates:
@@ -115,7 +112,7 @@ class RdrToPc(object):
 class USBSmartcardInterface(USBInterface):
     name = 'SmartcardInterface'
 
-    def __init__(self, app, phy):
+    def __init__(self, phy):
         descriptors = {
             DescriptorType.hid: self.get_icc_descriptor
         }
@@ -139,7 +136,6 @@ class USBSmartcardInterface(USBInterface):
         endpoints = [
             # CCID command pipe
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=1,
                 direction=USBEndpoint.direction_out,
@@ -152,7 +148,6 @@ class USBSmartcardInterface(USBInterface):
             ),
             # CCID response pipe
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=2,
                 direction=USBEndpoint.direction_in,
@@ -165,7 +160,6 @@ class USBSmartcardInterface(USBInterface):
             ),
             # CCID event notification pipe
             USBEndpoint(
-                app=app,
                 phy=phy,
                 number=3,
                 direction=USBEndpoint.direction_in,
@@ -180,7 +174,6 @@ class USBSmartcardInterface(USBInterface):
 
         # TODO: un-hardcode string index (last arg before 'verbose')
         super(USBSmartcardInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=0,
             interface_alternate=0,
@@ -190,7 +183,7 @@ class USBSmartcardInterface(USBInterface):
             interface_string_index=0,
             endpoints=endpoints,
             descriptors=descriptors,
-            usb_class=USBSmartcardClass(app, phy)
+            usb_class=USBSmartcardClass(phy)
         )
 
         self.proto = 0
@@ -216,7 +209,7 @@ class USBSmartcardInterface(USBInterface):
             PcToRdrOpcode.SetDataRateAndClock_Frequency: self.handle_PcToRdr_SetDataRateAndClock_Frequency,
         }
 
-    @mutable('smartcard_IccPowerOn_response')
+    #@mutable('smartcard_IccPowerOn_response')
     def handle_PcToRdr_IccPowerOn(self, slot, seq, data):
         abData = b'\x3b\x6e\x00\x00\x80\x31\x80\x66\xb0\x84\x12\x01\x6e\x01\x83\x00\x90\x00'
         # Entropia Universe Gold card
@@ -231,7 +224,7 @@ class USBSmartcardInterface(USBInterface):
             data=abData
         )
 
-    @mutable('smartcard_IccPowerOff_response')
+    #@mutable('smartcard_IccPowerOff_response')
     def handle_PcToRdr_IccPowerOff(self, slot, seq, data):
         '''
         Check out slot number (should be as bulk OUT message)
@@ -244,7 +237,7 @@ class USBSmartcardInterface(USBInterface):
             clock_status=self.clock_status
         )
 
-    @mutable('smartcard_GetSlotStatus_response')
+    #@mutable('smartcard_GetSlotStatus_response')
     def handle_PcToRdr_GetSlotStatus(self, slot, seq, data):
         return R2P_SlotStatus(
             slot=slot,
@@ -254,7 +247,7 @@ class USBSmartcardInterface(USBInterface):
             clock_status=self.clock_status
         )
 
-    @mutable('smartcard_XfrBlock_response')
+    #@mutable('smartcard_XfrBlock_response')
     def handle_PcToRdr_XfrBlock(self, slot, seq, data):
         '''
         .. todo:: check the response again later,
@@ -269,7 +262,7 @@ class USBSmartcardInterface(USBInterface):
             data=abData
         )
 
-    @mutable('smartcard_GetParameters_response')
+    #@mutable('smartcard_GetParameters_response')
     def handle_PcToRdr_GetParameters(self, slot, seq, data):
         return R2P_Parameters(
             slot=slot,
@@ -280,7 +273,7 @@ class USBSmartcardInterface(USBInterface):
             data=self.abProtocolDataStructure
         )
 
-    @mutable('smartcard_ResetParameters_response')
+    #@mutable('smartcard_ResetParameters_response')
     def handle_PcToRdr_ResetParameters(self, slot, seq, data):
         return R2P_Parameters(
             slot=slot,
@@ -291,7 +284,7 @@ class USBSmartcardInterface(USBInterface):
             data=self.abProtocolDataStructure
         )
 
-    @mutable('smartcard_SetParameters_response')
+    #@mutable('smartcard_SetParameters_response')
     def handle_PcToRdr_SetParameters(self, slot, seq, data):
         self.proto = struct.unpack('B', data[7:8])[0]
         if self.proto == 0:
@@ -307,7 +300,7 @@ class USBSmartcardInterface(USBInterface):
             data=self.abProtocolDataStructure
         )
 
-    @mutable('smartcard_Escape_response')
+    #@mutable('smartcard_Escape_response')
     def handle_PcToRdr_Escape(self, slot, seq, data):
         '''
         .. todo:: should check the data parameter
@@ -320,7 +313,7 @@ class USBSmartcardInterface(USBInterface):
             data=b''
         )
 
-    @mutable('smartcard_IccClock_response')
+    #@mutable('smartcard_IccClock_response')
     def handle_PcToRdr_IccClock(self, slot, seq, data):
         # bClockCommand = data[7]
         return R2P_SlotStatus(
@@ -331,7 +324,7 @@ class USBSmartcardInterface(USBInterface):
             clock_status=self.clock_status
         )
 
-    @mutable('smartcard_T0APDU_response')
+    #@mutable('smartcard_T0APDU_response')
     def handle_PcToRdr_T0APDU(self, slot, seq, data):
         # bmChange, bClassGetResponse, bClassEnvelope = struct.unpack('<BBB', data[7:10])
         return R2P_SlotStatus(
@@ -342,7 +335,7 @@ class USBSmartcardInterface(USBInterface):
             clock_status=self.clock_status
         )
 
-    @mutable('smartcard_Secure_response')
+    #@mutable('smartcard_Secure_response')
     def handle_PcToRdr_Secure(self, slot, seq, data):
         '''
         .. todo:: to complete that, go over section 6.1.11
@@ -358,7 +351,7 @@ class USBSmartcardInterface(USBInterface):
             data=b''
         )
 
-    @mutable('smartcard_Mechanical_response')
+    #@mutable('smartcard_Mechanical_response')
     def handle_PcToRdr_Mechanical(self, slot, seq, data):
         '''
         .. todo:: handling
@@ -371,7 +364,7 @@ class USBSmartcardInterface(USBInterface):
             clock_status=self.clock_status
         )
 
-    @mutable('smartcard_Abort_response')
+    #@mutable('smartcard_Abort_response')
     def handle_PcToRdr_Abort(self, slot, seq, data):
         '''
         .. todo:: handling
@@ -384,7 +377,7 @@ class USBSmartcardInterface(USBInterface):
             clock_status=self.clock_status
         )
 
-    @mutable('smartcard_SetDataRateAndClock_Frequency_response')
+    #@mutable('smartcard_SetDataRateAndClock_Frequency_response')
     def handle_PcToRdr_SetDataRateAndClock_Frequency(self, slot, seq, data):
         self.clock_freq, self.data_rate = struct.unpack('<II', data[10:18])
         return R2P_DataRateAndClockFrequency(
@@ -396,7 +389,7 @@ class USBSmartcardInterface(USBInterface):
             rate=self.data_rate
         )
 
-    @mutable('smartcard_scd_icc_descriptor')
+    #@mutable('smartcard_scd_icc_descriptor')
     def get_icc_descriptor(self, *args):
         bDescriptorType = 0x21
         bcdCCID = 0x0110
@@ -475,9 +468,8 @@ class USBSmartcardInterface(USBInterface):
 class USBSmartcardDevice(USBDevice):
     name = 'SmartcardDevice'
 
-    def __init__(self, app, phy, vid=0x0bda, pid=0x0165, rev=0x2361, **kwargs):
+    def __init__(self, phy, vid=0x0bda, pid=0x0165, rev=0x2361, **kwargs):
         super(USBSmartcardDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.Unspecified,
             device_subclass=0,
@@ -491,12 +483,11 @@ class USBSmartcardDevice(USBDevice):
             serial_number_string='20070818000000000',
             configurations=[
                 USBConfiguration(
-                    app=app,
                     phy=phy,
                     index=1,
                     string='Emulated Smartcard',
                     interfaces=[
-                        USBSmartcardInterface(app, phy)
+                        USBSmartcardInterface(phy)
                     ]
                 )
             ],

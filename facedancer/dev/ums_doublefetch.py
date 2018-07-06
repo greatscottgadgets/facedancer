@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
-#
-# facedancer-ums-doublefetc.py
-#
-# "Double fetch" proof-of-concept for Facedancer
-#
 
 import re
 import sys
 import math
 
-from facedancer import FacedancerUSBApp
-from facedancer.dev.mass_storage import *
-
-class DoubleFetchImage(FAT32DiskImage):
+class DoubleFetchImage():
 
     FIRMWARE_IMAGE_START = 10147  # specified by our root directory entry
 
@@ -192,19 +184,3 @@ class DoubleFetchImage(FAT32DiskImage):
             print("    [sector has been read {} times]".format(self.sector_read_counts[address]))
 
         return result
-
-
-if len(sys.argv)==1:
-    print("Usage: facedancer-ums-doublefetch.py valid_firmware hacked_firmware");
-    sys.exit(1);
-
-u = FacedancerUSBApp(verbose=0)
-i = DoubleFetchImage(sys.argv[1], sys.argv[2], verbose=2)
-d = USBMassStorageDevice(u, i, verbose=0)
-
-d.connect()
-
-try:
-    d.run()
-except KeyboardInterrupt:
-    d.disconnect()

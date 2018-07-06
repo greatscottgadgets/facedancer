@@ -5,11 +5,11 @@ Based on USB_Billboard_Revision_1_0_20140801.pdf
 All references in this script ar to this pdf.
 '''
 import struct
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_bos import USBBinaryObjectStore
-from umap2.core.usb_device_capability import USBDeviceCapability, DCContainerId
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBClass import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBBos import USBBinaryObjectStore
+from facedancer.usb.USBDeviceCapability import USBDeviceCapability,DCContainerId
 
 
 class DCBillboard(USBDeviceCapability):
@@ -18,7 +18,7 @@ class DCBillboard(USBDeviceCapability):
     BILLBOARD_CAPABILITY_TYPE = 0x0d
 
     def __init__(
-        self, app, phy,
+        self, phy,
         additional_info_idx,
         preferred_alternate_mode,
         vconn_power,
@@ -30,7 +30,7 @@ class DCBillboard(USBDeviceCapability):
         data += struct.pack('<I', 0)
         for mode in alternate_modes:
             data += struct.pack('<HBB', *mode)
-        super(DCBillboard, self).__init__(app, phy, self.BILLBOARD_CAPABILITY_TYPE, data)
+        super(DCBillboard, self).__init__(phy, self.BILLBOARD_CAPABILITY_TYPE, data)
         self.additional_info_idx = additional_info_idx
         self.preferred_alternate_mode = preferred_alternate_mode
         self.vconn_power = vconn_power
@@ -40,12 +40,11 @@ class DCBillboard(USBDeviceCapability):
 
 class USBBillboardDevice(USBDevice):
 
-    def __init__(self, app, phy, vid=0x8312, pid=0x8312, **kwargs):
+    def __init__(self, phy, vid=0x8312, pid=0x8312, **kwargs):
         usb_class = None
         usb_vendor = None
         configurations = [
             USBConfiguration(
-                app=app,
                 phy=phy,
                 index=0x1,
                 string='Billboard configuration',
@@ -55,7 +54,6 @@ class USBBillboardDevice(USBDevice):
             )
         ]
         super(USBBillboardDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.Billboard,
             device_subclass=0x0,
@@ -73,10 +71,10 @@ class USBBillboardDevice(USBDevice):
             usb_vendor=usb_vendor,
         )
         self.usb_spec_version = 0x0210
-        self.bos = USBBinaryObjectStore(app, phy, capabilities=[
-            DCContainerId(app, phy, container_id=b'UMAP2-BILL-12345'),
+        self.bos = USBBinaryObjectStore(phy, capabilities=[
+            DCContainerId(phy, container_id=b'UMAP2-BILL-12345'),
             DCBillboard(
-                app, phy,
+                phy,
                 additional_info_idx=self.get_string_id('https://additional.info/umap2'),
                 preferred_alternate_mode=0,
                 vconn_power=0x8000,

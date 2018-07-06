@@ -5,14 +5,14 @@ and in PSTN120.pdf.
 '''
 import struct
 from binascii import unhexlify
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.dev.cdc import USBCDCDevice
-from umap2.dev.cdc import CommunicationClassSubclassCodes
-from umap2.dev.cdc import CommunicationClassProtocolCodes
-from umap2.dev.cdc import DataInterfaceClassProtocolCodes
-from umap2.dev.cdc import FunctionalDescriptor as FD
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBClass import USBClass
+from facedancer.usb.USBEndpoint import USBEndpoint
+from facedancer.dev.cdc import USBCDCDevice
+from facedancer.dev.cdc import CommunicationClassSubclassCodes
+from facedancer.dev.cdc import CommunicationClassProtocolCodes
+from facedancer.dev.cdc import DataInterfaceClassProtocolCodes
+from facedancer.dev.cdc import FunctionalDescriptor as FD
 
 
 class USBCdcDlDevice(USBCDCDevice):
@@ -23,20 +23,20 @@ class USBCdcDlDevice(USBCDCDevice):
     bControlProtocol = CommunicationClassProtocolCodes.AtCommands_v250
     bDataProtocol = DataInterfaceClassProtocolCodes.NoClassSpecificProtocolRequired
 
-    def __init__(self, app, phy, vid=0x2548, pid=0x1001, rev=0x0010, cs_interfaces=None, cdc_cls=None, bmCapabilities=0x01, **kwargs):
+    def __init__(self, phy, vid=0x2548, pid=0x1001, rev=0x0010, cs_interfaces=None, cdc_cls=None, bmCapabilities=0x01, **kwargs):
         if cdc_cls is None:
-            cdc_cls = self.get_default_class(app, phy)
+            cdc_cls = self.get_default_class(phy)
         cs_interfaces = [
             # Header Functional Descriptor
-            FD(app, phy, FD.Header, '\x01\x01'),
+            FD(phy, FD.Header, '\x01\x01'),
             # Call Management Functional Descriptor
-            FD(app, phy, FD.CM, struct.pack('BB', bmCapabilities, USBCDCDevice.bDataInterface)),
-            FD(app, phy, FD.DLM, struct.pack('B', bmCapabilities)),
-            FD(app, phy, FD.UN, struct.pack('BB', USBCDCDevice.bControlInterface, USBCDCDevice.bDataInterface)),
+            FD(phy, FD.CM, struct.pack('BB', bmCapabilities, USBCDCDevice.bDataInterface)),
+            FD(phy, FD.DLM, struct.pack('B', bmCapabilities)),
+            FD(phy, FD.UN, struct.pack('BB', USBCDCDevice.bControlInterface, USBCDCDevice.bDataInterface)),
         ]
         interfaces = [
             USBInterface(
-                app=app, phy=phy,
+                phy=phy,
                 interface_number=self.bDataInterface,
                 interface_alternate=0,
                 interface_class=USBClass.CDCData,
@@ -45,7 +45,6 @@ class USBCdcDlDevice(USBCDCDevice):
                 interface_string_index=0,
                 endpoints=[
                     USBEndpoint(
-                        app=app,
                         phy=phy,
                         number=0x1,
                         direction=USBEndpoint.direction_out,
@@ -57,7 +56,6 @@ class USBCdcDlDevice(USBCDCDevice):
                         handler=self.handle_ep1_data_available
                     ),
                     USBEndpoint(
-                        app=app,
                         phy=phy,
                         number=0x2,
                         direction=USBEndpoint.direction_in,
@@ -73,7 +71,7 @@ class USBCdcDlDevice(USBCDCDevice):
             )
         ]
         super(USBCdcDlDevice, self).__init__(
-            app, phy,
+            phy,
             vid=vid, pid=pid, rev=rev,
             interfaces=interfaces, cs_interfaces=cs_interfaces, cdc_cls=cdc_cls,
             bmCapabilities=0x03, **kwargs

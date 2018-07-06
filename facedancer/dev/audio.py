@@ -10,15 +10,16 @@ headset.
 However, it does not contain alternate settings for the interfaces
 and no HID interface (as we don't really need it here)
 '''
-from six.moves.queue import Queue
-from umap2.core.usb_class import USBClass
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_cs_endpoint import USBCSEndpoint
-from umap2.core.usb_cs_interface import USBCSInterface
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.core.usb_interface import USBInterface
-from umap2.fuzz.helpers import mutable
+import struct
+import facedancer
+
+from facedancer.usb.USBClass import *
+from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBCSEndpoint import *
+from facedancer.usb.USBCSInterface import *
+from facedancer.usb.USBDevice import *
+from facedancer.usb.USBEndpoint import *
+from facedancer.usb.USBInterface import *
 
 
 SUBCLASS_UNDEFINED = 0x00
@@ -79,42 +80,41 @@ class USBAudioClass(USBClass):
         except:
             raise Exception('Cannot find tuple (%#x, %#x, %#x) in settings' % (req.value, req.index, param))
 
-    @mutable('audio_set_cur_response', silent=True)
+    #@mutable('audio_set_cur_response', silent=True)
     def handle_audio_set_cur(self, req):
         self.set_param_val(req, 0)
         return b''
 
-    @mutable('audio_set_res_response', silent=True)
+    #@mutable('audio_set_res_response', silent=True)
     def handle_audio_set_res(self, req):
         self.set_param_val(req, 3)
         return b''
 
-    @mutable('audio_set_idle_response', silent=True)
+    #@mutable('audio_set_idle_response', silent=True)
     def handle_audio_set_idle(self, req):
         self.set_param_val(req, 4)
         return b''
 
-    @mutable('audio_get_cur_response', silent=True)
+    #@mutable('audio_get_cur_response', silent=True)
     def handle_audio_get_cur(self, req):
         return self.get_param_val(req, 0)
 
-    @mutable('audio_get_min_response', silent=True)
+    #@mutable('audio_get_min_response', silent=True)
     def handle_audio_get_min(self, req):
         return self.get_param_val(req, 1)
 
-    @mutable('audio_get_max_response', silent=True)
+    #@mutable('audio_get_max_response', silent=True)
     def handle_audio_get_max(self, req):
         return self.get_param_val(req, 2)
 
-    @mutable('audio_get_res_response', silent=True)
+    #@mutable('audio_get_res_response', silent=True)
     def handle_audio_get_res(self, req):
         return self.get_param_val(req, 3)
 
 
 class AudioStreaming(object):
 
-    def __init__(self, app, phy, tx_ep, rx_ep):
-        self.app = app
+    def __init__(self, phy, tx_ep, rx_ep):
         self.phy = phy
         self.tx_ep = tx_ep
         self.rx_ep = rx_ep
@@ -127,14 +127,13 @@ class AudioStreaming(object):
             self.phy.send_on_endpoint(self.tx_ep, self.txq.get())
 
     def data_available(self, data):
-        self.app.logger.info('[AudioStreaming] Got %#x bytes on streaming endpoint' % (len(data)))
+        print(self.name,'[AudioStreaming] Got %#x bytes on streaming endpoint' % (len(data)))
 
 
 class USBAudioStreamingInterface(USBInterface):
 
-    def __init__(self, app, phy, iface_num, iface_alt, iface_str_idx, cs_ifaces, endpoints, usb_class):
+    def __init__(self, phy, iface_num, iface_alt, iface_str_idx, cs_ifaces, endpoints, usb_class):
         super(USBAudioStreamingInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=iface_num,
             interface_alternate=iface_alt,
@@ -147,16 +146,15 @@ class USBAudioStreamingInterface(USBInterface):
             usb_class=usb_class
         )
 
-    @mutable('audio_streaming_interface_descriptor')
+    #@mutable('audio_streaming_interface_descriptor')
     def get_descriptor(self, usb_type='fullspeed', valid=False):
         return super(USBAudioStreamingInterface, self).get_descriptor(usb_type, valid)
 
 
 class USBAudioControlInterface(USBInterface):
 
-    def __init__(self, app, phy, iface_num, iface_alt, iface_str_idx, cs_ifaces, usb_class):
+    def __init__(self, phy, iface_num, iface_alt, iface_str_idx, cs_ifaces, usb_class):
         super(USBAudioControlInterface, self).__init__(
-            app=app,
             phy=phy,
             interface_number=iface_num,
             interface_alternate=iface_alt,
@@ -168,7 +166,7 @@ class USBAudioControlInterface(USBInterface):
             usb_class=usb_class
         )
 
-    @mutable('audio_control_interface_descriptor')
+    #@mutable('audio_control_interface_descriptor')
     def get_descriptor(self, usb_type='fullspeed', valid=False):
         return super(USBAudioControlInterface, self).get_descriptor(usb_type, valid)
 
@@ -177,11 +175,10 @@ class USBAudioDevice(USBDevice):
 
     name = 'AudioDevice'
 
-    def __init__(self, app, phy, vid=0x0d8c, pid=0x000c, rev=0x0001, *args, **kwargs):
-        audio_streaming = AudioStreaming(app, phy, 2, 1)
-        usb_class = USBAudioClass(app, phy)
+    def __init__(self, phy, vid=0x0d8c, pid=0x000c, rev=0x0001, *args, **kwargs):
+        audio_streaming = AudioStreaming(phy, 2, 1)
+        usb_class = USBAudioClass(phy)
         super(USBAudioDevice, self).__init__(
-            app=app,
             phy=phy,
             device_class=USBClass.Unspecified,
             device_subclass=0,
@@ -195,43 +192,43 @@ class USBAudioDevice(USBDevice):
             serial_number_string='UMAP2-12345-AUDIO',
             configurations=[
                 USBConfiguration(
-                    app=app, phy=phy, index=1,
+                    phy=phy, index=1,
                     string='UMAP2 Audio Configuration',
                     attributes=USBConfiguration.ATTR_BASE,
                     interfaces=[
                         # standard AC interface (4.3.1)
                         # At this point - with no endpoints
                         USBAudioControlInterface(
-                            app=app, phy=phy, iface_num=0, iface_alt=0, iface_str_idx=0,
+                            phy=phy, iface_num=0, iface_alt=0, iface_str_idx=0,
                             cs_ifaces=[
                                 # Class specific AC interface: header (4.3.2)
-                                USBCSInterface('ACHeader', app, phy, '\x01\x00\x01\x64\x00\x02\x01\x02'),
+                                USBCSInterface('ACHeader', phy, '\x01\x00\x01\x64\x00\x02\x01\x02'),
                                 # Class specific AC interface: input terminal (Table 4.3.2.1)
-                                USBCSInterface('ACInputTerminal0', app, phy, '\x02\x01\x01\x01\x00\x02\x03\x00\x00\x00'),
-                                USBCSInterface('ACInputTerminal1', app, phy, '\x02\x02\x01\x02\x00\x01\x01\x00\x00\x00'),
+                                USBCSInterface('ACInputTerminal0', phy, '\x02\x01\x01\x01\x00\x02\x03\x00\x00\x00'),
+                                USBCSInterface('ACInputTerminal1', phy, '\x02\x02\x01\x02\x00\x01\x01\x00\x00\x00'),
                                 # Class specific AC interface: output terminal (Table 4.3.2.2)
-                                USBCSInterface('ACOutputTerminal0', app, phy, '\x03\x06\x01\x03\x00\x09\x00'),
-                                USBCSInterface('ACOutputTerminal1', app, phy, '\x03\x07\x01\x01\x00\x08\x00'),
+                                USBCSInterface('ACOutputTerminal0', phy, '\x03\x06\x01\x03\x00\x09\x00'),
+                                USBCSInterface('ACOutputTerminal1', phy, '\x03\x07\x01\x01\x00\x08\x00'),
                                 # Class specific AC interface: selector unit (Table 4.3.2.4)
-                                USBCSInterface('ACSelectorUnit', app, phy, '\x05\x08\x01\x0a\x00'),
+                                USBCSInterface('ACSelectorUnit', phy, '\x05\x08\x01\x0a\x00'),
                                 # Class specific AC interface: feature unit (Table 4.3.2.5)
-                                USBCSInterface('ACFeatureUnit0', app, phy, '\x06\x09\x0f\x01\x01\x02\x02\x00'),
-                                USBCSInterface('ACFeatureUnit1', app, phy, '\x06\x0a\x02\x01\x43\x00\x00'),
-                                USBCSInterface('ACFeatureUnit2', app, phy, '\x06\x0d\x02\x01\x03\x00\x00'),
+                                USBCSInterface('ACFeatureUnit0', phy, '\x06\x09\x0f\x01\x01\x02\x02\x00'),
+                                USBCSInterface('ACFeatureUnit1', phy, '\x06\x0a\x02\x01\x43\x00\x00'),
+                                USBCSInterface('ACFeatureUnit2', phy, '\x06\x0d\x02\x01\x03\x00\x00'),
                                 # Class specific AC interface: mixer unit (Table 4.3.2.3)
-                                USBCSInterface('ACMixerUnit', app, phy, '\x04\x0f\x02\x01\x0d\x02\x03\x00\x00\x00\x00'),
+                                USBCSInterface('ACMixerUnit', phy, '\x04\x0f\x02\x01\x0d\x02\x03\x00\x00\x00\x00'),
                             ],
                             usb_class=usb_class
                         ),
                         USBAudioStreamingInterface(
-                            app=app, phy=phy, iface_num=1, iface_alt=0, iface_str_idx=0,
+                            phy=phy, iface_num=1, iface_alt=0, iface_str_idx=0,
                             cs_ifaces=[
-                                USBCSInterface('ASGeneral', app, phy, '\x01\x01\x01\x01\x00'),
-                                USBCSInterface('ASFormatType', app, phy, '\x02\x01\x02\x02\x10\x02\x44\xac\x00\x44\xac\x00'),
+                                USBCSInterface('ASGeneral', phy, '\x01\x01\x01\x01\x00'),
+                                USBCSInterface('ASFormatType', phy, '\x02\x01\x02\x02\x10\x02\x44\xac\x00\x44\xac\x00'),
                             ],
                             endpoints=[
                                 USBEndpoint(
-                                    app=app, phy=phy, number=1,
+                                    phy=phy, number=1,
                                     direction=USBEndpoint.direction_out,
                                     transfer_type=USBEndpoint.transfer_type_isochronous,
                                     sync_type=USBEndpoint.sync_type_adaptive,
@@ -240,7 +237,7 @@ class USBAudioDevice(USBDevice):
                                     interval=1,
                                     handler=audio_streaming.data_available,
                                     cs_endpoints=[
-                                        USBCSEndpoint('ASEndpoint', app, phy, '\x01\x01\x01\x01\x00')
+                                        USBCSEndpoint('ASEndpoint', phy, '\x01\x01\x01\x01\x00')
                                     ],
                                     usb_class=usb_class,
                                 )
@@ -248,14 +245,14 @@ class USBAudioDevice(USBDevice):
                             usb_class=usb_class,
                         ),
                         USBAudioStreamingInterface(
-                            app=app, phy=phy, iface_num=2, iface_alt=0, iface_str_idx=0,
+                            phy=phy, iface_num=2, iface_alt=0, iface_str_idx=0,
                             cs_ifaces=[
-                                USBCSInterface('ASGeneral', app, phy, '\x01\x07\x01\x01\x00'),
-                                USBCSInterface('ASFormatType', app, phy, '\x02\x01\x01\x02\x10\x02\x44\xac\x00\x44\xac\x00'),
+                                USBCSInterface('ASGeneral', phy, '\x01\x07\x01\x01\x00'),
+                                USBCSInterface('ASFormatType', phy, '\x02\x01\x01\x02\x10\x02\x44\xac\x00\x44\xac\x00'),
                             ],
                             endpoints=[
                                 USBEndpoint(
-                                    app=app, phy=phy, number=2,
+                                    phy=phy, number=2,
                                     direction=USBEndpoint.direction_in,
                                     transfer_type=USBEndpoint.transfer_type_isochronous,
                                     sync_type=USBEndpoint.sync_type_async,
@@ -264,7 +261,7 @@ class USBAudioDevice(USBDevice):
                                     interval=1,
                                     handler=audio_streaming.buffer_available,
                                     cs_endpoints=[
-                                        USBCSEndpoint('ASEndpoint', app, phy, '\x01\x01\x00\x00\x00')
+                                        USBCSEndpoint('ASEndpoint', phy, '\x01\x01\x00\x00\x00')
                                     ],
                                     usb_class=usb_class,
                                 )
