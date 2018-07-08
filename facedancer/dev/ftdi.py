@@ -8,6 +8,7 @@ from facedancer.usb.USBConfiguration import *
 from facedancer.usb.USBInterface import *
 from facedancer.usb.USBEndpoint import *
 from facedancer.usb.USBVendor import *
+from facedancer.fuzz.helpers import mutable
 
 class USBFtdiVendor(USBVendor):
     name = "USB FTDI vendor"
@@ -28,7 +29,7 @@ class USBFtdiVendor(USBVendor):
             0x00: self.handle_reset,
             0x01: self.handle_modem_ctrl,
             0x02: self.handle_set_flow_ctrl,
-            0x03: self.handle_set_baud_rate,
+            0x03: self.handle_set_baud_rate_request,
             0x04: self.handle_set_data,
             0x05: self.handle_get_modem_status,
             0x06: self.handle_set_event_char,
@@ -38,11 +39,13 @@ class USBFtdiVendor(USBVendor):
             0x90: self.handle_read_ee,
         } 
 
+    @mutable('ftdi_reset_response')
     def handle_reset(self, req):
         if self.verbose > 0:
             print(self.name, "received reset request")
         return b''
 
+    @mutable('ftdi_modem_ctrl_response')
     def handle_modem_ctrl(self, req):
         if self.verbose > 0:
             print(self.name, "received modem_ctrl request")
@@ -59,6 +62,7 @@ class USBFtdiVendor(USBVendor):
 
         return b''
 
+    @mutable('ftdi_set_flow_ctrl_response')
     def handle_set_flow_ctrl(self, req):
         if self.verbose > 0:
             print(self.name, "received set_flow_ctrl request")
@@ -74,6 +78,7 @@ class USBFtdiVendor(USBVendor):
 
         return b''
 
+    @mutable('ftdi_set_baud_rate_response')
     def handle_set_baud_rate_request(self, req):
         if self.verbose > 0:
             print(self.name, "received set_baud_rate request")
@@ -83,36 +88,42 @@ class USBFtdiVendor(USBVendor):
 
         return b''
 
+    @mutable('ftdi_set_data_response')
     def handle_set_data(self, req):
         if self.verbose > 0:
             print(self.name, "received set_data request")
 
         return b''
 
+    @mutable('ftdi_get_modem_status_response')
     def handle_get_modem_status(self, req):
         if self.verbose > 0:
             print(self.name, "received get_status request")
 
         return b''
 
+    @mutable('ftdi_set_event_char_response')
     def handle_set_event_char(self, req):
         if self.verbose > 0:
             print(self.name, "received set_event_char request")
 
         return b''
 
+    @mutable('ftdi_set_error_char_response')
     def handle_set_error_char(self, req):
         if self.verbose > 0:
             print(self.name, "received set_error_char request")
 
         return b''
 
+    @mutable('ftdi_set_latency_timer_response')
     def handle_set_latency_timer(self, req):
         if self.verbose > 0:
             print(self.name, "received set_latency_timer request")
 
         return b''
 
+    @mutable('ftdi_get_latency_timer_response')
     def handle_get_latency_timer(self, req):
         if self.verbose > 0:
             print(self.name, "received get_latency_timer request")
@@ -120,24 +131,20 @@ class USBFtdiVendor(USBVendor):
         # bullshit value
         return struct.pack('B', self.latency_timer)
 
+    @mutable('ftdi_read_ee_response')
     def handle_read_ee(self, req):
         return b'\x31\x60'
         
-        
-    def handle_set_baud_rate(self, req):
-        self.dtr = req.value & 0x0001
-        self.baudrate = req.value
-        print('baudrate set to: %#x dtr set to: %#x' % (self.baudrate, self.dtr))
-        return b'' 
 
 class USBFtdiInterface(USBInterface):
     name = "USB FTDI interface"
 
-    def __init__(self, verbose=0):
+    def __init__(self, phy, interface_number, verbose=0):
         descriptors = { }
-
+        self.phy=phy
         endpoints = [
             USBEndpoint(
+                phy,
                 1,          # endpoint number
                 USBEndpoint.direction_out,
                 USBEndpoint.transfer_type_bulk,
@@ -148,6 +155,7 @@ class USBFtdiInterface(USBInterface):
                 self.handle_data_available      # handler function
             ),
             USBEndpoint(
+                phy,
                 3,          # endpoint number
                 USBEndpoint.direction_in,
                 USBEndpoint.transfer_type_bulk,
@@ -162,15 +170,16 @@ class USBFtdiInterface(USBInterface):
         # TODO: un-hardcode string index (last arg before "verbose")
         USBInterface.__init__(
                 self,
-                0,          # interface number
-                0,          # alternate setting
-                0xff,       # interface class: vendor-specific
-                0xff,       # subclass: vendor-specific
-                0xff,       # protocol: vendor-specific
-                0,          # string index
-                verbose,
-                endpoints,
-                descriptors
+                phy=self.phy,
+                interface_number=0,          # interface number
+                interface_alternate=0,          # alternate setting
+                interface_class=0xff,       # interface class: vendor-specific
+                interface_subclass=0xff,       # subclass: vendor-specific
+                interface_protocol=0xff,       # protocol: vendor-specific
+                interface_string_index=0,          # string index
+                verbose=verbose,
+                endpoints=endpoints,
+                descriptors=descriptors
         )
 
     def handle_data_available(self, data):
@@ -189,12 +198,13 @@ class USBFtdiDevice(USBDevice):
     name = "USB FTDI device"
 
     def __init__(self, phy, verbose=0):
-        interface = USBFtdiInterface(verbose=verbose)
+        interface = USBFtdiInterface(phy,0,verbose=verbose)
 
         config = USBConfiguration(
-                1,                                          # index
-                "FTDI",                                     # string desc
-                [ interface ]                               # interfaces
+                phy=phy,
+                configuration_index=1,                                          # index
+                configuration_string_or_index="FTDI",                                     # string desc
+                interfaces=[ interface ]                               # interfaces
         )
 
         USBDevice.__init__(

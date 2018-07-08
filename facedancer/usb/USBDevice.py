@@ -23,9 +23,11 @@ class USBDevice(USBDescribable):
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
             spec_version=0x0002, verbose=0, quirks=[], usb_class=None, usb_vendor=None, bos=None, scheduler=None):
+        super(USBDevice, self).__init__(phy)
         self.phy = phy
         self.verbose = verbose
-
+        descriptors = descriptors if descriptors else {}
+        configurations=configurations if configurations else []
         self.quirks = quirks[:]
         self.correct_set_address = ('fast_set_address' not in quirks)
 
@@ -49,12 +51,6 @@ class USBDevice(USBDescribable):
         else:
             self.serial_number_string_id = 0
 
-
-        # maps from USB.desc_type_* to bytearray OR callable
-        #self.descriptors = descriptors
-        #self.descriptors[DescriptorType.device] = lambda _ : self.get_descriptor()
-        #self.descriptors[DescriptorType.configuration] = self.handle_get_configuration_descriptor_request
-        #self.descriptors[DescriptorType.string] = self.handle_get_string_descriptor_request
 # maps from USB.desc_type_* to bytearray OR callable
         self.descriptors = {
             DescriptorType.device: self.get_descriptor,
@@ -82,6 +78,10 @@ class USBDevice(USBDescribable):
                 csi = self.get_string_id(c.configuration_string)
             c.set_configuration_string_index(csi)
             c.set_device(self)
+            if self.usb_class is None:
+                self.usb_class = c.usb_class
+            if self.usb_vendor is None:
+                self.usb_vendor = c.usb_vendor
 
         self.state = State.detached
         self.ready = False
@@ -98,9 +98,6 @@ class USBDevice(USBDescribable):
 
         # Add our IRQ-servicing task to the scheduler's list of tasks to be serviced.
         self.scheduler.add_task(lambda : self.phy.service_irqs())
-
-
-
 
     @classmethod
     def from_binary_descriptor(cls, data):
@@ -185,31 +182,6 @@ class USBDevice(USBDescribable):
     def set_address(self, address, defer=False):
         self.phy.set_address(address, defer)
 
-    '''
-    def get_descriptor(self, n=0x12):
-        d = bytearray([
-            18,         # length of descriptor in bytes
-            1,          # descriptor type 1 == device
-            (self.usb_spec_version >> 8) & 0xff,
-            self.usb_spec_version & 0xff,
-            self.device_class,
-            self.device_subclass,
-            self.protocol_rel_num,
-            self.max_packet_size_ep0,
-            self.vendor_id & 0xff,
-            (self.vendor_id >> 8) & 0xff,
-            self.product_id & 0xff,
-            (self.product_id >> 8) & 0xff,
-            (self.device_rev >> 8) & 0xff,
-            self.device_rev & 0xff,
-            self.manufacturer_string_id,
-            self.product_string_id,
-            self.serial_number_string_id,
-            len(self.configurations)
-        ])
-        return d[:n]
-    '''
-    
     def get_descriptor(self, index=0, valid=False):
         bLength = 18
         bDescriptorType = 1
@@ -288,7 +260,15 @@ class USBDevice(USBDescribable):
             handler_entity = recipient
 
         elif req_type == Request.type_class:    # for class requests we take the usb_class handler from the configuration
-            handler_entity = self.usb_class
+            index = req.get_index()
+            index = index & 0xff
+            if (len(self.configurations)!=0):
+                if index < len(self.configurations[0].interfaces):
+                    handler_entity = self.configurations[0].interfaces[index].usb_class
+                else:
+                    handler_entity = self.usb_class
+            else:
+                handler_entity = self.usb_class
         elif req_type == Request.type_vendor:   # for vendor requests we take the usb_vendor handler from the configuration
             handler_entity = self.usb_vendor
 

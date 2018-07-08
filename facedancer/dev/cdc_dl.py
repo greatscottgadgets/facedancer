@@ -28,7 +28,7 @@ class USBCdcDlDevice(USBCDCDevice):
             cdc_cls = self.get_default_class(phy)
         cs_interfaces = [
             # Header Functional Descriptor
-            FD(phy, FD.Header, '\x01\x01'),
+            FD(phy, FD.Header, b'\x01\x01'),
             # Call Management Functional Descriptor
             FD(phy, FD.CM, struct.pack('BB', bmCapabilities, USBCDCDevice.bDataInterface)),
             FD(phy, FD.DLM, struct.pack('B', bmCapabilities)),

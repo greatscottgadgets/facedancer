@@ -73,8 +73,9 @@ class USBSaharaInterface(USBInterface):
     SAHARA_MODE_MEMORY_DEBUG = 0x2
     SAHARA_MODE_COMMAND = 0x3
     
-    def __init__(self, hash,serial,hwid,sblversion,verbose=0):
+    def __init__(self, phy, hash,serial,hwid,sblversion,verbose=0):
         descriptors = { }
+        self.phy=phy
         self.hwid=hwid
         self.hash=hash
         self.serial=serial
@@ -91,6 +92,7 @@ class USBSaharaInterface(USBInterface):
         
         self.endpoints = [
         USBEndpoint(
+                phy,
                 1,          # endpoint number
                 USBEndpoint.direction_out,
                 USBEndpoint.transfer_type_bulk,
@@ -101,6 +103,7 @@ class USBSaharaInterface(USBInterface):
                 self.handle_data_available      # handler function
             ),
         USBEndpoint(
+                phy,
                 3,          # endpoint number
                 USBEndpoint.direction_in,
                 USBEndpoint.transfer_type_bulk,
@@ -114,9 +117,10 @@ class USBSaharaInterface(USBInterface):
         # TODO: un-hardcode string index (last arg before "verbose")
         USBInterface.__init__(
                 self,
+                phy,
                 0,          # interface number
                 0,          # alternate setting
-                USBClass(), # interface class: vendor-specific
+                USBClass(phy), # interface class: vendor-specific
                 0xff,       # subclass: vendor-specific
                 0xff,       # protocol: vendor-specific
                 0,          # string index
@@ -366,12 +370,13 @@ class USBSaharaDevice(USBDevice):
         #hash = bytearray.fromhex("1801000F43240892D02F0DC96313C81351B40FD5029ED98FF9EC7074DDAE8B05CDC8E1")
         #hash = bytearray.fromhex("5A93232B8EF5567752D0CB5554835215D1C473502E6F1052A78A6715B8B659AA")
 
-        interface = USBSaharaInterface(hash,serial,hwid,sblversion,verbose=verbose)
+        interface = USBSaharaInterface(phy,hash,serial,hwid,sblversion,verbose=verbose)
 
         config = USBConfiguration(
-                1,                                          # index
-                "Sahara",                                   # string desc
-                [ interface ]                               # interfaces
+                phy=phy,
+                configuration_index=1,                                          # index
+                configuration_string_or_index="Sahara",                                   # string desc
+                interfaces=[ interface ]                               # interfaces
         )
 
         USBDevice.__init__(

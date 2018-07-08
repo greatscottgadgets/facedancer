@@ -73,10 +73,6 @@ class FacedancerApp:
         else:
             return None
 
-
-
-
-
     @classmethod
     def appropriate_for_environment(cls, backend_name=None):
         """
@@ -105,7 +101,6 @@ class FacedancerApp:
 
     def enable(self):
         pass
-
 
 
 class FacedancerBasicScheduler(object):

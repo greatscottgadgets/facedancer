@@ -15,7 +15,7 @@ from .USBClass import USBClass
 # FIXME: This should also implement any functions descended from USBClass.
 #
 
-class HIDClass(USBDescribable, USBClass):
+class HIDClass(USBClass):
     """
     Simple class representing a HID device function.
     """

@@ -5,15 +5,17 @@
 import struct
 from .USB import *
 from .USBClass import USBClass
+from umap2.fuzz.helpers import mutable
 
 class USBInterface(USBDescribable):
     name = "generic USB interface"
 
-    def __init__(self, interface_number, interface_alternate, interface_class,
+    def __init__(self, phy, interface_number, interface_alternate, interface_class,
             interface_subclass, interface_protocol, interface_string_index,
             verbose=0, endpoints=None, descriptors=None, cs_interfaces=None,
         usb_class=None, usb_vendor=None):
-
+        
+        super(USBInterface, self).__init__(phy)
         self.number = interface_number
         self.alternate = interface_alternate
 
@@ -28,15 +30,16 @@ class USBInterface(USBDescribable):
         self.subclass = interface_subclass
         self.protocol = interface_protocol
         self.string_index = interface_string_index
-
-        self.endpoints = []
+        self.usb_class=usb_class
+        self.usb_vendor=usb_vendor
+        self.endpoints = endpoints if endpoints else []
         self.descriptors = descriptors if descriptors else {}
         self.cs_interfaces = cs_interfaces if cs_interfaces else []
         
         self.descriptors[DescriptorType.interface] = self.get_descriptor
         self.request_handlers = {
              6 : self.handle_get_descriptor_request,
-            11 : self.handle_set_interface_request
+            0xB : self.handle_set_interface_request
         } 
         
         self.configuration = None
@@ -47,11 +50,12 @@ class USBInterface(USBDescribable):
             if descriptor:
                 self.descriptors[self.iclass.class_descriptor_number] = descriptor
 
-        if endpoints:
-            for endpoint in endpoints:
-                self.add_endpoint(endpoint)
-
         '''
+        if cendpoints:
+            for endpoint in cendpoints:
+                self.add_endpoint(endpoint)
+        '''
+        
         self.usb_class = usb_class
         self.usb_vendor = usb_vendor
 
@@ -66,9 +70,9 @@ class USBInterface(USBDescribable):
             self.usb_class.interface = self
         if self.usb_vendor:
             self.usb_vendor.interface = self 
-        '''
-        self.device_class = None
-        self.device_vendor = None
+        
+        #self.device_class = None
+        #self.device_vendor = None
 
     def _handle_legacy_interface_class(self, interface_class, descriptors):
         """
@@ -82,7 +86,7 @@ class USBInterface(USBDescribable):
         else:
             descriptor = None
 
-        return USBClass(interface_class, descriptor, iclass_desc_num)
+        return USBClass(self.phy, interface_class, descriptor, iclass_desc_num)
 
 
     @classmethod
@@ -158,13 +162,14 @@ class USBInterface(USBDescribable):
         self.configuration.device.phy.stall_ep0()
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
+    @mutable('interface_descriptor')
     def get_descriptor(self, usb_type='fullspeed', valid=False):
 
         bLength = 9
         bDescriptorType = DescriptorType.interface
         bNumEndpoints = len(self.endpoints) 
         d = struct.pack(
-            '<BBBBBBBBB',
+            "<BBBBBBBBB",
             bLength,  # length of descriptor in bytes
             bDescriptorType,  # descriptor type 4 == interface
             self.number,

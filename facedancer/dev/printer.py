@@ -12,7 +12,7 @@ from facedancer.usb.USBDevice import USBDevice
 from facedancer.usb.USBConfiguration import USBConfiguration
 from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBEndpoint import USBEndpoint
-
+from facedancer.fuzz.helpers import mutable
 
 class USBPrinterClass(USBClass):
     name = 'PrinterClass'
@@ -22,7 +22,7 @@ class USBPrinterClass(USBClass):
             0x00: self.handle_get_device_id,
         }
 
-    #@mutable('get_device_id_response')
+    @mutable('get_device_id_response')
     def handle_get_device_id(self, req):
         device_id_dict = {
             'MFG': 'Hewlett-Packard',
@@ -115,7 +115,7 @@ class USBPrinterInterface(USBInterface):
             usb_class=USBPrinterClass(phy),
         )
 
-    #@mutable('handle_data_available')
+    @mutable('handle_data_available')
     def handle_data_available(self, data):
         if not self.writing:
             self.info('Writing PCL file: %s' % self.filename)
@@ -154,8 +154,8 @@ class USBPrinterDevice(USBDevice):
             configurations=[
                 USBConfiguration(
                     phy=phy,
-                    index=1,
-                    string='Printer',
+                    configuration_index=1,
+                    configuration_string_or_index='Printer',
                     interfaces=[
                         USBPrinterInterface(phy, 0, usbclass, subclass, proto),
                         # USBPrinterInterface(phy, 1, 0xff, 1, 1),

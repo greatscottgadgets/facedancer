@@ -18,7 +18,9 @@ class USBConfiguration(USBDescribable):
     ATTR_SELF_POWERED = ATTR_BASE | 0x40
     ATTR_REMOTE_WAKEUP = ATTR_BASE | 0x20
     
-    def __init__(self, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=ATTR_SELF_POWERED, max_power=0x32):
+    def __init__(self, phy, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=ATTR_SELF_POWERED, max_power=0x32):
+        super(USBConfiguration, self).__init__(phy)
+
         self.configuration_index        = configuration_index
 
         if isinstance(configuration_string_or_index, str):
@@ -34,6 +36,8 @@ class USBConfiguration(USBDescribable):
         self.max_power = max_power
 
         self.device = None
+        self.usb_class = None
+        self.usb_vendor = None
 
         for i in self.interfaces:
             i.set_configuration(self)

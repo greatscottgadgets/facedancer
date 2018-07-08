@@ -16,10 +16,11 @@ from facedancer.usb.USBInterface import *
 from facedancer.usb.USBEndpoint import *
 from facedancer.usb.USBVendor import *
 from facedancer.usb.USBCSInterface import *
+from facedancer.fuzz.helpers import mutable
 
 
-#def stage(stage, func):
-#    return mutable(stage)(func)
+def stage(stage, func):
+    return mutable(stage)(func)
 
 
 class USBCDCClass(USBClass):
@@ -130,6 +131,7 @@ class USBCDCClass(USBClass):
 
     def setup_local_handlers(self):
         self.local_handlers = {
+            '''
             self.SEND_ENCAPSULATED_COMMAND: self.handle_setter,
             self.GET_ENCAPSULATED_RESPONSE: stage('cdc_get_encapsulated_response', self.handle_getter),
             self.SET_COMM_FEATURE: self.handle_setter,
@@ -176,6 +178,7 @@ class USBCDCClass(USBClass):
             self.SET_MAX_DATAGRAM_SIZE: self.handle_setter,
             self.GET_CRC_MODE: stage('cdc_get_crc_mode', self.handle_getter),
             self.SET_CRC_MODE: self.handle_setter,
+            '''
         }
         self.params = {}
 
@@ -320,7 +323,7 @@ class FunctionalDescriptor(USBCSInterface):
     def __init__(self, phy, subtype, cs_config):
         name = FunctionalDescriptor.get_subtype_name(subtype)
         cs_config = struct.pack('B', subtype) + cs_config
-        super(FunctionalDescriptor, self).__init__(name, cs_config)
+        super(FunctionalDescriptor, self).__init__(phy, name, cs_config)
 
     @classmethod
     def get_subtype_name(cls, subtype):
@@ -341,7 +344,7 @@ def build_notification(req_type, notification_code, value, index, data=None):
 
 class USBCDCControlInterface(USBInterface):
 
-    #@mutable('cdc_control_interface_descriptor')
+    @mutable('cdc_control_interface_descriptor')
     def get_descriptor(self, usb_type='fullspeed', valid=False):
         '''
         We override get_descriptor so we can get more complex descriptors
@@ -358,6 +361,7 @@ class USBCDCDevice(USBDevice):
 
     USB_CDC_ACM_DEVICE (below) is an example of concrete implementation.
     '''
+
     name = 'CDCDevice'
     bControlInterface = 0
     bDataInterface = 1
@@ -368,6 +372,7 @@ class USBCDCDevice(USBDevice):
     _default_cls = None
 
     def __init__(self, phy, vid=0x2548, pid=0x1001, rev=0x0010, bmCapabilities=0x03, interfaces=None, cs_interfaces=None, cdc_cls=None, **kwargs):
+
         if cs_interfaces is None:
             cs_interfaces = []
         if cdc_cls is None:
@@ -375,7 +380,7 @@ class USBCDCDevice(USBDevice):
         if interfaces is None:
             interfaces = []
         control_interface = USBCDCControlInterface(
-            #phy=phy,
+            phy=phy,
             interface_number=self.bControlInterface, interface_alternate=0,
             interface_class=USBClass.CDC,
             interface_subclass=self.bControlSubclass,
@@ -383,7 +388,7 @@ class USBCDCDevice(USBDevice):
             interface_string_index=0,
             endpoints=[
                 USBEndpoint(
-                    #phy=phy, 
+                    phy=phy,
                     number=0x3,
                     direction=USBEndpoint.direction_in,
                     transfer_type=USBEndpoint.transfer_type_interrupt,
@@ -406,12 +411,12 @@ class USBCDCDevice(USBDevice):
             vendor_id=vid,
             product_id=pid,
             device_rev=rev,
-            manufacturer_string='UMAP2 NetSolutions',
-            product_string='UMAP2 CDC-TRON',
-            serial_number_string='UMAP2-13337-CDC',
+            manufacturer_string='Facedancer NetSolutions',
+            product_string='FD CDC-TRON',
+            serial_number_string='FD-13337-CDC',
             configurations=[
                 USBConfiguration(
-                    #phy=phy,
+                    phy=phy,
                     configuration_index=1, configuration_string_or_index='Emulated CDC',
                     interfaces=interfaces,
                 )
@@ -422,7 +427,7 @@ class USBCDCDevice(USBDevice):
             self._default_cls = USBCDCClass(phy)
         return self._default_cls
 
-    #@mutable('cdc_notification')
+    @mutable('cdc_notification')
     def handle_ep3_buffer_available(self):
         '''
         by default, send management notification endpoint

@@ -36,11 +36,12 @@ class USBSerialVendor(USBVendor):
 class USBSerialInterface(USBInterface):
     name = "USB Serial interface"
 
-    def __init__(self, verbose=0):
+    def __init__(self, phy, verbose=0):
         descriptors = { }
 
         endpoints = [
             USBEndpoint(
+                phy,
                 1,          # endpoint number
                 USBEndpoint.direction_out,
                 USBEndpoint.transfer_type_bulk,
@@ -51,6 +52,7 @@ class USBSerialInterface(USBInterface):
                 self.handle_data_available      # handler function
             ),
             USBEndpoint(
+                phy,
                 3,          # endpoint number
                 USBEndpoint.direction_in,
                 USBEndpoint.transfer_type_bulk,
@@ -65,9 +67,10 @@ class USBSerialInterface(USBInterface):
         # TODO: un-hardcode string index (last arg before "verbose")
         USBInterface.__init__(
                 self,
+                phy,
                 0,          # interface number
                 0,          # alternate setting
-                USBClass(), # interface class: vendor-specific
+                USBClass(phy), # interface class: vendor-specific
                 0xff,       # subclass: vendor-specific
                 0xff,       # protocol: vendor-specific
                 0,          # string index
@@ -93,9 +96,10 @@ class USBSerialDevice(USBDevice):
     name = "USB Serial device"
 
     def __init__(self, phy, verbose=0):
-        interface = USBSerialInterface(verbose=verbose)
+        interface = USBSerialInterface(phy,verbose=verbose)
 
         config = USBConfiguration(
+                phy,
                 1,                                          # index
                 "Serial config",                              # string desc
                 [ interface ]                               # interfaces

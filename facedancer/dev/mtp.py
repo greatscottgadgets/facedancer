@@ -8,6 +8,7 @@ from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBEndpoint import USBEndpoint
 from facedancer.usb.USBVendor import USBVendor
 from facedancer.usb.USBClass import USBClass
+from facedancer.fuzz.helpers import mutable
 
 try:
     from mtpdevice.mtp_device import MtpDevice, MtpDeviceInfo
@@ -127,7 +128,7 @@ class USBMsosVendor(USBVendor):
             0x00: self.handle_msos_vendor_extended_config_descriptor,
         }
 
-    #@mutable('msos_vendor_extended_config_descriptor')
+    @mutable('msos_vendor_extended_config_descriptor')
     def handle_msos_vendor_extended_config_descriptor(self, req):
         '''
         Taken from OS_Desc_CompatID

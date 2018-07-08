@@ -26,9 +26,12 @@ class USBEndpoint(USBDescribable):
     usage_type_feedback         = 0x01
     usage_type_implicit_feedback = 0x02
 
-    def __init__(self, number, direction, transfer_type, sync_type,
-            usage_type, max_packet_size, interval, handler=None, nak_callback=None, cs_endpoints=None):
+    def __init__(self, phy, number, direction, transfer_type, sync_type,
+            usage_type, max_packet_size, interval, handler=None, nak_callback=None, cs_endpoints=None,usb_class=None, usb_vendor=None):
 
+        super(USBEndpoint, self).__init__(phy)
+        self.usb_class=usb_class
+        self.usb_vendor=usb_vendor
         self.number             = number
         self.direction          = direction
         self.transfer_type      = transfer_type

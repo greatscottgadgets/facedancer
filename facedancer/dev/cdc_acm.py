@@ -44,8 +44,7 @@ class USBCdcAcmDevice(USBCDCDevice):
         ]
         interfaces = [
             USBInterface(
-                #app=app, 
-                #phy=phy,
+                phy=phy,
                 interface_number=self.bDataInterface,
                 interface_alternate=0,
                 interface_class=USBClass.CDCData,
@@ -54,8 +53,7 @@ class USBCdcAcmDevice(USBCDCDevice):
                 interface_string_index=0,
                 endpoints=[
                     USBEndpoint(
-                        #app=app,
-                        #phy=phy,
+                        phy=phy,
                         number=0x1,
                         direction=USBEndpoint.direction_out,
                         transfer_type=USBEndpoint.transfer_type_bulk,
@@ -66,8 +64,7 @@ class USBCdcAcmDevice(USBCDCDevice):
                         handler=self.handle_ep1_data_available
                     ),
                     USBEndpoint(
-                        #app=app,
-                        #phy=phy,
+                        phy=phy,
                         number=0x2,
                         direction=USBEndpoint.direction_in,
                         transfer_type=USBEndpoint.transfer_type_bulk,

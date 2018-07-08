@@ -1,5 +1,5 @@
-import sys
-from serial import Serial, PARITY_NONE
+import os
+from mmap import mmap
 
 class RawDiskImage():
     """

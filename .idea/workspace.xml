@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="247422cd-1484-45f2-9595-5b89e8dd4ef4" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/facedancer-emu.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer-emu.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/app/core.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/app/core.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/backends/GreatDancerApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/backends/GreatDancerApp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/backends/MAXUSBApp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/backends/MAXUSBApp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/audio.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/audio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/billboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/billboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/cdc.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/cdc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/cdc_acm.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/cdc_acm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/cdc_dl.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/cdc_dl.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/ftdi.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/ftdi.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/hub.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/hub.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/keyboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/keyboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/mass_storage.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/mass_storage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/mtp.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/mtp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/printer.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/printer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/qc_edl.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/qc_edl.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/rawdiskimage.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/rawdiskimage.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/serial.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/serial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/smartcard.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/smartcard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/dev/switch_TAS.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/dev/switch_TAS.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/HIDClass.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/HIDClass.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USB.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USB.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBCSEndpoint.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBCSEndpoint.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBCSInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBCSInterface.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBClass.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBClass.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBConfiguration.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBConfiguration.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBDevice.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBDevice.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBEndpoint.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBEndpoint.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/facedancer/usb/USBInterface.py" beforeDir="false" afterPath="$PROJECT_DIR$/facedancer/usb/USBInterface.py" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf>
+      <file leaf-file-name="mass_storage.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/dev/mass_storage.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="155">
+              <caret line="521" column="31" selection-start-line="521" selection-start-column="28" selection-end-line="521" selection-end-column="31" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="hub.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/dev/hub.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="154">
+              <caret line="56" column="14" selection-start-line="56" selection-start-column="14" selection-end-line="56" selection-end-column="14" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="USBDevice.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/usb/USBDevice.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="60">
+              <caret line="259" column="6" lean-forward="true" selection-start-line="259" selection-start-column="6" selection-end-line="259" selection-end-column="6" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="USBConfiguration.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/usb/USBConfiguration.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="378">
+              <caret line="53" lean-forward="true" selection-start-line="53" selection-end-line="53" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="facedancer-emu.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/facedancer-emu.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="172">
+              <caret line="103" column="5" selection-start-line="103" selection-start-column="5" selection-end-line="103" selection-end-column="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="vendor_specific.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/dev/vendor_specific.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="357">
+              <caret line="29" column="35" lean-forward="true" selection-start-line="29" selection-start-column="35" selection-end-line="29" selection-end-column="35" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="printer.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/dev/printer.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="103">
+              <caret line="154" column="10" selection-start-line="154" selection-start-column="10" selection-end-line="154" selection-end-column="10" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="serial.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/dev/serial.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="136">
+              <caret line="78" column="12" selection-start-line="78" selection-start-column="12" selection-end-line="78" selection-end-column="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="smartcard.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/facedancer/dev/smartcard.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="289">
+              <caret line="491" column="32" lean-forward="true" selection-start-line="491" selection-start-column="32" selection-end-line="491" selection-end-column="32" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>class</find>
+      <find>Usbmasssto</find>
+      <find>Configur</find>
+      <find>iclass</find>
+      <find>class_number</find>
+      <find>string_index</find>
+      <find>invalid handler entity</find>
+      <find>handler</find>
+      <find>max_lu</find>
+      <find>local_handlers</find>
+      <find>elif req_type == Request.type_class</find>
+      <find>Endpoint</find>
+      <find>0xfe</find>
+      <find>USBMassStorageInterfaceUSBMassStorageInterface</find>
+      <find>USBMassStorageInterface</find>
+      <find>request_handler</find>
+      <find>usb_function_supported</find>
+      <find>UMAP</find>
+      <find>EP0</find>
+      <find>cdc_get_line_coding</find>
+      <find>cdc_get_ringer_parms</find>
+      <find>cdc_get_operation_parms</find>
+      <find>cdc_get_line_parms</find>
+      <find>cdc_get_unit_parameter</find>
+      <find>cdc_get_profile</find>
+      <find>mutable</find>
+      <find>cdc_control_interface_descriptor</find>
+      <find>usb_class</find>
+      <find>index</find>
+      <find>Vendor</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/facedancer/usb/USBEndpoint.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/ftdi.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/keyboard.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/audio.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/billboard.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/cdc_acm.py" />
+        <option value="$PROJECT_DIR$/facedancer/usb/USB.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/cdc_dl.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/rawdiskimage.py" />
+        <option value="$PROJECT_DIR$/facedancer/usb/HIDClass.py" />
+        <option value="$PROJECT_DIR$/facedancer/usb/USBInterface.py" />
+        <option value="$PROJECT_DIR$/facedancer/usb/USBClass.py" />
+        <option value="$PROJECT_DIR$/facedancer/backends/MAXUSBApp.py" />
+        <option value="$PROJECT_DIR$/facedancer/backends/GreatDancerApp.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/mass_storage.py" />
+        <option value="$PROJECT_DIR$/facedancer/fuzz/helpers.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/cdc.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/qc_edl.py" />
+        <option value="$PROJECT_DIR$/facedancer/usb/USBConfiguration.py" />
+        <option value="$PROJECT_DIR$/facedancer/usb/USBDevice.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/hub.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/printer.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/serial.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/smartcard.py" />
+        <option value="$PROJECT_DIR$/facedancer/dev/switch_TAS.py" />
+        <option value="$PROJECT_DIR$/facedancer-emu.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="x" value="250" />
+    <option name="y" value="6" />
+    <option name="width" value="2304" />
+    <option name="height" value="1732" />
+  </component>
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="Facedancer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Facedancer" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Facedancer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Facedancer" type="462c0819:PsiDirectoryNode" />
+              <item name="facedancer" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Facedancer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Facedancer" type="462c0819:PsiDirectoryNode" />
+              <item name="facedancer" type="462c0819:PsiDirectoryNode" />
+              <item name="backends" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Facedancer" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Facedancer" type="462c0819:PsiDirectoryNode" />
+              <item name="facedancer" type="462c0819:PsiDirectoryNode" />
+              <item name="dev" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager">
+    <configuration name="facedancer-emu" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Facedancer" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/facedancer-emu.py" />
+      <option name="PARAMETERS" value="Hub" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.facedancer-emu" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="247422cd-1484-45f2-9595-5b89e8dd4ef4" name="Default" comment="" />
+      <created>1530987722182</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1530987722182</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="125" y="3" width="1152" height="866" extended-state="0" />
+    <editor active="true" />
+    <layout>
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.21880493" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3275862" />
+      <window_info anchor="bottom" id="Version Control" />
+      <window_info anchor="bottom" id="Python Console" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Terminal" />
+      <window_info anchor="bottom" id="Debug" order="3" visible="true" weight="0.3899204" />
+      <window_info id="Favorites" side_tool="true" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+    </layout>
+    <layout-to-restore>
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="bottom" id="Run" order="6" weight="0.32891247" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="bottom" id="Cvs" order="8" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="1" visible="true" weight="0.21388368" />
+      <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="10" />
+      <window_info anchor="bottom" id="Python Console" order="0" />
+      <window_info anchor="bottom" id="Message" order="4" />
+      <window_info active="true" anchor="bottom" id="Debug" order="7" visible="true" weight="0.39040208" />
+      <window_info anchor="bottom" id="Terminal" order="1" />
+      <window_info anchor="bottom" id="Event Log" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Inspection" order="9" weight="0.4" />
+      <window_info anchor="bottom" id="Version Control" order="3" />
+      <window_info anchor="bottom" id="Find" order="5" />
+      <window_info id="Favorites" order="0" side_tool="true" />
+    </layout-to-restore>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/facedancer-emu.py</url>
+          <line>53</line>
+          <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/facedancer/fuzz/helpers.py</url>
+          <line>48</line>
+          <option name="timeStamp" value="70" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+      <option name="time" value="72" />
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/ftdi.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="272">
+          <caret line="157" column="20" selection-start-line="157" selection-start-column="20" selection-end-line="157" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/keyboard.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="99">
+          <caret line="204" column="28" lean-forward="true" selection-start-line="204" selection-start-column="28" selection-end-line="204" selection-end-column="28" />
+          <folding>
+            <element signature="e#0#13#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/audio.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="85">
+          <caret line="118" column="24" selection-start-line="118" selection-start-column="24" selection-end-line="118" selection-end-column="24" />
+          <folding>
+            <element signature="e#326#339#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/cdc_acm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-14">
+          <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/billboard.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="357">
+          <caret line="73" column="48" selection-start-line="73" selection-start-column="48" selection-end-line="73" selection-end-column="48" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/cdc_dl.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="90">
+          <caret line="26" column="27" lean-forward="true" selection-start-line="26" selection-start-column="27" selection-end-line="26" selection-end-column="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/rawdiskimage.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="51">
+          <caret line="3" column="21" lean-forward="true" selection-start-line="3" selection-start-column="21" selection-end-line="3" selection-end-column="21" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBEndpoint.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="167">
+          <caret line="31" column="29" selection-start-line="31" selection-start-column="29" selection-end-line="31" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://C:/Python36/Lib/site-packages/umap2-2.0.1-py3.6.egg!/umap2/fuzz/helpers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="245">
+          <caret line="58" selection-start-line="58" selection-end-line="58" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USB.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="36" column="27" selection-start-line="36" selection-start-column="27" selection-end-line="36" selection-end-column="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/HIDClass.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="17" column="15" selection-start-line="17" selection-start-column="15" selection-end-line="17" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/backends/MAXUSBApp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="378">
+          <caret line="248" column="12" selection-start-line="248" selection-start-column="12" selection-end-line="248" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/backends/GreatDancerApp.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="378">
+          <caret line="791" lean-forward="true" selection-start-line="791" selection-end-line="791" />
+          <folding>
+            <element signature="e#61#71#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBVendor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="205">
+          <caret line="27" column="9" lean-forward="true" selection-start-line="27" selection-start-column="9" selection-end-line="27" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBInterface.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="137">
+          <caret line="17" selection-start-line="17" selection-end-line="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/app/core.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="259">
+          <caret line="133" selection-start-line="133" selection-end-line="133" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBClass.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="137">
+          <caret line="44" selection-start-line="44" selection-end-line="44" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Python36/Lib/codecs.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="145">
+          <caret line="308" selection-start-line="308" selection-end-line="308" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/fuzz/helpers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="34">
+          <caret line="45" column="17" lean-forward="true" selection-start-line="45" selection-start-column="17" selection-end-line="45" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/qc_edl.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="340">
+          <caret line="125" column="42" lean-forward="true" selection-start-line="125" selection-start-column="42" selection-end-line="125" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/cdc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="208">
+          <caret line="180" column="15" selection-start-line="180" selection-start-column="15" selection-end-line="180" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/mass_storage.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="155">
+          <caret line="521" column="31" selection-start-line="521" selection-start-column="28" selection-end-line="521" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBConfiguration.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="378">
+          <caret line="53" lean-forward="true" selection-start-line="53" selection-end-line="53" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/hub.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="154">
+          <caret line="56" column="14" selection-start-line="56" selection-start-column="14" selection-end-line="56" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/usb/USBDevice.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="259" column="6" lean-forward="true" selection-start-line="259" selection-start-column="6" selection-end-line="259" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/printer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="103">
+          <caret line="154" column="10" selection-start-line="154" selection-start-column="10" selection-end-line="154" selection-end-column="10" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/serial.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="78" column="12" selection-start-line="78" selection-start-column="12" selection-end-line="78" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/smartcard.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="289">
+          <caret line="491" column="32" lean-forward="true" selection-start-line="491" selection-start-column="32" selection-end-line="491" selection-end-column="32" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/ums_doublefetch.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/switch_TAS.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="96" lean-forward="true" selection-start-line="96" selection-end-line="96" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer/dev/vendor_specific.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="357">
+          <caret line="29" column="35" lean-forward="true" selection-start-line="29" selection-start-column="35" selection-end-line="29" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/facedancer-emu.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="172">
+          <caret line="103" column="5" selection-start-line="103" selection-start-column="5" selection-end-line="103" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

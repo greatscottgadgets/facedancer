@@ -26,52 +26,52 @@ def main(argv):
         print("-----------------------")
         print("Please run as: facedancer-emu.py [type]")
         print("\nSupported types are:")
-        print(" Audio")
-        print(" BillBoard")
+        print(" Audio TBF")
+        print(" Billboard TBF")
         print(" CDC")
         print(" CDC-ACM")
         print(" CDC-DL")
         print(" EDL")
         print(" FTDI")
-        print(" Hub")
+        print(" Hub TBF")
         print(" Keyboard")
-        print(" MassStorage")
+        print(" MassStorage TBF")
         print(" MTP")
         print(" Printer")
         print(" Serial")
-        print(" Smartcard")
+        print(" Smartcard TBF")
         print(" SwitchTAS")
         print(" UMS-DoubleFetch")
-        print(" Vendor")
         exit(0)
 
-    u = FacedancerUSBApp(verbose=5)
-    print(u)
+    type=argv[1]
+    phy = FacedancerUSBApp(verbose=5)
+    print(phy)
     
     if type=="Audio":
-        d = USBAudioDevice(u, verbose=4)
-    elif type=="BillBoard":
-        d = USBBillboardDevice(u, verbose=4)
+        d = USBAudioDevice(phy, verbose=4)
+    elif type=="Billboard":
+        d = USBBillboardDevice(phy, verbose=4)
     elif type=="CDC":
-        d = USBCDCDevice(u, verbose=4)
+        d = USBCDCDevice(phy, verbose=4)
     elif type=="CDC-ACM":
-        d = USBCdcAcmDevice(u, verbose=4)
+        d = USBCdcAcmDevice(phy, verbose=4)
     elif type=="CDC-DL":
-        d = USBCdcDlDevice(u, verbose=4)
+        d = USBCdcDlDevice(phy, verbose=4)
     elif type=="EDL":
-        d = USBSaharaDevice(u, verbose=4)
+        d = USBSaharaDevice(phy, verbose=4)
     elif type=="FTDI":
-        d = USBFtdiDevice(u, verbose=6)
+        d = USBFtdiDevice(phy, verbose=6)
     elif type=="Hub":
-        d = USBHubDevice(u, verbose=6)
+        d = USBHubDevice(phy, verbose=6)
     elif type=="Keyboard":
-        d = USBKeyboardDevice(u, verbose=5)
+        d = USBKeyboardDevice(phy, verbose=5)
     elif type=="Serial":
-        d = USBSerialDevice(u, verbose=4)
-    elif tpye=="Smartcard":
-        d = USBSmartcardDevice(u, verbose=4)
+        d = USBSerialDevice(phy, verbose=4)
+    elif type=="Smartcard":
+        d = USBSmartcardDevice(phy, verbose=4)
     elif type=="SwitchTAS":
-        d = USBSwitchTASDevice(u, verbose=5)
+        d = USBSwitchTASDevice(phy, verbose=5)
     elif type=="MassStorage":
         #
         # Creating a disk image under linux:
@@ -89,21 +89,23 @@ def main(argv):
         if len(sys.argv)<3:
             print("Usage: facedancer-emu.py MassStorage disk.img");
             sys.exit(1);
-        i = RawDiskImage(sys.argv[2], 512, verbose=3)
-        d = USBMassStorageDevice(u, i, verbose=3)
+        d = USBMassStorageDevice(phy=phy, disk_image_filename=sys.argv[2])
     elif type=="MTP":
-        d = USBMtpDevice(u, verbose=4)
+        d = USBMtpDevice(phy, verbose=4)
     elif type=="Printer":
-        d = USBPrinterDevice(u, verbose=4)
+        d = USBPrinterDevice(phy)
     elif type=="UMS-DoubleFetch":
         if len(sys.argv)<4:
             print("Usage: facedancer-emu.py UMS-DoubleFetch valid_firmware hacked_firmware");
             sys.exit(1);
         i = DoubleFetchImage(sys.argv[2], sys.argv[3], verbose=2)
-        d = USBMassStorageDevice(u, i, verbose=0)
-    elif type=="Vendor":
-        d = USBVendorSpecificDevice(u, verbose=4)
-        
+        d = USBMassStorageDevice(phy, i, verbose=0)
+    #elif type=="Vendor":
+    #    d = USBVendorSpecificDevice(phy, verbose=4)
+    else:
+        print("Given Type not found.")
+        exit(0)
+
     d.connect()
 
     try:

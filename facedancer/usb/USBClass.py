@@ -3,8 +3,9 @@
 # Contains class definition for USBClass, intended as a base class (in the OO
 # sense) for implementing device classes (in the USB sense), eg, HID devices,
 # mass storage devices.
+from .USB import USBDescribable
 
-class USBClass:
+class USBClass(USBDescribable):
 
     name = "generic USB device class"
 
@@ -33,7 +34,8 @@ class USBClass:
     # maps bRequest to handler function
     request_handlers = { }
 
-    def __init__(self, class_number=0xff, descriptor=None, class_descriptor_number=0, verbose=0):
+    def __init__(self, phy, class_number=0xff, descriptor=None, class_descriptor_number=0, verbose=0):
+        super(USBClass, self).__init__(phy)
         self.interface = None
         self.verbose = verbose
         self.class_number = class_number
@@ -45,9 +47,27 @@ class USBClass:
     def set_interface(self, interface):
         self.interface = interface
 
+    '''
     def setup_request_handlers(self):
         """To be overridden for subclasses to modify self.class_request_handlers"""
         pass
+    '''
+
+    def setup_request_handlers(self):
+        self.setup_local_handlers()
+        self.request_handlers = {
+            x: self._global_handler for x in self.local_handlers
+        }
+
+    def setup_local_handlers(self):
+        self.local_handlers = {}
+
+    def _global_handler(self, req):
+        handler = self.local_handlers[req.request]
+        response = handler(req)
+        if response is not None:
+            self.phy.send_on_endpoint(0, response)
+        self.usb_function_supported('class specific setup request received')
 
     def get_descriptor(self):
         return self.descriptor

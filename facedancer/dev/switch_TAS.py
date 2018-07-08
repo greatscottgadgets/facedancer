@@ -27,13 +27,14 @@ class USBSwitchTASInterface(USBInterface):
     hid_descriptor = b'\x09\x21\x11\x01\x00\x01\x22\x50\x00'
     report_descriptor = b'\x05\x01\t\x05\xa1\x01\x15\x00%\x015\x00E\x01u\x01\x95\x0e\x05\t\x19\x01)\x0e\x81\x02\x95\x02\x81\x01\x05\x01%\x07F;\x01u\x04\x95\x01e\x14\t9\x81Be\x00\x95\x01\x81\x01&\xff\x00F\xff\x00\t0\t1\t2\t5u\x08\x95\x04\x81\x02u\x08\x95\x01\x81\x01\xc0'
 
-    def __init__(self, verbose=0):
+    def __init__(self, phy, verbose=0):
         descriptors = { 
                 DescriptorType.hid    : self.hid_descriptor,
                 DescriptorType.report : self.report_descriptor
         }
 
         self.out_endpoint = USBEndpoint(
+                phy,
                 2,          # endpoint number
                 USBEndpoint.direction_out,
                 USBEndpoint.transfer_type_interrupt,
@@ -45,6 +46,7 @@ class USBSwitchTASInterface(USBInterface):
         )
 
         self.endpoint = USBEndpoint(
+                phy,
                 1,          # endpoint number
                 USBEndpoint.direction_in,
                 USBEndpoint.transfer_type_interrupt,
@@ -58,6 +60,7 @@ class USBSwitchTASInterface(USBInterface):
         # TODO: un-hardcode string index (last arg before "verbose")
         USBInterface.__init__(
                 self,
+                phy,
                 0,          # interface number
                 0,          # alternate setting
                 3,          # interface class
@@ -97,9 +100,10 @@ class USBSwitchTASDevice(USBDevice):
 
     def __init__(self, phy, verbose=0):
         config = USBConfiguration(
+                phy,
                 1,                                          # index
                 None,                                       # string desc
-                [ USBSwitchTASInterface() ],                 # interfaces
+                [ USBSwitchTASInterface(phy) ],                 # interfaces
                 0x80, # attributes
                 250 # power
         )

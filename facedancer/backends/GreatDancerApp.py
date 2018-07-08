@@ -11,6 +11,7 @@ from ..app.core import *
 from ..usb.USB import *
 from ..usb.USBDevice import USBDeviceRequest
 from ..usb.USBEndpoint import USBEndpoint
+from ..utils.ulogger import set_default_handler_level
 
 class GreatDancerApp(FacedancerApp):
     app_name = "GreatDancer"
@@ -772,4 +773,36 @@ class GreatDancerApp(FacedancerApp):
 
         if status & self.USBSTS_D_NAKI:
             self._handle_nak_events()
+     
 
+    def get_mutation(self, stage, data=None):
+        '''
+        mutation is only needed when fuzzing
+        '''
+        return None
+
+    def usb_function_supported(self, reason=None):
+        '''
+        Callback from a USB device, notifying that the current USB device
+        is supported by the host.
+
+        :param reason: reason why we decided it is supported (default: None)
+        '''
+        self.current_usb_function_supported = True
+
+    def get_logger(self):
+        levels = {
+            0: logging.INFO,
+            1: logging.DEBUG,
+            # verbose is added by facedancer.__init__ module
+            2: logging.VERBOSE,
+        }
+        verbose = self.options.get('--verbose', 0)
+        logger = logging.getLogger('facedancer')
+        if verbose in levels:
+            set_default_handler_level(levels[verbose])
+        else:
+            set_default_handler_level(logging.VERBOSE)
+        if self.options.get('--quiet', False):
+            set_default_handler_level(logging.WARNING)
+        return logger

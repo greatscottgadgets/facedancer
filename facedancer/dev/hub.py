@@ -8,6 +8,7 @@ from facedancer.usb.USBDevice import USBDevice
 from facedancer.usb.USBConfiguration import USBConfiguration
 from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBEndpoint import USBEndpoint
+from facedancer.fuzz.helpers import mutable
 
 class USBHubClass(USBClass):
     name = 'HubClass'
@@ -26,7 +27,7 @@ class USBHubClass(USBClass):
             0x06: self.handle_get_descriptor
         }
 
-    #@mutable('hub_get_hub_status_response')
+    @mutable('hub_get_hub_status_response')
     def handle_get_hub_status(self, req):
         i = req.index
         if i:
@@ -35,11 +36,11 @@ class USBHubClass(USBClass):
             self.info('GetHubStatus')
         return b'\x00\x00\x00\x00'
 
-    #@mutable('hub_set_port_feature_response')
+    @mutable('hub_set_port_feature_response')
     def handle_set_port_feature(self, req):
         return b'\x01'
 
-    #@mutable('hub_descriptor')
+    @mutable('hub_descriptor')
     def handle_get_descriptor(self, req):
         d = struct.pack(
             '<BBHBB',
@@ -52,8 +53,8 @@ class USBHubClass(USBClass):
         num_bytes = self.num_ports // 7
         if self.num_ports % 7 != 0:
             num_bytes += 1
-        d += '\x00' * num_bytes
-        d += '\xff' * num_bytes
+        d += b'\x00' * num_bytes
+        d += b'\xff' * num_bytes
         d = struct.pack('B', len(d) + 1) + d
         return d
 
@@ -90,7 +91,7 @@ class USBHubInterface(USBInterface):
             usb_class=USBHubClass(phy)
         )
 
-    #@mutable('hub_descriptor')
+    @mutable('hub_descriptor')
     def get_hub_descriptor(self, **kwargs):
         bLength = 9
         bDescriptorType = 0x29
@@ -136,8 +137,8 @@ class USBHubDevice(USBDevice):
             configurations=[
                 USBConfiguration(
                     phy=phy,
-                    index=1,
-                    string='Emulated Hub',
+                    configuration_index=1,
+                    configuration_string_or_index='Emulated Hub',
                     interfaces=[
                         USBHubInterface(phy)
                     ],

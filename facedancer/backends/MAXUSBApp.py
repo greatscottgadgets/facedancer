@@ -231,3 +231,19 @@ class MAXUSBApp(FacedancerApp):
         # be nice to print a message or store the active coniguration for
         # use by the USBDevice, etc. etc.
         pass
+        
+    def get_mutation(self, stage, data=None):
+        '''
+        mutation is only needed when fuzzing
+        '''
+        pass
+
+    def usb_function_supported(self, reason=None):
+        '''
+        Callback from a USB device, notifying that the current USB device
+        is supported by the host.
+        By default, do nothing with this information
+
+        :param reason: reason why we decided it is supported (default: None)
+        '''
+        pass

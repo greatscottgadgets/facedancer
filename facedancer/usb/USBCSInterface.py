@@ -9,8 +9,8 @@ from .USBClass import USBClass
 class USBCSInterface(USBDescribable):
     name = "CSinterface"
 
-    def __init__(self, name, cs_config, verbose=0):
-
+    def __init__(self, name, phy, cs_config, verbose=0):
+        super(USBCSInterface, self).__init__(phy)
         self.name = name
         self.verbose = verbose
         self.cs_config = cs_config
@@ -19,7 +19,7 @@ class USBCSInterface(USBDescribable):
 
         self.request_handlers = {
              6 : self.handle_get_descriptor_request,
-            11 : self.handle_set_interface_request
+            0xb : self.handle_set_interface_request
         }
 
 
@@ -109,7 +109,8 @@ class USBCSInterface(USBDescribable):
                 print(self.name, "sent", n, "bytes in response")
 
     def handle_set_interface_request(self, req):
-        self.configuration.device.phy.stall_ep0()
+        self.phy.stall_ep0()
+        print(self.name,'Received SET_INTERFACE request')
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     def get_descriptor(self, usb_type='fullspeed', valid=False):

@@ -3,7 +3,7 @@
 # Contains class definition for USBCSEndpoint.
 
 import struct
-from .USB import *
+from .USB import DescriptorType, USBDescribable
 
 class USBCSEndpoint(USBDescribable):
     name = 'CSEndpoint'

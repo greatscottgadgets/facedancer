@@ -11,7 +11,6 @@ from facedancer.usb.USBConfiguration import *
 from facedancer.usb.USBBos import USBBinaryObjectStore
 from facedancer.usb.USBDeviceCapability import USBDeviceCapability,DCContainerId
 
-
 class DCBillboard(USBDeviceCapability):
     '''Section 3.1.5.2'''
 
@@ -46,8 +45,8 @@ class USBBillboardDevice(USBDevice):
         configurations = [
             USBConfiguration(
                 phy=phy,
-                index=0x1,
-                string='Billboard configuration',
+                configuration_index=0x1,
+                configuration_string_or_index='Billboard configuration',
                 interfaces=[],
                 attributes=0xc0,
                 max_power=0xfa
@@ -62,9 +61,9 @@ class USBBillboardDevice(USBDevice):
             vendor_id=vid,
             product_id=pid,
             device_rev=0x0,
-            manufacturer_string='Umap2 Inc.',
-            product_string='Umap2 Billboard',
-            serial_number_string='UMAP2-BILL-0123',
+            manufacturer_string='Facedancer Inc.',
+            product_string='Facedancer Billboard',
+            serial_number_string='FD-BILL-0123',
             configurations=configurations,
             descriptors=None,
             usb_class=usb_class,
@@ -72,10 +71,10 @@ class USBBillboardDevice(USBDevice):
         )
         self.usb_spec_version = 0x0210
         self.bos = USBBinaryObjectStore(phy, capabilities=[
-            DCContainerId(phy, container_id=b'UMAP2-BILL-12345'),
+            DCContainerId(phy, container_id=b'FD-BILL-12345'),
             DCBillboard(
                 phy,
-                additional_info_idx=self.get_string_id('https://additional.info/umap2'),
+                additional_info_idx=self.get_string_id('https://additional.info/facedancer'),
                 preferred_alternate_mode=0,
                 vconn_power=0x8000,
                 bm_configured=b'\xff' * 16,
