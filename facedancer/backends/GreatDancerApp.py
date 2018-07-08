@@ -806,3 +806,6 @@ class GreatDancerApp(FacedancerApp):
         if self.options.get('--quiet', False):
             set_default_handler_level(logging.WARNING)
         return logger
+
+    def is_connected(self):
+        return self.connected_device is not None

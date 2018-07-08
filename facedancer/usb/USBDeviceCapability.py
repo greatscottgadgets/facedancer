@@ -4,11 +4,11 @@ Device capabilities
 As defined in USB 3.1 spec, section 9.6.2
 '''
 import struct
-from .USB import *
-
+from facedancer.usb.USB import *
+from facedancer.fuzz.helpers import mutable
 
 class USBDeviceCapability(USBDescribable):
-
+    name = 'DeviceCapability'
     WIRELESS_USB = 0x01
     USB_20_EXTENSION = 0x02
     SUPERSPEED_USB = 0x03
@@ -33,7 +33,7 @@ class USBDeviceCapability(USBDescribable):
         self.cap_type = cap_type
         self.cap_data = data
 
-    #@mutable('device_capability_descriptor')
+    @mutable('device_capability_descriptor')
     def get_descriptor(self, usb_type='fullspeed', valid=False):
         bDescriptorType = DescriptorType.device_capability
         bLength = 3 + len(self.cap_data)
@@ -54,7 +54,7 @@ class DCUsb20Extension(USBDeviceCapability):
     '''
     USB 2.0 Extension capability is defined in USB 3.1 spec, section 9.6.2.1
     '''
-
+    name = 'DCUsb20Extension'
     ATTR_LPM = 0x00000002
     ATTR_NONE = 0x00000000
 
@@ -68,7 +68,7 @@ class DCSuperspeedUsb(USBDeviceCapability):
     '''
     Superspeed USB capability is defined in USB 3.1 spec, section 9.6.2.2
     '''
-
+    name = 'DCSuperspeedUsb'
     def __init__(self, phy, attributes, speeds_supported, functionality_support, u1dev_exit_lat, u2dev_exit_lat):
         data = struct.pack('<BHBBH', attributes, speeds_supported, functionality_support, u1dev_exit_lat, u2dev_exit_lat)
         super(DCSuperspeedUsb, self).__init__(phy, self.SUPERSPEED_USB, data)
@@ -83,7 +83,7 @@ class DCContainerId(USBDeviceCapability):
     '''
     Container ID capability is defined in USB 3.1 spec, section 9.6.2.3
     '''
-
+    name='DCContainerId'
     def __init__(self, phy, container_id):
         data = b'\x00' + container_id
         super(DCContainerId, self).__init__(phy, self.CONTAINER_ID, data)
@@ -94,7 +94,7 @@ class DCPlatform(USBDeviceCapability):
     '''
     Platform capability is defined in USB 3.1 spec, section 9.6.2.4
     '''
-
+    name = 'DCPlatform'
     def __init__(self, phy, platform_capability_uuid, capability_data=b''):
         data = b'\x00' + platform_capability_uuid + capability_data
         super(DCPlatform, self).__init__(phy, self.PLATFORM, data)
@@ -106,7 +106,7 @@ class DCSuperspeedPlusUsb(USBDeviceCapability):
     '''
     Superspeed Plus USB capability is defined in USB 3.1 spec, section 9.6.2.5
     '''
-
+    name = 'DCSuperspeed'
     def __init__(self, phy, attributes, functionality_support, sublink_speed_attributes):
         data = struct.pack('<BIHH', 0, attributes, 0, functionality_support)
         for sls_attr in sublink_speed_attributes:
@@ -121,5 +121,6 @@ class DCPrecisionTimeMeasurement(USBDeviceCapability):
     '''
     Precision Time Measurement capability is defined in USB 3.1 spec, section 9.6.2.6
     '''
+    name = 'DCPrecisionTime'
     def __init__(self, phy):
         super(DCPrecisionTimeMeasurement, self).__init__(phy, self.PRECISION_TIME_MEASUREMENT, b'')

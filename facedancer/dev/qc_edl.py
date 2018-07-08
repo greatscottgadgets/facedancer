@@ -73,7 +73,7 @@ class USBSaharaInterface(USBInterface):
     SAHARA_MODE_MEMORY_DEBUG = 0x2
     SAHARA_MODE_COMMAND = 0x3
     
-    def __init__(self, phy, hash,serial,hwid,sblversion,verbose=0):
+    def __init__(self, phy, hash,serial,hwid,sblversion):
         descriptors = { }
         self.phy=phy
         self.hwid=hwid
@@ -124,7 +124,6 @@ class USBSaharaInterface(USBInterface):
                 0xff,       # subclass: vendor-specific
                 0xff,       # protocol: vendor-specific
                 0,          # string index
-                verbose,
                 self.endpoints,
                 descriptors
         )
@@ -351,7 +350,7 @@ class USBSaharaInterface(USBInterface):
 class USBSaharaDevice(USBDevice):
     name = "USB QC Sahara EDL Device"
 
-    def __init__(self, phy, verbose=0):
+    def __init__(self, phy):
     
         #z ultra c 6833 msm8974_23_4_aid_4
         #hash = bytearray.fromhex("49109A8016C239CD8F76540FE4D5138C87B2297E49C6B30EC31852330BDDB177")
@@ -370,7 +369,7 @@ class USBSaharaDevice(USBDevice):
         #hash = bytearray.fromhex("1801000F43240892D02F0DC96313C81351B40FD5029ED98FF9EC7074DDAE8B05CDC8E1")
         #hash = bytearray.fromhex("5A93232B8EF5567752D0CB5554835215D1C473502E6F1052A78A6715B8B659AA")
 
-        interface = USBSaharaInterface(phy,hash,serial,hwid,sblversion,verbose=verbose)
+        interface = USBSaharaInterface(phy,hash,serial,hwid,sblversion)
 
         config = USBConfiguration(
                 phy=phy,
@@ -392,8 +391,7 @@ class USBSaharaDevice(USBDevice):
                 "Qualcomm CDMA Technologies MSM", # manufacturer string
                 "QHUSB__BULK",        # product string
                 "",                # serial number string
-                [ config ],
-                verbose=verbose
+                [ config ]
         )
 
         self.device_vendor = USBSaharaVendor(phy)

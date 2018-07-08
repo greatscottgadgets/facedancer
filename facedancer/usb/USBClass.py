@@ -3,11 +3,11 @@
 # Contains class definition for USBClass, intended as a base class (in the OO
 # sense) for implementing device classes (in the USB sense), eg, HID devices,
 # mass storage devices.
-from .USB import USBDescribable
+from facedancer.usb.USB import USBDescribable
 
 class USBClass(USBDescribable):
 
-    name = "generic USB device class"
+    name = "Class"
 
     Unspecified = 0x00
     Audio = 0x01
@@ -36,13 +36,12 @@ class USBClass(USBDescribable):
 
     def __init__(self, phy, class_number=0xff, descriptor=None, class_descriptor_number=0, verbose=0):
         super(USBClass, self).__init__(phy)
+        self.setup_request_handlers()
         self.interface = None
         self.verbose = verbose
         self.class_number = class_number
         self.descriptor = descriptor
         self.class_descriptor_number = class_descriptor_number
-
-        self.setup_request_handlers()
 
     def set_interface(self, interface):
         self.interface = interface

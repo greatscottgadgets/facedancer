@@ -41,14 +41,12 @@ class USBFtdiVendor(USBVendor):
 
     @mutable('ftdi_reset_response')
     def handle_reset(self, req):
-        if self.verbose > 0:
-            print(self.name, "received reset request")
+        self.verbose("received reset request")
         return b''
 
     @mutable('ftdi_modem_ctrl_response')
     def handle_modem_ctrl(self, req):
-        if self.verbose > 0:
-            print(self.name, "received modem_ctrl request")
+        self.verbose("received modem_ctrl request")
 
         dtr = req.value & 0x0001
         rts = (req.value & 0x0002) >> 1
@@ -64,8 +62,7 @@ class USBFtdiVendor(USBVendor):
 
     @mutable('ftdi_set_flow_ctrl_response')
     def handle_set_flow_ctrl(self, req):
-        if self.verbose > 0:
-            print(self.name, "received set_flow_ctrl request")
+        self.verbose("received set_flow_ctrl request")
 
         if req.value == 0x000:
             print("SET_FLOW_CTRL to no handshaking")
@@ -80,8 +77,7 @@ class USBFtdiVendor(USBVendor):
 
     @mutable('ftdi_set_baud_rate_response')
     def handle_set_baud_rate_request(self, req):
-        if self.verbose > 0:
-            print(self.name, "received set_baud_rate request")
+        self.verbose("received set_baud_rate request")
 
         dtr = req.value & 0x0001
         print("baud rate set to", dtr)
@@ -90,43 +86,37 @@ class USBFtdiVendor(USBVendor):
 
     @mutable('ftdi_set_data_response')
     def handle_set_data(self, req):
-        if self.verbose > 0:
-            print(self.name, "received set_data request")
+        self.verbose("received set_data request")
 
         return b''
 
     @mutable('ftdi_get_modem_status_response')
     def handle_get_modem_status(self, req):
-        if self.verbose > 0:
-            print(self.name, "received get_status request")
+        self.verbose("received get_status request")
 
         return b''
 
     @mutable('ftdi_set_event_char_response')
     def handle_set_event_char(self, req):
-        if self.verbose > 0:
-            print(self.name, "received set_event_char request")
+        self.verbose("received set_event_char request")
 
         return b''
 
     @mutable('ftdi_set_error_char_response')
     def handle_set_error_char(self, req):
-        if self.verbose > 0:
-            print(self.name, "received set_error_char request")
+        self.verbose("received set_error_char request")
 
         return b''
 
     @mutable('ftdi_set_latency_timer_response')
     def handle_set_latency_timer(self, req):
-        if self.verbose > 0:
-            print(self.name, "received set_latency_timer request")
+        self.verbose("received set_latency_timer request")
 
         return b''
 
     @mutable('ftdi_get_latency_timer_response')
     def handle_get_latency_timer(self, req):
-        if self.verbose > 0:
-            print(self.name, "received get_latency_timer request")
+        self.verbose("received get_latency_timer request")
 
         # bullshit value
         return struct.pack('B', self.latency_timer)
@@ -139,7 +129,7 @@ class USBFtdiVendor(USBVendor):
 class USBFtdiInterface(USBInterface):
     name = "USB FTDI interface"
 
-    def __init__(self, phy, interface_number, verbose=0):
+    def __init__(self, phy, interface_number):
         descriptors = { }
         self.phy=phy
         endpoints = [
@@ -177,28 +167,26 @@ class USBFtdiInterface(USBInterface):
                 interface_subclass=0xff,       # subclass: vendor-specific
                 interface_protocol=0xff,       # protocol: vendor-specific
                 interface_string_index=0,          # string index
-                verbose=verbose,
                 endpoints=endpoints,
                 descriptors=descriptors
         )
 
     def handle_data_available(self, data):
         s = data[1:]
-        if self.verbose > 0:
-            print(self.name, "received string", s)
+        self.verbose("received string", s)
 
         s = s.replace(b'\r', b'\r\n')
 
         reply = b'\x01\x00' + s
 
-        self.configuration.device.phy.send_on_endpoint(3, reply)
+        self.phy.send_on_endpoint(3, reply)
 
 
 class USBFtdiDevice(USBDevice):
     name = "USB FTDI device"
 
-    def __init__(self, phy, verbose=0):
-        interface = USBFtdiInterface(phy,0,verbose=verbose)
+    def __init__(self, phy):
+        interface = USBFtdiInterface(phy,0)
 
         config = USBConfiguration(
                 phy=phy,
@@ -220,8 +208,7 @@ class USBFtdiDevice(USBDevice):
                 "Future Technology Devices International, Ltd",              # manufacturer string
                 "FT232 Serial (UART) IC",        # product string
                 "FTGQOTV+",             # serial number string
-                [ config ],
-                verbose=verbose
+                [ config ]
         )
 
         self.device_vendor = USBFtdiVendor(phy)

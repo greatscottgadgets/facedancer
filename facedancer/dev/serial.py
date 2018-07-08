@@ -36,7 +36,7 @@ class USBSerialVendor(USBVendor):
 class USBSerialInterface(USBInterface):
     name = "USB Serial interface"
 
-    def __init__(self, phy, verbose=0):
+    def __init__(self, phy):
         descriptors = { }
 
         endpoints = [
@@ -74,29 +74,27 @@ class USBSerialInterface(USBInterface):
                 0xff,       # subclass: vendor-specific
                 0xff,       # protocol: vendor-specific
                 0,          # string index
-                verbose,
                 endpoints,
                 descriptors
         )
 
     def handle_data_available(self, data):
         s=data;
-        if self.verbose > 0:
-            print(self.name, "received string", s)
+        self.verbose("received string", s)
 
         s = s.replace(b'\r', b'\r\n')
         s = s.upper()
 
         reply = s
 
-        self.configuration.device.phy.send_on_endpoint(3, reply)
+        self.phy.send_on_endpoint(3, reply)
 
 
 class USBSerialDevice(USBDevice):
     name = "USB Serial device"
 
-    def __init__(self, phy, verbose=0):
-        interface = USBSerialInterface(phy,verbose=verbose)
+    def __init__(self, phy):
+        interface = USBSerialInterface(phy)
 
         config = USBConfiguration(
                 phy,
@@ -118,8 +116,7 @@ class USBSerialDevice(USBDevice):
                 "GoodFET",              # manufacturer string
                 "HP4X Emulator",        # product string
                 "12345",                # serial number string
-                [ config ],
-                verbose=verbose
+                [ config ]
         )
 
         self.device_vendor = USBSerialVendor(phy)

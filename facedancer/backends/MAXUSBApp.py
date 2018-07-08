@@ -247,3 +247,6 @@ class MAXUSBApp(FacedancerApp):
         :param reason: reason why we decided it is supported (default: None)
         '''
         pass
+
+    def is_connected(self):
+        pass

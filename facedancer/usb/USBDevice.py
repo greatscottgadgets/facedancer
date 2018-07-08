@@ -2,18 +2,18 @@
 #
 # Contains class definitions for USBDevice and USBDeviceRequest.
 
-from .USB import *
-from .USBClass import *
-from .USBConfiguration import USBConfiguration
+from facedancer.usb.USB import *
+from facedancer.usb.USBClass import *
+from facedancer.usb.USBConfiguration import USBConfiguration
 
-from ..app.core import FacedancerBasicScheduler
-
-
+from facedancer.app.core import FacedancerBasicScheduler
+from facedancer.fuzz.helpers import mutable
+import traceback
 import time
 import struct
 
 class USBDevice(USBDescribable):
-    name = "generic device"
+    name = "Device"
 
     DESCRIPTOR_TYPE_NUMBER    = 0x01
     DESCRIPTOR_LENGTH         = 0x12
@@ -22,12 +22,14 @@ class USBDevice(USBDescribable):
             protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
-            spec_version=0x0002, verbose=0, quirks=[], usb_class=None, usb_vendor=None, bos=None, scheduler=None):
+            spec_version=0x0002, quirks=[], usb_class=None, usb_vendor=None, bos=None, scheduler=None):
         super(USBDevice, self).__init__(phy)
         self.phy = phy
-        self.verbose = verbose
         descriptors = descriptors if descriptors else {}
         configurations=configurations if configurations else []
+        self.supported_device_class_trigger = False
+        self.supported_device_class_count = 0
+
         self.quirks = quirks[:]
         self.correct_set_address = ('fast_set_address' not in quirks)
 
@@ -78,10 +80,16 @@ class USBDevice(USBDescribable):
                 csi = self.get_string_id(c.configuration_string)
             c.set_configuration_string_index(csi)
             c.set_device(self)
+            # this is fool-proof against weird drivers
             if self.usb_class is None:
                 self.usb_class = c.usb_class
             if self.usb_vendor is None:
                 self.usb_vendor = c.usb_vendor
+
+        if self.usb_vendor:
+            self.usb_vendor.device = self
+        if self.usb_class:
+            self.usb_class.device = self
 
         self.state = State.detached
         self.ready = False
@@ -89,6 +97,7 @@ class USBDevice(USBDescribable):
         self.address = 0
 
         self.setup_request_handlers()
+        self.endpoints = {}
 
         # If we don't have a scheduler, create a basic scheduler.
         if scheduler:
@@ -169,8 +178,8 @@ class USBDevice(USBDescribable):
         self.state = State.powered
 
     def disconnect(self):
-        self.phy.disconnect()
-
+        if self.phy.is_connected():
+            self.phy.disconnect()
         self.state = State.detached
 
     def run(self):
@@ -182,6 +191,7 @@ class USBDevice(USBDescribable):
     def set_address(self, address, defer=False):
         self.phy.set_address(address, defer)
 
+    @mutable('device_descriptor')
     def get_descriptor(self, index=0, valid=False):
         bLength = 18
         bDescriptorType = 1
@@ -205,6 +215,9 @@ class USBDevice(USBDescribable):
         )
         return d
 
+    # IRQ handlers
+    #####################################################
+    @mutable('device_qualifier_descriptor')
     def get_device_qualifier_descriptor(self, n):
         bDescriptorType = 6
         bNumConfigurations = len(self.configurations)
@@ -215,7 +228,7 @@ class USBDevice(USBDescribable):
             '<BHBBBBBB',
             bDescriptorType,
             self.usb_spec_version,
-            self.device_class,
+            self._device_class,
             self.device_subclass,
             self.protocol_rel_num,
             bMaxPacketSize0,
@@ -232,15 +245,14 @@ class USBDevice(USBDescribable):
     #####################################################
 
     def handle_request(self, req):
-        if self.verbose > 3:
-            print(self.name, "received request", repr(req))
+        self.debug("received request", repr(req))
 
         # figure out the intended recipient
+        req_type = req.get_type()
         recipient_type = req.get_recipient()
         recipient = None
         handler_entity = None
-        req_type = req.get_type()
-        
+
         if req_type == Request.type_standard:    # for standard requests we lookup the recipient by index
             index = req.get_index()
             if recipient_type == Request.recipient_device:
@@ -260,34 +272,26 @@ class USBDevice(USBDescribable):
             handler_entity = recipient
 
         elif req_type == Request.type_class:    # for class requests we take the usb_class handler from the configuration
-            index = req.get_index()
-            index = index & 0xff
-            if (len(self.configurations)!=0):
-                if index < len(self.configurations[0].interfaces):
-                    handler_entity = self.configurations[0].interfaces[index].usb_class
-                else:
-                    handler_entity = self.usb_class
-            else:
-                handler_entity = self.usb_class
+            handler_entity = self.usb_class
         elif req_type == Request.type_vendor:   # for vendor requests we take the usb_vendor handler from the configuration
             handler_entity = self.usb_vendor
 
         if not handler_entity:
-            print(self.name, 'invalid handler entity, stalling')
+            self.warning('invalid handler entity, stalling')
             self.phy.stall_ep0()
             return
 
         # if handler_entity == 9:  # HACK: for hub class
         #     handler_entity = recipient
 
-        print(self.name,'req: %s' % req)
+        self.debug('req: %s' % req)
         handler = handler_entity.request_handlers.get(req.request, None)
 
         if not handler:
-            print(self.name, 'request not handled: %s' % req)
-            print(self.name, 'handler entity type: %s' % (type(handler_entity)))
-            print(self.name, 'handler entity: %s' % (handler_entity))
-            print(self.name, 'handler_entity.request_handlers: %s' % (handler_entity.request_handlers))
+            self.error('request not handled: %s' % req)
+            self.error('handler entity type: %s' % (type(handler_entity)))
+            self.error('handler entity: %s' % (handler_entity))
+            self.error('handler_entity.request_handlers: %s' % (handler_entity.request_handlers))
             for k in sorted(handler_entity.request_handlers.keys()):
                 self.error('0x%02x: %s' % (k, handler_entity.request_handlers[k]))
             self.error('invalid handler, stalling')
@@ -295,6 +299,7 @@ class USBDevice(USBDescribable):
         try:
             handler(req)
         except:
+            traceback.print_exc()
             raise
 
     def handle_data_available(self, ep_num, data):
@@ -307,7 +312,12 @@ class USBDevice(USBDescribable):
         if self.state == State.configured and ep_num in self.endpoints:
             endpoint = self.endpoints[ep_num]
             if callable(endpoint.handler):
-                endpoint.handler()
+                try:
+                    endpoint.handler()
+                except:
+                    self.error(traceback.format_exc())
+                    self.error(''.join(traceback.format_stack()))
+                    raise
 
     def handle_nak(self, ep_num):
         if self.state == State.configured and ep_num in self.endpoints:
@@ -321,7 +331,7 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.5 (p 282 of pdf)
     def handle_get_status_request(self, req):
-        print(self.name, "received GET_STATUS request")
+        self.verbose("received GET_STATUS request")
 
         # self-powered and remote-wakeup (USB 2.0 Spec section 9.4.5)
         response = b'\x03\x00'
@@ -329,13 +339,13 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.1 (p 280 of pdf)
     def handle_clear_feature_request(self, req):
-        print(self.name, "received CLEAR_FEATURE request with type 0x%02x and value 0x%02x" \
+        self.verbose("received CLEAR_FEATURE request with type 0x%02x and value 0x%02x" \
                 % (req.request_type, req.value))
         self.ack_status_stage()
 
     # USB 2.0 specification, section 9.4.9 (p 286 of pdf)
     def handle_set_feature_request(self, req):
-        print(self.name, "received SET_FEATURE request")
+        self.verbose("received SET_FEATURE request")
 
     # USB 2.0 specification, section 9.4.6 (p 284 of pdf)
     def handle_set_address_request(self, req):
@@ -363,8 +373,7 @@ class USBDevice(USBDescribable):
 
         response = None
 
-        if self.verbose > 2:
-            print(self.name, ("received GET_DESCRIPTOR req %d, index %d, " \
+        self.verbose(("received GET_DESCRIPTOR req %d, index %d, " \
                     + "language 0x%04x, length %d") \
                     % (dtype, dindex, lang, n))
 
@@ -374,13 +383,12 @@ class USBDevice(USBDescribable):
 
         if response:
             n = min(n, len(response))
-            self.phy.verbose += 1
+            #self.phy.verbose += 1
             self.send_control_message(response[:n])
 
-            self.phy.verbose -= 1
+            #self.phy.verbose -= 1
 
-            if self.verbose > 5:
-                print(self.name, "sent", n, "bytes in response")
+            self.verbose("sent", n, "bytes in response")
         else:
             self.phy.stall_ep0()
 
@@ -402,6 +410,7 @@ class USBDevice(USBDescribable):
         # no bos? stall ep
         return None
 
+    @mutable('string_descriptor_zero')
     def get_string0_descriptor(self):
         d = struct.pack(
             '<BBBB',
@@ -410,8 +419,9 @@ class USBDevice(USBDescribable):
             9,      # language code 0, byte 0
             4       # language code 0, byte 1
         )
-        return 
+        return
 
+    @mutable('string_descriptor')
     def get_string_descriptor(self, num):
         print(self.name,'get_string_descriptor: %#x (%#x)' % (num, len(self.strings)))
         s = None
@@ -439,6 +449,7 @@ class USBDevice(USBDescribable):
         else:
             return self.get_string_descriptor(num)
 
+    @mutable('hub_descriptor')
     def handle_get_hub_descriptor_request(self, num):
         bLength = 9
         bDescriptorType = 0x29
@@ -466,12 +477,11 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.8 (p 285 of pdf)
     def handle_set_descriptor_request(self, req):
-        print(self.name, "received SET_DESCRIPTOR request")
+        self.debug("received SET_DESCRIPTOR request")
 
     # USB 2.0 specification, section 9.4.2 (p 281 of pdf)
     def handle_get_configuration_request(self, req):
-        if self.verbose > 2:
-            print(self.name, "received GET_CONFIGURATION request with data 0x%02x" \
+        self.verbose("received GET_CONFIGURATION request with data 0x%02x" \
                     % req.value)
 
         # If we haven't yet been configured, send back a zero configuration value.
@@ -484,17 +494,18 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.7 (p 285 of pdf)
     def handle_set_configuration_request(self, req):
-        print(self.name, "received SET_CONFIGURATION request")
+        self.debug("received SET_CONFIGURATION request")
 
         self.supported_device_class_trigger = True
 
         # configs are one-based
         if (req.value) > len(self.configurations):
-            print(self.name,'Host tries to set invalid configuration: %#x' % (req.value - 1))
+            self.error('Host tries to set invalid configuration: %#x' % (req.value - 1))
             self.config_num = 0
         else:
             self.config_num = req.value - 1
 
+        self.info('Setting configuration: %#x' % self.config_num)
         self.configuration = self.configurations[self.config_num]
         self.state = State.configured
 
@@ -513,7 +524,7 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.4 (p 282 of pdf)
     def handle_get_interface_request(self, req):
-        print(self.name, "received GET_INTERFACE request")
+        self.debug("received GET_INTERFACE request")
 
         if req.index == 0:
             # HACK: currently only support one interface
@@ -523,11 +534,11 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.10 (p 288 of pdf)
     def handle_set_interface_request(self, req):
-        print(self.name, "received SET_INTERFACE request")
+        self.debug("received SET_INTERFACE request")
 
     # USB 2.0 specification, section 9.4.11 (p 288 of pdf)
     def handle_synch_frame_request(self, req):
-        print(self.name, "received SYNCH_FRAME request")
+        self.debug("received SYNCH_FRAME request")
 
 
 class USBDeviceRequest:

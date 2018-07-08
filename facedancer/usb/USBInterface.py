@@ -5,15 +5,15 @@
 import struct
 from .USB import *
 from .USBClass import USBClass
-from umap2.fuzz.helpers import mutable
+from facedancer.fuzz.helpers import mutable
 
 class USBInterface(USBDescribable):
-    name = "generic USB interface"
+    name = "Interface"
 
     def __init__(self, phy, interface_number, interface_alternate, interface_class,
             interface_subclass, interface_protocol, interface_string_index,
-            verbose=0, endpoints=None, descriptors=None, cs_interfaces=None,
-        usb_class=None, usb_vendor=None):
+            endpoints=None, descriptors=None, cs_interfaces=None,
+            usb_class=None, usb_vendor=None):
         
         super(USBInterface, self).__init__(phy)
         self.number = interface_number
@@ -26,7 +26,6 @@ class USBInterface(USBDescribable):
         else:
             self.iclass = interface_class
 
-        self.verbose = verbose
         self.subclass = interface_subclass
         self.protocol = interface_protocol
         self.string_index = interface_string_index
@@ -50,15 +49,6 @@ class USBInterface(USBDescribable):
             if descriptor:
                 self.descriptors[self.iclass.class_descriptor_number] = descriptor
 
-        '''
-        if cendpoints:
-            for endpoint in cendpoints:
-                self.add_endpoint(endpoint)
-        '''
-        
-        self.usb_class = usb_class
-        self.usb_vendor = usb_vendor
-
         for e in self.endpoints:
             e.interface = self
             if self.usb_class is None:
@@ -71,8 +61,6 @@ class USBInterface(USBDescribable):
         if self.usb_vendor:
             self.usb_vendor.interface = self 
         
-        #self.device_class = None
-        #self.device_vendor = None
 
     def _handle_legacy_interface_class(self, interface_class, descriptors):
         """
@@ -137,8 +125,7 @@ class USBInterface(USBDescribable):
 
         response = None
 
-        if self.verbose > 2:
-            print(self.name, ("received GET_DESCRIPTOR at interface req %d, index %d, " \
+        self.debug(("received GET_DESCRIPTOR at interface req %d, index %d, " \
                     + "language 0x%04x, length %d") \
                     % (dtype, dindex, lang, n))
 
@@ -153,13 +140,13 @@ class USBInterface(USBDescribable):
 
         if response:
             n = min(n, len(response))
-            self.configuration.device.phy.send_on_endpoint(0, response[:n])
+            self.phy.send_on_endpoint(0, response[:n])
 
-            if self.verbose > 5:
-                print(self.name, "sent", n, "bytes in response")
+            self.verbose("sent", n, "bytes in response")
 
     def handle_set_interface_request(self, req):
-        self.configuration.device.phy.stall_ep0()
+        self.debug('Received SET_INTERFACE request')
+        self.phy.stall_ep0()
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     @mutable('interface_descriptor')
@@ -197,5 +184,6 @@ class USBInterface(USBDescribable):
 
         for e in self.endpoints:
             d += e.get_descriptor(usb_type, valid)
+
         return d
 

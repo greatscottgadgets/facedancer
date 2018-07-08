@@ -6,6 +6,7 @@ import struct
 from .USB import *
 
 class USBEndpoint(USBDescribable):
+    name = 'Endpoint'
 
     DESCRIPTOR_TYPE_NUMBER      = 0x05
 
@@ -30,8 +31,6 @@ class USBEndpoint(USBDescribable):
             usage_type, max_packet_size, interval, handler=None, nak_callback=None, cs_endpoints=None,usb_class=None, usb_vendor=None):
 
         super(USBEndpoint, self).__init__(phy)
-        self.usb_class=usb_class
-        self.usb_vendor=usb_vendor
         self.number             = number
         self.direction          = direction
         self.transfer_type      = transfer_type
@@ -40,10 +39,12 @@ class USBEndpoint(USBDescribable):
         self.max_packet_size    = max_packet_size
         self.interval           = interval
         self.handler            = handler
-        self.nak_callback       = nak_callback
-        self.address = (self.number & 0x0f) | (self.direction << 7)
-        self.cs_endpoints = cs_endpoints if cs_endpoints else []
         self.interface          = None
+        self.usb_class=usb_class
+        self.usb_vendor=usb_vendor
+        self.nak_callback       = nak_callback
+        self.cs_endpoints = cs_endpoints if cs_endpoints else []
+        self.address = (self.number & 0x0f) | (self.direction << 7)
 
         self.request_handlers   = {
                  0: self.handle_get_status,
@@ -88,13 +89,12 @@ class USBEndpoint(USBDescribable):
         )
 
     def handle_get_status(self, req):
-        print(self.name,'in GET_STATUS of endpoint %d' % self.number)
-        self.interface.configuration.device.phy.send_on_endpoint(0, b'\x00\x00')
+        self.info('in GET_STATUS of endpoint %d' % self.number)
+        self.phy.send_on_endpoint(0, b'\x00\x00')
         
     def handle_clear_feature_request(self, req):
-        print("received CLEAR_FEATURE request for endpoint", self.number,
-                "with value", req.value)
-        self.interface.configuration.device.phy.send_on_endpoint(0, b'')
+        self.info("received CLEAR_FEATURE request for endpoint %d with value %d", self.number, req.value)
+        self.phy.send_on_endpoint(0, b'')
 
     def set_interface(self, interface):
         self.interface = interface
@@ -130,9 +130,7 @@ class USBEndpoint(USBDescribable):
         return self.max_packet_size 
 
     def send_packet(self, data, blocking=False):
-        dev = self.interface.configuration.device
-        dev.phy.send_on_endpoint(self.number, data, blocking=blocking)
-
+        self.phy.send_on_endpoint(self.number, data, blocking=blocking)
 
     def send(self, data):
         # Send the relevant data one packet at a time,
@@ -145,7 +143,6 @@ class USBEndpoint(USBDescribable):
             self.send_packet(packet)
 
     def recv(self):
-        dev = self.interface.configuration.device
-        data = dev.phy.read_from_endpoint(self.number)
+        data = self.phy.read_from_endpoint(self.number)
         return data
 

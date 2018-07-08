@@ -4,15 +4,18 @@
 
 import struct
 
-from .USB import *
-from .USBInterface import USBInterface
-from .USBEndpoint import USBEndpoint
+from facedancer.usb.USB import USBDescribable,DescriptorType
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
 
 # TODO: Section these out into their own folder?
-from .USBClass import USBClass
+from facedancer.usb.USBClass import USBClass
 from .HIDClass import HIDClass
+from facedancer.fuzz.helpers import mutable
 
 class USBConfiguration(USBDescribable):
+
+    name = 'Configuration'
 
     ATTR_BASE = 0x80
     ATTR_SELF_POWERED = ATTR_BASE | 0x40
@@ -21,27 +24,31 @@ class USBConfiguration(USBDescribable):
     def __init__(self, phy, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=ATTR_SELF_POWERED, max_power=0x32):
         super(USBConfiguration, self).__init__(phy)
 
-        self.configuration_index        = configuration_index
+        self._configuration_index        = configuration_index
 
         if isinstance(configuration_string_or_index, str):
             self.configuration_string       = configuration_string_or_index
-            self.configuration_string_index = 0
+            self._configuration_string_index = 0
         else:
-            self.configuration_string_index = configuration_string_or_index
+            self._configuration_string_index = configuration_string_or_index
             self.configuration_string       = None
 
-        self.interfaces                 = interfaces if interfaces else []
+        self.interfaces = interfaces if interfaces else []
 
-        self.attributes = attributes
-        self.max_power = max_power
+        self._attributes = attributes
+        self._max_power = max_power
 
-        self.device = None
+        self._device = None
         self.usb_class = None
         self.usb_vendor = None
 
         for i in self.interfaces:
             i.set_configuration(self)
-
+            # this is fool-proof against weird drivers
+            if i.usb_class is not None:
+                self.usb_class = i.usb_class
+            if i.usb_vendor is not None:
+                self.usb_vendor = i.usb_vendor
 
     @classmethod
     def from_binary_descriptor(cls, data):
@@ -101,16 +108,16 @@ class USBConfiguration(USBDescribable):
         """
         # TODO: make attributes readable
 
-        max_power_mA = self.max_power * 2
+        max_power_mA = self._max_power * 2
         return "<USBConfiguration index={} num_interfaces={} attributes=0x{:02X} max_power={}mA>".format(
-            self.configuration_index, len(self.interfaces), self.attributes, max_power_mA)
+            self._configuration_index, len(self.interfaces), self._attributes, max_power_mA)
 
 
     def set_device(self, device):
-        self.device = device
+        self._device = device
 
     def set_configuration_string_index(self, i):
-        self.configuration_string_index = i
+        self._configuration_string_index = i
 
     def get_string(self):
         return self.configuration_string
@@ -124,7 +131,7 @@ class USBConfiguration(USBDescribable):
                     break
         return s
 
-        
+    @mutable('configuration_descriptor')
     def get_descriptor(self, usb_type='fullspeed', valid=False):
         interface_descriptors = bytearray()
         for i in self.interfaces:
@@ -140,19 +147,19 @@ class USBConfiguration(USBDescribable):
             bDescriptorType,
             wTotalLength & 0xffff,
             bNumInterfaces,
-            self.configuration_index,
-            self.configuration_string_index,
-            self.attributes,
-            self.max_power
+            self._configuration_index,
+            self._configuration_string_index,
+            self._attributes,
+            self._max_power
         )
 
         return d + interface_descriptors
-        
+
+    @mutable('other_speed_configuration_descriptor')
     def get_other_speed_descriptor(self, usb_type='fullspeed', valid=False):
-        interface_descriptors = bytearray()
+        interface_descriptors = b''
         for i in self.interfaces:
             interface_descriptors += i.get_descriptor(usb_type, valid)
-            
         bLength = 9  # always 9
         bDescriptorType = DescriptorType.other_speed_configuration
         wTotalLength = len(interface_descriptors) + 9
@@ -163,9 +170,9 @@ class USBConfiguration(USBDescribable):
             bDescriptorType,
             wTotalLength & 0xffff,
             bNumInterfaces,
-            self.configuration_index,
-            self.configuration_string_index,
-            self.attributes,
-            self.max_power
+            self._configuration_index,
+            self._configuration_string_index,
+            self._attributes,
+            self._max_power
         )
         return d + interface_descriptors

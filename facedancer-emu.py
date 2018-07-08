@@ -10,6 +10,7 @@ from facedancer.dev.keyboard import *
 from facedancer.dev.serial import *
 from facedancer.dev.switch_TAS import *
 from facedancer.dev.mass_storage import *
+from facedancer.dev.mass_storage2 import *
 from facedancer.dev.rawdiskimage import * 
 from facedancer.dev.ums_doublefetch import *
 from facedancer.dev.billboard import *
@@ -36,6 +37,7 @@ def main(argv):
         print(" Hub TBF")
         print(" Keyboard")
         print(" MassStorage TBF")
+        print(" MassStorage2")
         print(" MTP")
         print(" Printer")
         print(" Serial")
@@ -59,19 +61,19 @@ def main(argv):
     elif type=="CDC-DL":
         d = USBCdcDlDevice(phy, verbose=4)
     elif type=="EDL":
-        d = USBSaharaDevice(phy, verbose=4)
+        d = USBSaharaDevice(phy)
     elif type=="FTDI":
-        d = USBFtdiDevice(phy, verbose=6)
+        d = USBFtdiDevice(phy)
     elif type=="Hub":
         d = USBHubDevice(phy, verbose=6)
     elif type=="Keyboard":
         d = USBKeyboardDevice(phy, verbose=5)
     elif type=="Serial":
-        d = USBSerialDevice(phy, verbose=4)
+        d = USBSerialDevice(phy)
     elif type=="Smartcard":
         d = USBSmartcardDevice(phy, verbose=4)
     elif type=="SwitchTAS":
-        d = USBSwitchTASDevice(phy, verbose=5)
+        d = USBSwitchTASDevice(phy)
     elif type=="MassStorage":
         #
         # Creating a disk image under linux:
@@ -90,6 +92,12 @@ def main(argv):
             print("Usage: facedancer-emu.py MassStorage disk.img");
             sys.exit(1);
         d = USBMassStorageDevice(phy=phy, disk_image_filename=sys.argv[2])
+    elif type=="MassStorage2":
+        if len(sys.argv) < 3:
+            print("Usage: facedancer-emu.py MassStorage2 disk.img");
+            sys.exit(1);
+        i = RawDiskImage(sys.argv[2], 512, verbose=3)
+        d = USBMassStorageDevice2(phy, i)
     elif type=="MTP":
         d = USBMtpDevice(phy, verbose=4)
     elif type=="Printer":

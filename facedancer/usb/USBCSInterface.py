@@ -9,20 +9,17 @@ from .USBClass import USBClass
 class USBCSInterface(USBDescribable):
     name = "CSinterface"
 
-    def __init__(self, name, phy, cs_config, verbose=0):
+    def __init__(self, name, phy, cs_config):
         super(USBCSInterface, self).__init__(phy)
         self.name = name
-        self.verbose = verbose
         self.cs_config = cs_config
         self.descriptors = {}
-        self.descriptors[DescriptorType.interface] = self.get_descriptor
+        self.descriptors[DescriptorType.cs_interface] = self.get_descriptor
 
         self.request_handlers = {
              6 : self.handle_get_descriptor_request,
             0xb : self.handle_set_interface_request
         }
-
-
 
     def _handle_legacy_interface_class(self, interface_class, descriptors):
         """
@@ -87,8 +84,7 @@ class USBCSInterface(USBDescribable):
 
         response = None
 
-        if self.verbose > 2:
-            print(self.name, ("received GET_DESCRIPTOR at interface req %d, index %d, " \
+        self.info(("received GET_DESCRIPTOR at interface req %d, index %d, " \
                     + "language 0x%04x, length %d") \
                     % (dtype, dindex, lang, n))
 
@@ -96,21 +92,20 @@ class USBCSInterface(USBDescribable):
         try:
             response = self.descriptors[dtype]
         except KeyError:
-            self.configuration.device.phy.stall_ep0()
+            self.phy.stall_ep0()
 
         if callable(response):
             response = response(dindex)
 
         if response:
             n = min(n, len(response))
-            self.configuration.device.phy.send_on_endpoint(0, response[:n])
+            self.phy.send_on_endpoint(0, response[:n])
 
-            if self.verbose > 5:
-                print(self.name, "sent", n, "bytes in response")
+            self.verbose("sent", n, "bytes in response")
 
     def handle_set_interface_request(self, req):
         self.phy.stall_ep0()
-        print(self.name,'Received SET_INTERFACE request')
+        self.info('Received SET_INTERFACE request')
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     def get_descriptor(self, usb_type='fullspeed', valid=False):
