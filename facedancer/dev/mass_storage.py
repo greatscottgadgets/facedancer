@@ -106,7 +106,7 @@ class DiskImage:
             print('''
 ----------------------------------------------------------------------
 No disk image named '%s' was found.
-You can use the disk image from umap2/data/fat32.3M.stick.img
+You can use the disk image from facedancer/examples/fat32.3M.stick.img
 as a small disk image (extract it using `tar xvf fat32.3M.stick.img`)
 ----------------------------------------------------------------------
             ''' % (filename))
@@ -506,9 +506,8 @@ class USBMassStorageInterface(USBInterface):
 class USBMassStorageDevice(USBDevice):
     name = 'MassStorageDevice'
 
-    def __init__(
-        self, phy, vid=0x154b, pid=0x6545, rev=0x0002,
-        usbclass=USBClass.MassStorage, subclass=0x06, proto=0x50,
+    def __init__(self, phy, vid=0x154b, pid=0x6545, rev=0x0002, \
+        usbclass=USBClass.MassStorage, subclass=0x06, proto=0x50, \
         disk_image_filename='stick.img'
     ):
         self.disk_image = DiskImage(disk_image_filename, 0x200)

@@ -24,7 +24,6 @@ class USBDeviceCapability(USBDescribable):
 
     def __init__(self, phy, cap_type, data):
         '''
-        :param app: Umap2 application
         :param phy: Physical connection
         :param cap_type: Capability type
         :param data: the capability data (string)

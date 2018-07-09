@@ -1,5 +1,5 @@
 '''
-Kitty Controller for the Umap stack
+Kitty Controller for the FD stack
 '''
 import os
 import time
@@ -7,15 +7,15 @@ import time
 from kitty.controllers import ClientController
 
 
-class UmapController(ClientController):
+class FDController(ClientController):
     '''
     Trigger a USB reconnection -
-    Signal the Umap to disconnect / reconnect using files.
+    Signal the FD to disconnect / reconnect using files.
     '''
 
     def __init__(self, pre_disconnect_delay=0.0, post_disconnect_delay=0.0):
-        super(UmapController, self).__init__('UmapController')
-        self.trigger_dir = '/tmp/umap_kitty'
+        super(FDController, self).__init__('FDController')
+        self.trigger_dir = '/tmp/fd_kitty'
         self.connect_file = 'trigger_reconnect'
         self.disconnect_file = 'trigger_disconnect'
         self.heartbeat_file = 'heartbeat'
@@ -36,7 +36,7 @@ class UmapController(ClientController):
         self.del_file(self.heartbeat_file)
 
     def setup(self):
-        super(UmapController, self).setup()
+        super(FDController, self).setup()
         self.cleanup_triggers()
 
     def trigger_connect(self):
@@ -60,12 +60,12 @@ class UmapController(ClientController):
             time.sleep(0.01)
             count += 1
             if count % 1000 == 0:
-                self.logger.warning('still waiting for umap_stack to remove the file %s' % path)
+                self.logger.warning('still waiting for fd_stack to remove the file %s' % path)
 
     def get_last_heartbeat(self):
         '''
         Return the time of the latest heartbeat received from the victim stack
-        (via umap_stack).
+        (via fd_stack).
         If no responses have ever been received from the victim, returns 0.
         '''
         heartbeat_file = os.path.join(self.trigger_dir, self.heartbeat_file)
@@ -75,10 +75,10 @@ class UmapController(ClientController):
 
     def pre_test(self, test_number):
         self.trigger_disconnect()
-        super(UmapController, self).pre_test(test_number)
+        super(FDController, self).pre_test(test_number)
 
     def post_test(self):
-        super(UmapController, self).post_test()
+        super(FDController, self).post_test()
         if self.pre_disconnect_delay:
             time.sleep(self.pre_disconnect_delay)
         self.trigger_disconnect()

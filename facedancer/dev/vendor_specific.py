@@ -129,8 +129,8 @@ class USBVendorSpecificDevice(USBDevice):
             vendor_id=vid,
             product_id=pid,
             device_rev=rev,
-            manufacturer_string='UMAP2. VID:0x%04x' % vid,
-            product_string='UMAP2. PID:0x%04x' % pid,
+            manufacturer_string='FD. VID:0x%04x' % vid,
+            product_string='FD. PID:0x%04x' % pid,
             serial_number_string='123456',
             configurations=[
                 USBConfiguration(

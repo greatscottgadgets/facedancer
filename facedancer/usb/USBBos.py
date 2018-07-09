@@ -11,7 +11,6 @@ class USBBinaryObjectStore(USBDescribable):
 
     def __init__(self, phy, capabilities):
         '''
-        :param app: Umap2 application
         :param phy: Physical connection
         '''
         super(USBBinaryObjectStore, self).__init__(phy)

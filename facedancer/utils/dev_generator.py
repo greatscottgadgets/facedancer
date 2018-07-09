@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 '''
-Generate a umap2 USB device python code from device and configuration descriptors
+Generate a facedancer USB device python code from device and configuration descriptors
 
 Usage:
-    umap2mkdevice <DEVICE_DESCRIPTOR> <CONFIGURATION_DESCRIPTOR> ...
+    dev_generator <DEVICE_DESCRIPTOR> <CONFIGURATION_DESCRIPTOR> ...
 
 Arguments:
     DEVICE_DESCRIPTOR           device descriptor (hex)
@@ -11,13 +11,13 @@ Arguments:
 
 Example(write in one line ...):
 
-    umap2mkdevice 120100020000004012831283000001020001 \\
+    dev_generator 120100020000004012831283000001020001 \\
     09022e00010100c0fa0904000004ff00000007058203000401070504020002000705860200020007058802000200
 '''
 from docopt import docopt
 from binascii import unhexlify, hexlify
 import struct
-from umap2.core.usb import DescriptorType
+from facedancer.usb.USB import DescriptorType
 
 
 def get_device_descriptor(opts):
@@ -92,12 +92,12 @@ class RootNode(DescriptorNode):
         fres = ''
         for dep in self.deps:
             pre_code = '''# This script was auto generated from descriptors
-from umap2.core.usb_device import USBDevice
-from umap2.core.usb_configuration import USBConfiguration
-from umap2.core.usb_interface import USBInterface
-from umap2.core.usb_endpoint import USBEndpoint
-from umap2.core.usb_cs_interface import USBCSInterface
-from umap2.core.usb_cs_endpoint import USBCSEndpoint
+from facedancer.usb.USBDevice import USBDevice
+from facedancer.usb.USBConfiguration import USBConfiguration
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
+from facedancer.usb.USBCSInterface import USBCSInterface
+from facedancer.usb.USBCSEndpoint import USBCSEndpoint
 
 
 class USBMyDevice(USBDevice):

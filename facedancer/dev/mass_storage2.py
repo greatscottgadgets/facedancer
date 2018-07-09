@@ -17,7 +17,131 @@ from facedancer.usb.USBInterface import *
 from facedancer.usb.USBEndpoint import *
 from facedancer.usb.USBVendor import *
 
+from mmap import mmap
 
+class DiskImage:
+    """
+        Class representing an arbitrary disk image, which can be procedurally generated,
+        or which can be rendered from e.g. a file.
+
+        Currently limited to representing disk with 512-byte sectors.
+    """
+
+    def close(self):
+        """ Closes and cleans up any resources held by the disk image. """
+        pass
+
+    def get_sector_size(self):
+        return 512
+
+    def get_sector_count(self):
+        """ Returns the disk's sector count. """
+        raise NotImplementedError()
+
+    def get_data(self, address, length):
+        data_to_read = length
+        sector_size  = self.get_sector_size()
+        data         = bytes()
+
+        while data_to_read > 0:
+            data.extend(self.get_sector_data(address))
+            data_to_read -= sector_size
+
+            address += 1
+
+        return data
+
+
+    def get_sector_data(self, address):
+        """ Returns the raw binary data for a given sector. """
+        raise NotImplementedError()
+
+
+    def put_data(self, address, data):
+        sector_size   = self.get_sector_size()
+
+        while data:
+            sector = data[:sector_size]
+            data   = data[sector_size:]
+
+            self.put_sector_data(address, sector)
+            address += 1
+
+        return data
+
+    def put_sector_data(self, address, data):
+        """ Sets the raw binary data for a given disk sector. """
+        sys.stderr.write("WARNING: UMS write ignored; this type of image does not support writing.\n")
+
+class RawDiskImage(DiskImage):
+    """
+        Raw disk image backed by a file.
+    """
+
+    def __init__(self, filename, block_size, verbose=0):
+        self.filename = filename
+        self.block_size = block_size
+        self.verbose = verbose
+
+        statinfo = os.stat(self.filename)
+        self.size = statinfo.st_size
+
+        self.file = open(self.filename, 'r+b')
+        self.image = mmap(self.file.fileno(), 0)
+
+    def close(self):
+        self.image.flush()
+        self.image.close()
+
+    def get_sector_count(self):
+        return int(self.size / self.block_size) - 1
+
+    def get_sector_data(self, address):
+
+        if self.verbose == 2:
+            print("<-- reading sector {}".format(address))
+
+        block_start = address * self.block_size
+        block_end   = (address + 1) * self.block_size   # slices are NON-inclusive
+        data = self.image[block_start:block_end]
+
+        if self.verbose > 3:
+
+            if not any(data):
+                print("<-- reading sector {} [all zeroes]".format(address))
+            else:
+                print("<-- reading sector {} [{}]".format(address, data))
+
+        return data
+
+    def put_data(self, address, data):
+        if self.verbose > 1:
+            blocks = int(len(data) / self.block_size)
+            print("--> writing {} blocks at lba {}".format(blocks, address))
+
+        super().put_data(address, data)
+
+
+    def put_sector_data(self, address, data):
+
+        if self.verbose == 2:
+            print("--> writing sector {}".format(address))
+
+        if len(data) > self.block_size:
+            print("WARNING: got {} bytes of sector data; expected a max of {}".format(len(data), self.block_size))
+
+        block_start = address * self.block_size
+        block_end   = (address + 1) * self.block_size   # slices are NON-inclusive
+
+        if self.verbose > 3:
+            if not any(data):
+                print("--> writing sector {} [all zeroes]".format(address))
+            else:
+                print("--> writing sector {} [{}]".format(address, data))
+
+        self.image[block_start:block_end] = data[:self.block_size]
+        self.image.flush()
+        
 def bytes_as_hex(b, delim=" "):
     return delim.join(["%02x" % x for x in b])
 
@@ -414,61 +538,6 @@ class USBMassStorageDevice2(USBDevice):
     def disconnect(self):
         self.disk_image.close()
         USBDevice.disconnect(self)
-
-
-class DiskImage:
-    """
-        Class representing an arbitrary disk image, which can be procedurally generated,
-        or which can be rendered from e.g. a file.
-
-        Currently limited to representing disk with 512-byte sectors.
-    """
-
-    def close(self):
-        """ Closes and cleans up any resources held by the disk image. """
-        pass
-
-    def get_sector_size(self):
-        return 512
-
-    def get_sector_count(self):
-        """ Returns the disk's sector count. """
-        raise NotImplementedError()
-
-    def get_data(self, address, length):
-        data_to_read = length
-        sector_size  = self.get_sector_size()
-        data         = bytes()
-
-        while data_to_read > 0:
-            data.extend(self.get_sector_data(address))
-            data_to_read -= sector_size
-
-            address += 1
-
-        return data
-
-
-    def get_sector_data(self, address):
-        """ Returns the raw binary data for a given sector. """
-        raise NotImplementedError()
-
-
-    def put_data(self, address, data):
-        sector_size   = self.get_sector_size()
-
-        while data:
-            sector = data[:sector_size]
-            data   = data[sector_size:]
-
-            self.put_sector_data(address, sector)
-            address += 1
-
-        return data
-
-    def put_sector_data(self, address, data):
-        """ Sets the raw binary data for a given disk sector. """
-        sys.stderr.write("WARNING: UMS write ignored; this type of image does not support writing.\n")
 
 
 class FAT32DiskImage(DiskImage):

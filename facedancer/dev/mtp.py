@@ -96,13 +96,13 @@ class USBMtpInterface(USBInterface):
             functional_mode=0x0000,
             capture_formats=[],
             playback_formats=[],
-            manufacturer='UMAP2',
+            manufacturer='Facedancer',
             model='Role',
             device_version='1.2',
             serial_number='3031323334353637',
         )
         properties = [
-            MtpDeviceProperty(MtpDevicePropertyCode.MTP_DeviceFriendlyName, 0, MStr('UmapMtpDevice'), MStr('')),
+            MtpDeviceProperty(MtpDevicePropertyCode.MTP_DeviceFriendlyName, 0, MStr('FDMtpDevice'), MStr('')),
             MtpDeviceProperty(MtpDevicePropertyCode.BatteryLevel, 0, UInt8(100), UInt8(0))
         ]
         self.dev = MtpDevice(self.dev_info, properties, self.logger)

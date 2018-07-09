@@ -189,13 +189,13 @@ class USBAudioDevice(USBDevice):
             vendor_id=vid,
             product_id=pid,
             device_rev=rev,
-            manufacturer_string='UMAP2 Sound Inc.',
-            product_string='UMAP2 Audio Adapter',
-            serial_number_string='UMAP2-12345-AUDIO',
+            manufacturer_string='FD Sound Inc.',
+            product_string='FD Audio Adapter',
+            serial_number_string='FD2-12345-AUDIO',
             configurations=[
                 USBConfiguration(
                     phy=phy, configuration_index=1,
-                    configuration_string_or_index='UMAP2 Audio Configuration',
+                    configuration_string_or_index='Facedancer Audio Configuration',
                     attributes=USBConfiguration.ATTR_BASE,
                     interfaces=[
                         # standard AC interface (4.3.1)
