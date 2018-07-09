@@ -6,14 +6,10 @@
 # the details of the GreatFET protocol.
 #
 
-import os
 import sys
-import time
 
-from ..app.core import FacedancerApp
-from ..backends.MAXUSBApp import MAXUSBApp
-from ..usb.USB import *
-from ..usb.USBDevice import USBDeviceRequest
+from facedancer.app.core import FacedancerApp
+from facedancer.backends.MAXUSBApp import MAXUSBApp
 
 class RaspdancerMaxUSBApp(MAXUSBApp):
     app_name = "MAXUSB"
@@ -186,3 +182,5 @@ class Raspdancer(object):
         data = self.spi.transfer(data)
 
         return bytearray(data)
+
+

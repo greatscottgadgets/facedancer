@@ -4,9 +4,9 @@
 
 import time
 
-from ..app.core import FacedancerApp
-from ..usb.USB import *
-from ..usb.USBDevice import USBDeviceRequest
+from facedancer.app.core import FacedancerApp
+from facedancer.usb.USB import *
+from facedancer.usb.USBDevice import USBDeviceRequest
 
 class MAXUSBApp(FacedancerApp):
     reg_ep0_fifo                    = 0x00
@@ -232,21 +232,3 @@ class MAXUSBApp(FacedancerApp):
         # use by the USBDevice, etc. etc.
         pass
         
-    def get_mutation(self, stage, data=None):
-        '''
-        mutation is only needed when fuzzing
-        '''
-        pass
-
-    def usb_function_supported(self, reason=None):
-        '''
-        Callback from a USB device, notifying that the current USB device
-        is supported by the host.
-        By default, do nothing with this information
-
-        :param reason: reason why we decided it is supported (default: None)
-        '''
-        pass
-
-    def is_connected(self):
-        pass

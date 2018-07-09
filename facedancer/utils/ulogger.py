@@ -33,3 +33,19 @@ def prepare_logging():
 def set_default_handler_level(level):
     global stdio_handler
     stdio_handler.setLevel(level)
+
+def get_logger(verbose):
+        levels = {
+            0: logging.INFO,
+            1: logging.DEBUG,
+            # verbose is added by facedancer.__init__ module
+            2: logging.VERBOSE,
+        }
+        logger = logging.getLogger('facedancer')
+        if verbose in levels:
+            set_default_handler_level(levels[verbose])
+        else:
+            set_default_handler_level(logging.VERBOSE)
+        # if self.options.get('--quiet', False):
+        #    set_default_handler_level(logging.WARNING)
+        return logger

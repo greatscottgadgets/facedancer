@@ -5,8 +5,9 @@
 # and GoodFETMonitorApp.
 
 import os
-
 from .errors import *
+from facedancer.utils.ulogger import get_logger
+
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -23,6 +24,31 @@ def FacedancerUSBApp(verbose=0, quirks=None):
 class FacedancerApp:
     app_name = "override this"
     app_num = 0x00
+
+    @classmethod
+    def set_log_level(self,verbose):
+        return get_logger(verbose)
+
+    @classmethod
+    def get_mutation(self, stage, data=None):
+        '''
+        mutation is only needed when fuzzing
+        '''
+        return None
+
+    @classmethod
+    def usb_function_supported(self, reason=None):
+        '''
+        Callback from a USB device, notifying that the current USB device
+        is supported by the host.
+
+        :param reason: reason why we decided it is supported (default: None)
+        '''
+        self.current_usb_function_supported = True
+
+    @classmethod
+    def is_connected(self):
+        return self.connected_device is not None
 
     @classmethod
     def autodetect(cls, verbose=0, quirks=None):
@@ -132,5 +158,3 @@ class FacedancerBasicScheduler(object):
         while True:
             for task in self.tasks:
                 task()
-
-

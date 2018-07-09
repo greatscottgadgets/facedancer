@@ -129,7 +129,7 @@ def main(argv):
         d = func(phy)
 
     d.connect()
-    phy.get_logger(int(args.verbose))
+    phy.set_log_level(int(args.verbose))
 
     try:
         d.run()
