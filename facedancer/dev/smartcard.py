@@ -175,7 +175,7 @@ class USBSmartcardInterface(USBInterface):
             ),
         ]
 
-        # TODO: un-hardcode string index (last arg before 'verbose')
+        # TODO: un-hardcode string index
         super(USBSmartcardInterface, self).__init__(
             phy=phy,
             interface_number=0,

@@ -8,7 +8,7 @@ class DoubleFetchImage():
 
     FIRMWARE_IMAGE_START = 10147  # specified by our root directory entry
 
-    def __init__(self, valid_firmware_filename, hacked_firmware_filename, verbose=0):
+    def __init__(self, valid_firmware_filename, hacked_firmware_filename):
 
         # Store the filename for our valid firmware, which we'll present to the target.
         self.firmware_filename = valid_firmware_filename
@@ -27,7 +27,7 @@ class DoubleFetchImage():
         self.sector_read_counts = {}
 
         # Call into our parent constructor.
-        super().__init__(size, verbose)
+        super().__init__(size)
 
 
     def _initialize_sector_handlers(self):
@@ -180,7 +180,7 @@ class DoubleFetchImage():
         result = super().get_sector_data(address)
 
         # If this is a handled sector, print how many times it's been read.
-        if self.verbose > 1 and self._find_sector_handler(address):
-            print("    [sector has been read {} times]".format(self.sector_read_counts[address]))
+        if self._find_sector_handler(address):
+            self.verbose("    [sector has been read %d times]" % (self.sector_read_counts[address]))
 
         return result

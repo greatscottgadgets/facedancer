@@ -57,7 +57,7 @@ class USBSwitchTASInterface(USBInterface):
                 self.handle_buffer_available    # handler function
         )
 
-        # TODO: un-hardcode string index (last arg before "verbose")
+        # TODO: un-hardcode string index
         USBInterface.__init__(
                 self,
                 phy,

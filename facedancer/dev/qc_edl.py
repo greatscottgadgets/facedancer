@@ -90,7 +90,6 @@ class USBSaharaInterface(USBInterface):
         self.buffer=bytes(b'')
         self.loader=bytes(b'')
         self.receive_buffer = bytes(b'')
-        self.txq = Queue()
 
         self.endpoints = [
         USBEndpoint(
@@ -116,7 +115,7 @@ class USBSaharaInterface(USBInterface):
                 self.handle_buffer_available       # handler function
             )]
 
-        # TODO: un-hardcode string index (last arg before "verbose")
+        # TODO: un-hardcode string index
         USBInterface.__init__(
                 self,
                 phy,
@@ -138,14 +137,8 @@ class USBSaharaInterface(USBInterface):
         assert("Send_on_endpoint: wrong endpoint given.")
         
     def send_data(self, data):
-        self.txq.put(data)
-        if self.txq.empty():
-            self.phy.send_on_endpoint(3, b'\x00\x00\x00\x00\x00\x00\x00\x00')
-        else:
-            print ("TX: ")
-            rec=binascii.hexlify(data)
-            print(rec)
-            self.phy.send_on_endpoint(3, self.txq.get())
+        self.debug("TX: "+str(binascii.hexlify(data)))
+        self.phy.send_on_endpoint(3, data)
 
     def bytes_as_hex(self, b, delim=" "):
         return delim.join(["%02x" % x for x in b])

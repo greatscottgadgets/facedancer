@@ -29,7 +29,7 @@ class USBMtpInterface(USBInterface):
     def __init__(self, phy):
         if not mtpdeviceloaded:
             raise Exception('You cannot use USBMtp until you install pymtpdevice')
-        # TODO: un-hardcode string index (last arg before 'verbose')
+        # TODO: un-hardcode string index
         super(USBMtpInterface, self).__init__(
             phy=phy,
             interface_number=0,

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import argparse
 
 from facedancer import FacedancerUSBApp
 from facedancer.dev.audio import *
@@ -21,60 +23,84 @@ from facedancer.dev.mtp import *
 from facedancer.dev.vendor_specific import *
 from facedancer.dev.smartcard import *
 
+targets=[
+    ["Audio", USBAudioDevice],
+    ["Billboard", USBBillboardDevice],
+    ["CDC",USBCDCDevice],
+    ["CDC-ACM",USBCdcAcmDevice],
+    ["CDC-DL",USBCdcDlDevice],
+    ["EDL",USBSaharaDevice],
+    ["FTDI",USBFtdiDevice],
+    ["Hub",USBHubDevice],
+    ["Keyboard",USBKeyboardDevice],
+    ["MassStorage",USBMassStorageDevice],
+    ["MassStorage2",USBMassStorageDevice2],
+    ["Serial",USBSerialDevice],
+    ["Smartcard",USBSmartcardDevice],
+    ["SwitchTAS",USBSwitchTASDevice],
+    ["MTP",USBMtpDevice],
+    ["Printer",USBPrinterDevice],
+    ["Vendor",USBVendorSpecificDevice]
+
+]
+
+def showtypes():
+    print("\nSupported types are:")
+    for entry in targets:
+        print("\t\"%s\"" % (entry[0]))
+
 def main(argv):
-    if (len(argv)<2):
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     description='Facedancer Emulator')
+
+    parser.add_argument(
+        '--device', '-device',
+        help='USB Device to emulate',
+        default='')
+    parser.add_argument(
+        '--filename', '-file',
+        help='Filename',
+        default='')
+    parser.add_argument(
+        '--filename2', '-file2',
+        help='Additional Filename',
+        default='')
+
+    parser.add_argument(
+        '--verbose', '-verbose',
+        help='Debug level',
+        default='0')
+        
+    args = parser.parse_args()
+
+    if args.device == '':
         print("\nFaceDancer USB-Emulator")
         print("-----------------------")
-        print("Please run as: facedancer-emu.py [type]")
-        print("\nSupported types are:")
-        print(" Audio TBF")
-        print(" Billboard TBF")
-        print(" CDC")
-        print(" CDC-ACM")
-        print(" CDC-DL")
-        print(" EDL")
-        print(" FTDI")
-        print(" Hub TBF")
-        print(" Keyboard")
-        print(" MassStorage TBF")
-        print(" MassStorage2")
-        print(" MTP")
-        print(" Printer")
-        print(" Serial")
-        print(" Smartcard TBF")
-        print(" SwitchTAS")
-        print(" UMS-DoubleFetch")
+        print("Please run as: facedancer-emu.py -device [devicetype]")
+        showtypes()
         exit(0)
 
-    type=argv[1]
-    phy = FacedancerUSBApp(verbose=5)
+    found=False
+    for entry in targets:
+        if args.device==entry[0]:
+            func=entry[1]
+            found=True
+            break
+
+    if not found:
+        print("Wrong devicetype given.")
+        showtypes()
+        exit(0)
+        
+    phy = FacedancerUSBApp()
     print(phy)
     
-    if type=="Audio":
-        d = USBAudioDevice(phy, verbose=4)
-    elif type=="Billboard":
-        d = USBBillboardDevice(phy, verbose=4)
-    elif type=="CDC":
-        d = USBCDCDevice(phy, verbose=4)
-    elif type=="CDC-ACM":
-        d = USBCdcAcmDevice(phy, verbose=4)
-    elif type=="CDC-DL":
-        d = USBCdcDlDevice(phy, verbose=4)
-    elif type=="EDL":
-        d = USBSaharaDevice(phy)
-    elif type=="FTDI":
-        d = USBFtdiDevice(phy)
-    elif type=="Hub":
-        d = USBHubDevice(phy, verbose=6)
-    elif type=="Keyboard":
-        d = USBKeyboardDevice(phy, verbose=5)
-    elif type=="Serial":
-        d = USBSerialDevice(phy)
-    elif type=="Smartcard":
-        d = USBSmartcardDevice(phy, verbose=4)
-    elif type=="SwitchTAS":
-        d = USBSwitchTASDevice(phy)
-    elif type=="MassStorage":
+    if type=="MassStorage":
+        if args.filename=='':
+            print("Usage: facedancer-emu.py -device MassStorage -file disk.img");
+            sys.exit(1);
+        d = func(phy=phy, disk_image_filename=args.filename)
+    elif type=="MassStorage2":
         #
         # Creating a disk image under linux:
         #
@@ -88,34 +114,22 @@ def main(argv):
         #   # umount /mnt/point
         #   # kpartx -d /dev/loopX
         #   # losetup -d /dev/loopX
-        if len(sys.argv)<3:
-            print("Usage: facedancer-emu.py MassStorage disk.img");
+        if args.filename=='':
+            print("Usage: facedancer-emu.py -device MassStorage2 -file disk.img");
             sys.exit(1);
-        d = USBMassStorageDevice(phy=phy, disk_image_filename=sys.argv[2])
-    elif type=="MassStorage2":
-        if len(sys.argv) < 3:
-            print("Usage: facedancer-emu.py MassStorage2 disk.img");
-            sys.exit(1);
-        i = RawDiskImage(sys.argv[2], 512, verbose=3)
-        d = USBMassStorageDevice2(phy, i)
-    elif type=="MTP":
-        d = USBMtpDevice(phy, verbose=4)
-    elif type=="Printer":
-        d = USBPrinterDevice(phy)
+        i = RawDiskImage(args.filename, 512)
+        d = func(phy, i)
     elif type=="UMS-DoubleFetch":
-        if len(sys.argv)<4:
-            print("Usage: facedancer-emu.py UMS-DoubleFetch valid_firmware hacked_firmware");
+        if args.filename=='' or args.filename2=='':
+            print("Usage: facedancer-emu.py -device UMS-DoubleFetch -file valid_firmware -file2 hacked_firmware");
             sys.exit(1);
-        i = DoubleFetchImage(sys.argv[2], sys.argv[3], verbose=2)
-        d = USBMassStorageDevice(phy, i, verbose=0)
-    #elif type=="Vendor":
-    #    d = USBVendorSpecificDevice(phy, verbose=4)
+        i = DoubleFetchImage(args.filename, args.filename2)
+        d = func(phy, i)
     else:
-        print("Given Type not found.")
-        exit(0)
+        d = func(phy)
 
     d.connect()
-    phy.get_logger(logging.DEBUG)
+    phy.get_logger(int(args.verbose))
 
     try:
         d.run()

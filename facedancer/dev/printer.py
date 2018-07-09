@@ -102,7 +102,7 @@ class USBPrinterInterface(USBInterface):
         if int_num == 1:
             endpoints = endpoints1
 
-        # TODO: un-hardcode string index (last arg before 'verbose')
+        # TODO: un-hardcode string index
         super(USBPrinterInterface, self).__init__(
             phy=phy,
             interface_number=int_num,

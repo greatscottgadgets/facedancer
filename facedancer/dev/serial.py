@@ -64,7 +64,7 @@ class USBSerialInterface(USBInterface):
             )
         ]
 
-        # TODO: un-hardcode string index (last arg before "verbose")
+        # TODO: un-hardcode string index
         USBInterface.__init__(
                 self,
                 phy,
