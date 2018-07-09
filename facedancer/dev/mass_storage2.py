@@ -19,6 +19,48 @@ from facedancer.usb.USBVendor import *
 
 from mmap import mmap
 
+class ScsiCmds(object):
+    TEST_UNIT_READY = 0x00
+    REQUEST_SENSE = 0x03
+    READ_6 = 0x08
+    WRITE_6 = 0x0A
+    INQUIRY = 0x12
+    MODE_SENSE_6 = 0x1A
+    SEND_DIAGNOSTIC = 0x1D
+    PREVENT_ALLOW_MEDIUM_REMOVAL = 0x1E
+    READ_FORMAT_CAPACITIES = 0x23
+    READ_CAPACITY_10 = 0x25
+    READ_10 = 0x28
+    WRITE_10 = 0x2A
+    VERIFY_10 = 0x2F
+    SYNCHRONIZE_CACHE = 0x35
+    MODE_SENSE_10 = 0x5A
+    READ_CAPACITY_16 = 0x9e
+    SYNCHRONIZE_CACHE2 = 0x36
+
+
+class ScsiSenseKeys(object):
+    GOOD = 0x00
+    RECOVERED_ERROR = 0x01
+    NOT_READY = 0x02
+    MEDIUM_ERROR = 0x03
+    HARDWARE_ERROR = 0x04
+    ILLEGAL_REQUEST = 0x05
+    UNIT_ATTENTION = 0x06
+    DATA_PROTECT = 0x07
+    BLANK_CHECK = 0x08
+    VENDOR_SPECIFIC = 0x09
+    COPY_ABORTED = 0x0A
+    ABORTED_COMMAND = 0x0B
+    VOLUME_OVERFLOW = 0x0D
+    MISCOMPARE = 0x0E
+
+
+class ScsiCmdStatus(object):
+    COMMAND_PASSED = 0x00
+    COMMAND_FAILED = 0x01
+    PHASE_ERROR = 0x02
+
 class DiskImage:
     """
         Class representing an arbitrary disk image, which can be procedurally generated,
@@ -247,18 +289,23 @@ class USBMassStorageInterface(USBInterface):
     def _initialize_scsi_commands(self):
         self.commands = {}
 
-        self._register_scsi_command(0x00, "Test Unit Ready", self.handle_ignored_event)
-        self._register_scsi_command(0x03, "Request Sense", self.handle_sense)
-        self._register_scsi_command(0x12, "Inquiry", self.handle_inquiry)
-        self._register_scsi_command(0x1a, "Mode Sense (6)", self.handle_mode_sense)
-        self._register_scsi_command(0x5a, "Mode Sense (10)", self.handle_mode_sense)
-        self._register_scsi_command(0x1e, "Prevent/Allow Removal", self.handle_ignored_event)
-        self._register_scsi_command(0x23, "Get Format Capacity", self.handle_get_format_capacity)
-        self._register_scsi_command(0x25, "Get Read Capacity", self.handle_get_read_capacity)
-        self._register_scsi_command(0x28, "Read", self.handle_read)
-        self._register_scsi_command(0x2a, "Write (10)", self.handle_write)
-        self._register_scsi_command(0x36, "Synchronize Cache", self.handle_ignored_event)
-
+        self._register_scsi_command(ScsiCmds.TEST_UNIT_READY, "Test Unit Ready", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.REQUEST_SENSE, "Request Sense", self.handle_sense)
+        self._register_scsi_command(ScsiCmds.INQUIRY, "Inquiry", self.handle_inquiry)
+        self._register_scsi_command(ScsiCmds.MODE_SENSE_6, "Mode Sense (6)", self.handle_mode_sense)
+        self._register_scsi_command(ScsiCmds.MODE_SENSE_10, "Mode Sense (10)", self.handle_mode_sense)
+        self._register_scsi_command(ScsiCmds.PREVENT_ALLOW_MEDIUM_REMOVAL, "Prevent/Allow Removal", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.READ_FORMAT_CAPACITIES, "Get Format Capacity", self.handle_get_format_capacity)
+        self._register_scsi_command(ScsiCmds.READ_CAPACITY_10, "Get Read Capacity", self.handle_get_read_capacity)
+        self._register_scsi_command(ScsiCmds.READ_10, "Read (10)", self.handle_read)
+        self._register_scsi_command(ScsiCmds.WRITE_10, "Write (10)", self.handle_write)
+        self._register_scsi_command(ScsiCmds.SYNCHRONIZE_CACHE2, "Synchronize Cache2", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.READ_6, "Read (6)", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.WRITE_6, "Write (6)", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.SEND_DIAGNOSTIC, "Send Diagnostic", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.VERIFY_10, "Verify (10)", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.SYNCHRONIZE_CACHE, "Synchronize Cache", self.handle_ignored_event)
+        self._register_scsi_command(ScsiCmds.READ_CAPACITY_16, "Read Capacity 16", self.handle_ignored_event)
 
     def handle_scsi_command(self, cbw):
         """
