@@ -17,6 +17,7 @@ from facedancer.usb.USBConfiguration import *
 from facedancer.usb.USBInterface import *
 from facedancer.usb.USBEndpoint import *
 from facedancer.usb.USBVendor import *
+from six.moves.queue import Queue
 
 class USBSaharaVendor(USBVendor):
     name = "QC Sahara EDL"
@@ -89,7 +90,8 @@ class USBSaharaInterface(USBInterface):
         self.buffer=bytes(b'')
         self.loader=bytes(b'')
         self.receive_buffer = bytes(b'')
-        
+        self.txq = Queue()
+
         self.endpoints = [
         USBEndpoint(
                 phy,
@@ -136,11 +138,14 @@ class USBSaharaInterface(USBInterface):
         assert("Send_on_endpoint: wrong endpoint given.")
         
     def send_data(self, data):
-        #print ("TX: ")
-        #rec=binascii.hexlify(data)
-        #print(rec)
-        self.send_on_endpoint(3,data)
-        #self.txq.put(data)
+        self.txq.put(data)
+        if self.txq.empty():
+            self.phy.send_on_endpoint(3, b'\x00\x00\x00\x00\x00\x00\x00\x00')
+        else:
+            print ("TX: ")
+            rec=binascii.hexlify(data)
+            print(rec)
+            self.phy.send_on_endpoint(3, self.txq.get())
 
     def bytes_as_hex(self, b, delim=" "):
         return delim.join(["%02x" % x for x in b])
@@ -153,6 +158,11 @@ class USBSaharaInterface(USBInterface):
                    data=self.buffer
                    self.buffer=bytes(b'')
                    print("Complete RX")
+                   packet = struct.pack('<IIIII', 0x3, 0x14, 0xD, self.curoffset, 0x1000)
+                   print("Sending Packet")
+                   self.send_data(packet)
+                   print("Done sending")
+                   time.sleep(0.1)
                 else:
                    print("Queueing, total: %x of %x" % (len(self.buffer),self.bytestoread))
                    return
@@ -335,9 +345,8 @@ class USBSaharaInterface(USBInterface):
                    if (toread>0x1000):
                        toread=0x1000
                    self.curoffset+=toread
-                   packet = struct.pack('<IIIII', 0x3, 0x14, 0xD, self.curoffset, 0x1000)
                    self.bytestoread=toread
-                   self.send_data(packet)
+                   
                    print("Loader to read : %x" % self.bytestotal)
 
     def handle_buffer_available(self):

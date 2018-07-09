@@ -245,7 +245,7 @@ class USBDevice(USBDescribable):
     #####################################################
 
     def handle_request(self, req):
-        self.debug("received request", repr(req))
+        self.debug("received request %s" % repr(req))
 
         # figure out the intended recipient
         req_type = req.get_type()
@@ -331,7 +331,7 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.5 (p 282 of pdf)
     def handle_get_status_request(self, req):
-        self.verbose("received GET_STATUS request")
+        print("received GET_STATUS request")
 
         # self-powered and remote-wakeup (USB 2.0 Spec section 9.4.5)
         response = b'\x03\x00'
@@ -388,7 +388,7 @@ class USBDevice(USBDescribable):
 
             #self.phy.verbose -= 1
 
-            self.verbose("sent", n, "bytes in response")
+            self.verbose("sent %d bytes in response" % n)
         else:
             self.phy.stall_ep0()
 

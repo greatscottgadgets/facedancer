@@ -2,7 +2,7 @@
 Contains class definitions to implement a USB hub.
 '''
 import struct
-from umap2.core.usb import DescriptorType
+from facedancer.usb.USB import DescriptorType
 from facedancer.usb.USBClass import USBClass
 from facedancer.usb.USBDevice import USBDevice
 from facedancer.usb.USBConfiguration import USBConfiguration

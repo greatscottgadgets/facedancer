@@ -756,7 +756,8 @@ class GreatDancerApp(FacedancerApp):
         """
 
         status = self._fetch_irq_status()
-
+        #if status!=0:
+        #   print("Status: %d" % status)
         # Other bits that may be of interest:
         # D_SRI = start of frame received
         # D_PCI = port change detect (switched between low, full, high speed state)
@@ -790,21 +791,20 @@ class GreatDancerApp(FacedancerApp):
         '''
         self.current_usb_function_supported = True
 
-    def get_logger(self):
+    def get_logger(self,verbose):
         levels = {
             0: logging.INFO,
             1: logging.DEBUG,
             # verbose is added by facedancer.__init__ module
             2: logging.VERBOSE,
         }
-        verbose = self.options.get('--verbose', 0)
         logger = logging.getLogger('facedancer')
         if verbose in levels:
             set_default_handler_level(levels[verbose])
         else:
             set_default_handler_level(logging.VERBOSE)
-        if self.options.get('--quiet', False):
-            set_default_handler_level(logging.WARNING)
+        #if self.options.get('--quiet', False):
+        #    set_default_handler_level(logging.WARNING)
         return logger
 
     def is_connected(self):

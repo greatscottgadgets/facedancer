@@ -115,6 +115,7 @@ def main(argv):
         exit(0)
 
     d.connect()
+    phy.get_logger(logging.DEBUG)
 
     try:
         d.run()
