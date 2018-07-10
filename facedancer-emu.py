@@ -12,7 +12,6 @@ from facedancer.dev.keyboard import *
 from facedancer.dev.serial import *
 from facedancer.dev.switch_TAS import *
 from facedancer.dev.mass_storage import *
-from facedancer.dev.mass_storage2 import *
 from facedancer.dev.ums_doublefetch import *
 from facedancer.dev.billboard import *
 from facedancer.dev.cdc_dl import *
@@ -33,7 +32,6 @@ targets=[
     ["Hub",USBHubDevice],
     ["Keyboard",USBKeyboardDevice],
     ["MassStorage",USBMassStorageDevice],
-    ["MassStorage2",USBMassStorageDevice2],
     ["Serial",USBSerialDevice],
     ["Smartcard",USBSmartcardDevice],
     ["SwitchTAS",USBSwitchTASDevice],
@@ -95,11 +93,6 @@ def main(argv):
     print(phy)
     
     if args.device=="MassStorage":
-        if args.filename=='':
-            print("Usage: facedancer-emu.py -device MassStorage -file disk.img");
-            sys.exit(1);
-        d = func(phy, disk_image_filename=args.filename)
-    elif args.device=="MassStorage2":
         #
         # Creating a disk image under linux:
         #
@@ -114,7 +107,7 @@ def main(argv):
         #   # kpartx -d /dev/loopX
         #   # losetup -d /dev/loopX
         if args.filename=='':
-            print("Usage: facedancer-emu.py -device MassStorage2 -file disk.img");
+            print("Usage: facedancer-emu.py -device MassStorage -file disk.img");
             sys.exit(1);
         i = RawDiskImage(args.filename, 512, verbose=int(args.verbose))
         d = func(phy, i)
