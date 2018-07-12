@@ -9,6 +9,7 @@ from facedancer.dev.cdc_acm import *
 from facedancer.dev.qc_edl import *
 from facedancer.dev.ftdi import *
 from facedancer.dev.keyboard import *
+from facedancer.dev.iphone import *
 from facedancer.dev.serial import *
 from facedancer.dev.switch_TAS import *
 from facedancer.dev.mass_storage import *
@@ -30,6 +31,7 @@ targets=[
     ["EDL",USBSaharaDevice],
     ["FTDI",USBFtdiDevice],
     ["Hub",USBHubDevice],
+    ["iPhone",USBiPhoneDevice],
     ["Keyboard",USBKeyboardDevice],
     ["MassStorage",USBMassStorageDevice],
     ["Serial",USBSerialDevice],

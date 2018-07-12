@@ -173,8 +173,8 @@ class USBMtpDevice(USBDevice):
             configurations=[
                 USBConfiguration(
                     phy=phy,
-                    index=1,
-                    string='Android MTP Device',
+                    configuration_index=1,
+                    configuration_string_or_index='Android MTP Device',
                     interfaces=[
                         USBMtpInterface(phy)
                     ]

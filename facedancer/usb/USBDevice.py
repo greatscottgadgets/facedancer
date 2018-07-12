@@ -277,6 +277,7 @@ class USBDevice(USBDescribable):
             handler_entity = self.usb_vendor
 
         if not handler_entity:
+            self.warning("received request %s" % req)
             self.warning('invalid handler entity, stalling')
             self.phy.stall_ep0()
             return
