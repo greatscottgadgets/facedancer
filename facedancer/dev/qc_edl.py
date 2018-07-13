@@ -138,7 +138,6 @@ class USBSaharaInterface(USBInterface):
 
     def handle_data_available(self, data):
         if (self.switch>=2):
-            time.sleep(0.005)
             if (len(self.buffer)<self.bytestoread):
                 self.buffer+=bytes(data)
                 if (len(self.buffer)==self.bytestoread):
@@ -149,7 +148,6 @@ class USBSaharaInterface(USBInterface):
                    self.debug("Sending Packet")
                    self.send_data(packet)
                    self.debug("Done sending")
-                   time.sleep(0.1)
                 else:
                    self.debug("Queueing, total: %x of %x" % (len(self.buffer),self.bytestoread))
                    return

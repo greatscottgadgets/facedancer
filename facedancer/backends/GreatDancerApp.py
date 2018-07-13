@@ -176,8 +176,7 @@ class GreatDancerApp(FacedancerApp):
         for interface in config.interfaces:
             for endpoint in interface.endpoints:
 
-                if self.verbose > 0:
-                    print ("Setting up endpoint {} (direction={}, transfer_type={})".format(endpoint.number, endpoint.direction, endpoint.transfer_type))
+                self.verbose("Setting up endpoint {} (direction={}, transfer_type={})".format(endpoint.number, endpoint.direction, endpoint.transfer_type))
 
                 command.extend(self._generate_endpoint_config_quad(endpoint))
 
@@ -197,16 +196,14 @@ class GreatDancerApp(FacedancerApp):
 
         # Compute our quirk flags.
         if 'manual_set_address' in self.quirks:
-            if self.verbose > 0:
-                print("Handling SET_ADDRESS on the host side!")
+            self.verbose("Handling SET_ADDRESS on the host side!")
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT, value=max_ep0_packet_size, index=quirks)
         self.connected_device = usb_device
 
-        if self.loglevel > 0:
-            print(self.app_name, "connected device", self.connected_device.name)
+        self.verbose("connected device", self.connected_device.name)
 
 
     def disconnect(self):
@@ -576,7 +573,10 @@ class GreatDancerApp(FacedancerApp):
             # callback.
             else:
                 data = self._finish_primed_read_on_endpoint(endpoint_number)
-                self.connected_device.handle_data_available(endpoint_number, data)
+                if direction == USBEndpoint.direction_out:
+                    self.connected_device.handle_data_available(endpoint_number, data)
+                else:
+                    self.connected_device.handle_buffer_available(endpoint_number)
 
 
     def _fetch_transfer_readiness(self):

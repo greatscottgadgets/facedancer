@@ -48,23 +48,23 @@ class USBAudioClass(USBClass):
         }
         self._settings = {
             # (val, index): [cur, min, max, res, (idle)]
-            (0x0100, 0x0001): ['\x44\xac\x00', '\x44\xac\x00', '\x80\xbb\x00', '\x80\xbb\x00'],
+            (0x0100, 0x0001): [b'\x44\xac\x00', b'\x44\xac\x00', b'\x80\xbb\x00', b'\x80\xbb\x00'],
             # (0x0100, 0x0002): ['\x44\xac\x00', '\x44\xac\x00', '\x80\xbb\x00', '\x80\xbb\x00'],
-            (0x0100, 0x0082): ['\x44\xac\x00', '\x44\xac\x00', '\x80\xbb\x00', '\x80\xbb\x00'],
-            (0x0100, 0x0900): ['\x00', '\x00', '\xff', '\x00'],
-            (0x0100, 0x0a00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0100, 0x0d00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0101, 0x0f00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0102, 0x0f00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0200, 0x0a00): ['\x00\x00', '\x00\x00', '\xd0\x17', '\x30\x00', '\x00\x00'],
-            (0x0200, 0x0d00): ['\x80\x22', '\x00\x00', '\xd0\x2f', '\x30\x00'],
-            (0x0201, 0x0900): ['\x80\x22', '\xa0\xe3', '\xf0\xff', '\x30\x00'],
-            (0x0201, 0x0f00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0202, 0x0900): ['\xcf\x00', '\x00\x00', '\xcf\x00', '\x30\x00'],
-            (0x0202, 0x0f00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0301, 0x0f00): ['\x01', '\x00', '\xff', '\x00'],
-            (0x0302, 0x0f00): ['\x00\x00', '\x00\x00', '\x00\x00', '\x00\x00'],
-            (0x0700, 0x0a00): ['\x01', '\x00', '\xff', '\x00'],
+            (0x0100, 0x0082): [b'\x44\xac\x00', b'\x44\xac\x00', b'\x80\xbb\x00', b'\x80\xbb\x00'],
+            (0x0100, 0x0900): [b'\x00', b'\x00', b'\xff', b'\x00'],
+            (0x0100, 0x0a00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0100, 0x0d00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0101, 0x0f00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0102, 0x0f00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0200, 0x0a00): [b'\x00\x00', b'\x00\x00', b'\xd0\x17', b'\x30\x00', b'\x00\x00'],
+            (0x0200, 0x0d00): [b'\x80\x22', b'\x00\x00', b'\xd0\x2f', b'\x30\x00'],
+            (0x0201, 0x0900): [b'\x80\x22', b'\xa0\xe3', b'\xf0\xff', b'\x30\x00'],
+            (0x0201, 0x0f00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0202, 0x0900): [b'\xcf\x00', b'\x00\x00', b'\xcf\x00', b'\x30\x00'],
+            (0x0202, 0x0f00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0301, 0x0f00): [b'\x01', b'\x00', b'\xff', b'\x00'],
+            (0x0302, 0x0f00): [b'\x00\x00', b'\x00\x00', b'\x00\x00', b'\x00\x00'],
+            (0x0700, 0x0a00): [b'\x01', b'\x00', b'\xff', b'\x00'],
         }
 
         self._cur = b'\x44\xac\x00'
@@ -197,7 +197,8 @@ class USBAudioDevice(USBDevice):
             serial_number_string='FD2-12345-AUDIO',
             configurations=[
                 USBConfiguration(
-                    phy=phy, configuration_index=1,
+                    phy=phy,
+                    configuration_index=1,
                     configuration_string_or_index='Facedancer Audio Configuration',
                     attributes=USBConfiguration.ATTR_BASE,
                     interfaces=[

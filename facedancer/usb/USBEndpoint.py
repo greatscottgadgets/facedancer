@@ -94,7 +94,7 @@ class USBEndpoint(USBDescribable):
         
     def handle_clear_feature_request(self, req):
         self.info("received CLEAR_FEATURE request for endpoint %d with value %d", self.number, req.value)
-        self.phy.send_on_endpoint(0, b'')
+        self.phy.send_on_endpoint(0, b'', False)
 
     def set_interface(self, interface):
         self.interface = interface

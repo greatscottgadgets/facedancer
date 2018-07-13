@@ -506,7 +506,7 @@ class USBDevice(USBDescribable):
         else:
             self.config_num = req.value - 1
 
-        self.info('Setting configuration: %#x' % self.config_num)
+        self.info('Setting configuration: %#x' % (self.config_num+1))
         self.configuration = self.configurations[self.config_num]
         self.state = State.configured
 
