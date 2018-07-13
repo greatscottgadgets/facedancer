@@ -9,7 +9,10 @@
 # This device doesn't work properly yet!!!!!
 
 import struct
-from six.moves.queue import Queue
+try:
+    from six.moves.queue import Queue # Python 3
+except ImportError:
+    from six.moves.queue import queue as Queue # Python 2
 
 from binascii import hexlify
 from facedancer.usb.USB import DescriptorType

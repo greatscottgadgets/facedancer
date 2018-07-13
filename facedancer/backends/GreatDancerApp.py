@@ -12,7 +12,7 @@ from facedancer.usb.USBEndpoint import USBEndpoint
 class GreatDancerApp(FacedancerApp):
     app_name = "GreatDancer"
     app_num = 0x00 # This doesn't have any meaning for us.
-
+    connected_device = None
     # Interrupt register (USBSTS) bits masks.
     USBSTS_D_UI   = (1 <<  0)
     USBSTS_D_URI  = (1 <<  6)
@@ -61,7 +61,7 @@ class GreatDancerApp(FacedancerApp):
             return False
 
 
-    def __init__(self, device=None, verbose=0, quirks=None):
+    def __init__(self, device=None, loglevel=0, quirks=None):
         """
         Sets up a new GreatFET-backed Facedancer (GreatDancer) application.
 
@@ -74,7 +74,7 @@ class GreatDancerApp(FacedancerApp):
         if device is None:
             device = greatfet.GreatFET()
 
-        FacedancerApp.__init__(self, device, verbose)
+        FacedancerApp.__init__(self, device, loglevel)
         self.connected_device = None
         self.vendor_requests = greatfet.protocol.vendor_requests
 
@@ -205,7 +205,7 @@ class GreatDancerApp(FacedancerApp):
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT, value=max_ep0_packet_size, index=quirks)
         self.connected_device = usb_device
 
-        if self.verbose > 0:
+        if self.loglevel > 0:
             print(self.app_name, "connected device", self.connected_device.name)
 
 
@@ -238,8 +238,7 @@ class GreatDancerApp(FacedancerApp):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        if self.verbose > 3:
-            print("sending on {}: {}".format(ep_num, data))
+        self.verbose("sending on %s" % ("{}: {}".format(ep_num, data)))
 
         self._wait_until_ready_to_send(ep_num)
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
@@ -277,9 +276,9 @@ class GreatDancerApp(FacedancerApp):
         ep_num: The number of the endpoint to be stalled.
         """
 
-        if self.verbose > 2:
+        if self.get_log_level() > 2:
             in_vs_out = "IN" if direction else "OUT"
-            print("Stalling EP{} {}".format(ep_num, in_vs_out))
+            self.debug("Stalling EP{} {}".format(ep_num, in_vs_out))
 
         self.endpoint_stalled[ep_num] = True
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_STALL_ENDPOINT, index=ep_num, value=direction)
@@ -313,8 +312,11 @@ class GreatDancerApp(FacedancerApp):
         transfer_result: The value returned by the vendor request.
         returns: The raw integer value of the given register.
         """
-        status_hex = codecs.encode(transfer_result[::-1], 'hex')
-        return int(status_hex, 16)
+        try:
+             status_hex = int(codecs.encode(transfer_result[::-1], 'hex'),16)
+        except:
+             return 0
+        return status_hex
 
 
     def _fetch_status_register(self, register_number):
@@ -448,9 +450,8 @@ class GreatDancerApp(FacedancerApp):
         if not status:
             return
 
-        if self.verbose > 5:
-            print("Out status: {}".format(bin(status & 0x0F)))
-            print("IN status: {}".format(bin(status >> 16)))
+        self.debug("Out status: {}".format(bin(status & 0x0F)))
+        self.debug("IN status: {}".format(bin(status >> 16)))
 
         # Figure out which endpoints have recently completed transfers,
         # and clean up any transactions on those endpoints. It's important
@@ -521,8 +522,7 @@ class GreatDancerApp(FacedancerApp):
         direction: The endpoint direction for which TD's should be cleaned.
         """
 
-        if self.verbose > 5:
-            print("Cleaning up transfers on {}".format(endpoint_number))
+        self.debug("Cleaning up transfers on {}".format(endpoint_number))
 
         # Ask the device to clean up any transaction descriptors related to the transfer.
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CLEAN_UP_TRANSFER, index=endpoint_number, value=direction)
@@ -684,7 +684,7 @@ class GreatDancerApp(FacedancerApp):
         Triggers the GreatDancer to perform its side of a bus reset.
         """
 
-        if self.verbose > 0:
+        if self.loglevel > 0:
             print("-- Reset requested! --")
 
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_BUS_RESET)

@@ -22,7 +22,7 @@ class USBDevice(USBDescribable):
             protocol_rel_num=0, max_packet_size_ep0=64, vendor_id=0, product_id=0,
             device_rev=0, manufacturer_string="", product_string="",
             serial_number_string="", configurations=[], descriptors={},
-            spec_version=0x0002, quirks=[], usb_class=None, usb_vendor=None, bos=None, scheduler=None):
+            spec_version=0x0200, quirks=[], usb_class=None, usb_vendor=None, bos=None, scheduler=None):
         super(USBDevice, self).__init__(phy)
         self.phy = phy
         descriptors = descriptors if descriptors else {}
@@ -228,7 +228,7 @@ class USBDevice(USBDescribable):
             '<BHBBBBBB',
             bDescriptorType,
             self.usb_spec_version,
-            self._device_class,
+            self.device_class,
             self.device_subclass,
             self.protocol_rel_num,
             bMaxPacketSize0,
@@ -420,7 +420,7 @@ class USBDevice(USBDescribable):
             9,      # language code 0, byte 0
             4       # language code 0, byte 1
         )
-        return
+        return d
 
     @mutable('string_descriptor')
     def get_string_descriptor(self, num):

@@ -126,8 +126,10 @@ class USBEndpoint(USBDescribable):
 
     def _get_max_packet_size(self, usb_type):
         if usb_type == 'highspeed':
-            return 512
-        return self.max_packet_size 
+            return self.max_packet_size
+        if usb_type == 'lowspeed':
+            return 64
+        return self.max_packet_size
 
     def send_packet(self, data, blocking=False):
         self.phy.send_on_endpoint(self.number, data, blocking=blocking)

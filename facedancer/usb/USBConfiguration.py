@@ -156,7 +156,7 @@ class USBConfiguration(USBDescribable):
         return d + interface_descriptors
 
     @mutable('other_speed_configuration_descriptor')
-    def get_other_speed_descriptor(self, usb_type='fullspeed', valid=False):
+    def get_other_speed_descriptor(self, usb_type='lowspeed', valid=False):
         interface_descriptors = b''
         for i in self.interfaces:
             interface_descriptors += i.get_descriptor(usb_type, valid)

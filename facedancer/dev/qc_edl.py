@@ -7,7 +7,10 @@ Supports extraction of firehose/EDL loaders, saves as [hwid].bin in local direct
 '''
 
 import time
-from six.moves.queue import Queue
+try:
+    from six.moves.queue import Queue # Python 3
+except ImportError:
+    from six.moves.queue import queue as Queue # Python 2
 
 import binascii
 from facedancer.usb.USBDevice import *

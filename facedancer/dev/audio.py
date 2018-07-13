@@ -12,7 +12,10 @@ and no HID interface (as we don't really need it here)
 '''
 import struct
 import facedancer
-from six.moves.queue import Queue
+try:
+    from six.moves.queue import Queue # Python 3
+except ImportError:
+    from six.moves.queue import queue as Queue # Python 2
 
 from facedancer.usb.USBClass import *
 from facedancer.usb.USBConfiguration import *
@@ -115,7 +118,7 @@ class USBAudioClass(USBClass):
 
 
 class AudioStreaming(object):
-
+    name = "AudioStreaming"
     def __init__(self, phy, tx_ep, rx_ep):
         self.phy = phy
         self.tx_ep = tx_ep

@@ -34,11 +34,10 @@ class USBClass(USBDescribable):
     # maps bRequest to handler function
     request_handlers = { }
 
-    def __init__(self, phy, class_number=0xff, descriptor=None, class_descriptor_number=0, verbose=0):
+    def __init__(self, phy, class_number=0xff, descriptor=None, class_descriptor_number=0):
         super(USBClass, self).__init__(phy)
         self.setup_request_handlers()
         self.interface = None
-        self.verbose = verbose
         self.class_number = class_number
         self.descriptor = descriptor
         self.class_descriptor_number = class_descriptor_number

@@ -5,29 +5,36 @@
 # and GoodFETMonitorApp.
 
 import os
+import logging
 from .errors import *
 from facedancer.utils.ulogger import get_logger
 
 
-def FacedancerUSBApp(verbose=0, quirks=None):
+def FacedancerUSBApp(loglevel=0, quirks=None):
     """
     Convenience function that automatically creates a FacedancerApp
     based on the BOARD environment variable and some crude internal
     automagic.
 
-    verbose: Sets the verbosity level of the relevant app. Increasing
+    loglevel: Sets the verbosity level of the relevant app. Increasing
         this from zero yields progressively more output.
     """
-    return FacedancerApp.autodetect(verbose, quirks)
+    return FacedancerApp.autodetect(loglevel, quirks)
 
 
-class FacedancerApp:
+class FacedancerApp(object):
     app_name = "override this"
+    name = "FacedancerApp"
     app_num = 0x00
+    log_level = 0
+    @classmethod
+    def set_log_level(self,loglevel):
+        self.log_level=loglevel
+        return get_logger(loglevel)
 
     @classmethod
-    def set_log_level(self,verbose):
-        return get_logger(verbose)
+    def get_log_level(self):
+        return self.log_level
 
     @classmethod
     def get_mutation(self, stage, data=None):
@@ -51,13 +58,13 @@ class FacedancerApp:
         return self.connected_device is not None
 
     @classmethod
-    def autodetect(cls, verbose=0, quirks=None):
+    def autodetect(cls, loglevel=0, quirks=None):
         """
         Convenience function that automatically creates the apporpriate
         sublass based on the BOARD environment variable and some crude internal
         automagic.
 
-        verbose: Sets the verbosity level of the relevant app. Increasing
+        loglevel: Sets the verbosity level of the relevant app. Increasing
             this from zero yields progressively more output.
         """
 
@@ -71,10 +78,10 @@ class FacedancerApp:
         subclass = cls._find_appropriate_subclass(backend_name)
 
         if subclass:
-            if verbose > 0:
+            if loglevel > 0:
                 print("Using {} backend.".format(subclass.app_name))
 
-            return subclass(verbose=verbose, quirks=quirks)
+            return subclass(loglevel=loglevel, quirks=quirks)
         else:
             raise DeviceNotFoundError()
 
@@ -113,13 +120,13 @@ class FacedancerApp:
         return False
 
 
-    def __init__(self, device, verbose=0):
+    def __init__(self, device, loglevel=0):
         self.device = device
-        self.verbose = verbose
-
+        self.loglevel = loglevel
+        self.logger = logging.getLogger('facedancer')
         self.init_commands()
 
-        if self.verbose > 0:
+        if self.loglevel > 0:
             print(self.app_name, "initialized")
 
     def init_commands(self):
@@ -127,6 +134,27 @@ class FacedancerApp:
 
     def enable(self):
         pass
+
+    def verbose(self, msg, *args, **kwargs):
+        self.logger.verbose('[%s] %s' % (self.name, msg), *args, **kwargs)
+
+    def debug(self, msg, *args, **kwargs):
+        self.logger.debug('[%s] %s' % (self.name, msg), *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        self.logger.info('[%s] %s' % (self.name, msg), *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        self.logger.warning('[%s] %s' % (self.name, msg), *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        self.logger.error('[%s] %s' % (self.name, msg), *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self.logger.critical('[%s] %s' % (self.name, msg), *args, **kwargs)
+
+    def always(self, msg, *args, **kwargs):
+        self.logger.always('[%s] %s' % (self.name, msg), *args, **kwargs)
 
 
 class FacedancerBasicScheduler(object):
