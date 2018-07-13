@@ -73,7 +73,7 @@ class USBBillboardDevice(USBDevice):
         self.bos = USBBinaryObjectStore(phy, capabilities=[
             DCContainerId(phy, container_id=b'FD-BILL-12345'),
             DCBillboard(
-                phy,
+                phy=phy,
                 additional_info_idx=self.get_string_id('https://additional.info/facedancer'),
                 preferred_alternate_mode=0,
                 vconn_power=0x8000,
@@ -83,6 +83,5 @@ class USBBillboardDevice(USBDevice):
                 ],
             )
         ])
-
 
 usb_device = USBBillboardDevice

@@ -18,6 +18,7 @@ from facedancer.usb.USBEndpoint import *
 from facedancer.usb.USBVendor import *
 
 from mmap import mmap
+import binascii
 
 class ScsiCmds(object):
     TEST_UNIT_READY = 0x00
@@ -185,7 +186,10 @@ class RawDiskImage(DiskImage):
         self.image.flush()
         
 def bytes_as_hex(b, delim=" "):
-    return delim.join(["%02x" % x for x in b])
+    if type(b[0])==str:
+        return delim.join(["%02x" % ord(x) for x in b])
+    else:
+        return delim.join(["%02x" % x for x in b])
 
 class USBMassStorageClass(USBClass):
     name = "USB mass storage class"
@@ -194,7 +198,7 @@ class USBMassStorageClass(USBClass):
     DESCRIPTOR_TYPE_NUMBER      = 0
 
     def __init__(self, phy):
-        super().__init__(phy, self.UMS_CLASS_NUMBER, None, self.DESCRIPTOR_TYPE_NUMBER)
+        super(USBMassStorageClass,self).__init__(phy, self.UMS_CLASS_NUMBER, None, self.DESCRIPTOR_TYPE_NUMBER)
 
     def setup_request_handlers(self):
         self.request_handlers = {
@@ -203,10 +207,10 @@ class USBMassStorageClass(USBClass):
         }
 
     def handle_bulk_only_mass_storage_reset_request(self, req):
-        self.interface.configuration.device.send_control_message(b'')
+        self.interface.configuration._device.send_control_message(b'')
 
     def handle_get_max_lun_request(self, req):
-        self.interface.configuration.device.send_control_message(b'\x00')
+        self.interface.configuration._device.send_control_message(b'\x00')
 
 
 class USBMassStorageInterface(USBInterface):
@@ -247,8 +251,7 @@ class USBMassStorageInterface(USBInterface):
         dclass = USBMassStorageClass(phy)
 
         # TODO: un-hardcode string index
-        USBInterface.__init__(
-                self,
+        super(USBMassStorageInterface, self).__init__(
                 phy=self.phy,
                 interface_number=0,          # interface number
                 interface_alternate=0,          # alternate setting
@@ -257,11 +260,12 @@ class USBMassStorageInterface(USBInterface):
                 interface_protocol=0x50,       # protocol: bulk-only (BBB) transport
                 interface_string_index=0,          # string index
                 endpoints=[ self.ep_from_host, self.ep_to_host ],
-                descriptors=descriptors
+                descriptors=descriptors,
+                usb_class=dclass
         )
 
-        self.device_class = dclass
-        self.device_class.set_interface(self)
+        #self.device_class = dclass
+        #self.device_class.set_interface(self)
 
         self.is_write_in_progress = False
         self.write_cbw = None
@@ -312,7 +316,11 @@ class USBMassStorageInterface(USBInterface):
             Handles an SCSI command.
         """
 
-        opcode = cbw.cb[0]
+        if type(cbw.cb[0]) == str:
+            opcode = ord(cbw.cb[0])
+        else:
+            opcode = cbw.cb[0]
+
         direction = cbw.flags >> 7
 
         # If we have a handler for this routine, handle it.
@@ -340,7 +348,10 @@ class USBMassStorageInterface(USBInterface):
         """
             Handles unsupported SCSI commands.
         """
-        print(self.name, "received unsupported SCSI opcode 0x%x" % cbw.cb[0])
+        if type(cbw.cb[0])==str:
+            self.warning("received unsupported SCSI opcode 0x%x" % ord(cbw.cb[0]))
+        else:
+            self.warning("received unsupported SCSI opcode 0x%x" % cbw.cb[0])
 
         # Generate an empty response to the relevant command.
         if cbw.data_transfer_length > 0:
@@ -367,7 +378,12 @@ class USBMassStorageInterface(USBInterface):
 
     @mutable('scsi_test_unit_ready_response')
     def handle_test_unit_ready(self, cbw):
-        self.debug('SCSI Test Unit Ready, logical unit number: %02x' % (cbw.cb[1]))
+        if type(cbw.cb[1])==str:
+            self.debug('SCSI Test Unit Ready, logical unit number: %02x' % (ord(cbw.cb[1])))
+        else:
+            self.debug('SCSI Test Unit Ready, logical unit number: %02x' % (cbw.cb[1]))
+
+
         return self.STATUS_OKAY, None
 
     @mutable('scsi_synchronize_cache_response')
@@ -378,7 +394,7 @@ class USBMassStorageInterface(USBInterface):
     @mutable('scsi_read_capacity_16_response')
     def handle_read_capacity_16(self, cbw):
         # .. todo: is the length correct?
-        self.debug('SCSI Read Capacity(16), data: %s' % hexlify(cbw.cb[1:]))
+        self.debug('SCSI Read Capacity(16), data: %s' % binascii.hexlify(cbw.cb[1:]))
         lastlba = self.disk_image.get_sector_count()
         length = self.disk_image.block_size
         response = struct.pack('>BBQIBB', 0x9e, 0x10, lastlba, length, 0x00, 0x00)
@@ -544,13 +560,22 @@ class USBMassStorageInterface(USBInterface):
 
 
     def handle_read(self, cbw):
-        base_lba = cbw.cb[2] << 24 \
-                 | cbw.cb[3] << 16 \
-                 | cbw.cb[4] << 8 \
-                 | cbw.cb[5]
+        if type(cbw.cb[0])==str:
+            base_lba = ord(cbw.cb[2]) << 24 \
+                     | ord(cbw.cb[3]) << 16 \
+                     | ord(cbw.cb[4]) << 8 \
+                     | ord(cbw.cb[5])
 
-        num_blocks = cbw.cb[7] << 8 \
-                   | cbw.cb[8]
+            num_blocks = ord(cbw.cb[7]) << 8 \
+                       | ord(cbw.cb[8])
+        else:
+            base_lba = cbw.cb[2] << 24 \
+                       | cbw.cb[3] << 16 \
+                       | cbw.cb[4] << 8 \
+                       | cbw.cb[5]
+
+            num_blocks = cbw.cb[7] << 8 \
+                         | cbw.cb[8]
 
         self.verbose("<-- performing READ (10), lba", base_lba, "+", num_blocks, "block(s)")
 
@@ -566,14 +591,22 @@ class USBMassStorageInterface(USBInterface):
 
     @mutable('scsi_write_10_response')
     def handle_write(self, cbw):
-        base_lba = cbw.cb[2] << 24 \
-                 | cbw.cb[3] << 16 \
-                 | cbw.cb[4] <<  8 \
-                 | cbw.cb[5]
+        if type(cbw.cb[0])==str:
+            base_lba = ord(cbw.cb[2]) << 24 \
+                     | ord(cbw.cb[3]) << 16 \
+                     | ord(cbw.cb[4]) << 8 \
+                     | ord(cbw.cb[5])
 
-        num_blocks = cbw.cb[7] << 8 \
-                   | cbw.cb[8]
+            num_blocks = ord(cbw.cb[7]) << 8 \
+                       | ord(cbw.cb[8])
+        else:
+            base_lba = cbw.cb[2] << 24 \
+                       | cbw.cb[3] << 16 \
+                       | cbw.cb[4] << 8 \
+                       | cbw.cb[5]
 
+            num_blocks = cbw.cb[7] << 8 \
+                         | cbw.cb[8]
         self.verbose("--> performing WRITE (10), lba", base_lba, "+", num_blocks, "block(s)")
 
         # save for later
@@ -626,12 +659,20 @@ class USBMassStorageInterface(USBInterface):
             self.ep_to_host.send_packet(response, blocking=True)
 
         # Otherwise, respond with our status.
-        csw = bytes([
-            ord('U'), ord('S'), ord('B'), ord('S'),
-            cbw.tag[0], cbw.tag[1], cbw.tag[2], cbw.tag[3],
-            0x00, 0x00, 0x00, 0x00,
-            status
-        ])
+        if type(cbw.tag[0])==str:
+            csw = bytes([
+                ord('U'), ord('S'), ord('B'), ord('S'),
+                ord(cbw.tag[0]), ord(cbw.tag[1]), ord(cbw.tag[2]), ord(cbw.tag[3]),
+                0x00, 0x00, 0x00, 0x00,
+                status
+            ])
+        else:
+            csw = bytes([
+                ord('U'), ord('S'), ord('B'), ord('S'),
+                cbw.tag[0], cbw.tag[1], cbw.tag[2], cbw.tag[3],
+                0x00, 0x00, 0x00, 0x00,
+                status
+            ])
 
         self.ep_to_host.send_packet(csw, blocking=True)
 
@@ -640,13 +681,23 @@ class CommandBlockWrapper:
     def __init__(self, bytestring):
         self.signature              = bytestring[0:4]
         self.tag                    = bytestring[4:8]
-        self.data_transfer_length   = bytestring[8] \
-                                    | bytestring[9] << 8 \
-                                    | bytestring[10] << 16 \
-                                    | bytestring[11] << 24
-        self.flags                  = int(bytestring[12])
-        self.lun                    = int(bytestring[13] & 0x0f)
-        self.cb_length              = int(bytestring[14] & 0x1f)
+        if type(bytestring)!=str:
+            self.data_transfer_length   = bytestring[8] \
+                                        | bytestring[9] << 8 \
+                                        | bytestring[10] << 16 \
+                                        | bytestring[11] << 24
+            self.flags = int(bytestring[12])
+            self.lun                    = int(bytestring[13] & 0x0f)
+            self.cb_length              = int(bytestring[14] & 0x1f)
+        else:
+            self.data_transfer_length = ord(bytestring[8]) \
+                                        | ord(bytestring[9]) << 8 \
+                                        | ord(bytestring[10]) << 16 \
+                                        | ord(bytestring[11]) << 24
+            self.flags = int(ord(bytestring[12]))
+            self.lun                    = int(ord(bytestring[13]) & 0x0f)
+            self.cb_length              = int(ord(bytestring[14]) & 0x1f)
+
         #self.cb                     = bytestring[15:15+self.cb_length]
         self.cb                     = bytestring[15:]
 
