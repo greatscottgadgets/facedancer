@@ -239,7 +239,7 @@ class USBDevice(USBDescribable):
         return d
         
     def send_control_message(self, data):
-        self.phy.send_on_endpoint(0, data)
+        self.phy.send_on_endpoint(0, data, False)
 
     # IRQ handlers
     #####################################################

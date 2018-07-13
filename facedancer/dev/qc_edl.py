@@ -75,7 +75,6 @@ class USBSaharaInterface(USBInterface):
     SAHARA_MODE_COMMAND = 0x3
     
     def __init__(self, phy, hash,serial,hwid,sblversion):
-        descriptors = { }
         self.phy=phy
         self.hwid=hwid
         self.hash=hash
@@ -91,88 +90,66 @@ class USBSaharaInterface(USBInterface):
         self.loader=bytes(b'')
         self.receive_buffer = bytes(b'')
 
-        self.endpoints = [
+        endpoints = [
         USBEndpoint(
-                phy,
-                1,          # endpoint number
-                USBEndpoint.direction_out,
-                USBEndpoint.transfer_type_bulk,
-                USBEndpoint.sync_type_none,
-                USBEndpoint.usage_type_data,
-                64,      # max packet size
-                0,          # polling interval, see USB 2.0 spec Table 9-13
-                self.handle_data_available      # handler function
+                phy=phy,
+                number=1,          # endpoint number
+                direction=USBEndpoint.direction_out,
+                transfer_type=USBEndpoint.transfer_type_bulk,
+                sync_type=USBEndpoint.sync_type_none,
+                usage_type=USBEndpoint.usage_type_data,
+                max_packet_size=64,      # max packet size
+                interval=0,          # polling interval, see USB 2.0 spec Table 9-13
+                handler=self.handle_data_available      # handler function
             ),
         USBEndpoint(
-                phy,
-                3,          # endpoint number
-                USBEndpoint.direction_in,
-                USBEndpoint.transfer_type_bulk,
-                USBEndpoint.sync_type_none,
-                USBEndpoint.usage_type_data,
-                64,      # max packet size
-                0,          # polling interval, see USB 2.0 spec Table 9-13
-                self.handle_buffer_available       # handler function
+                phy=phy,
+                number=3,          # endpoint number
+                direction=USBEndpoint.direction_in,
+                transfer_type=USBEndpoint.transfer_type_bulk,
+                sync_type=USBEndpoint.sync_type_none,
+                usage_type=USBEndpoint.usage_type_data,
+                max_packet_size=64,      # max packet size
+                interval=0,          # polling interval, see USB 2.0 spec Table 9-13
+                handler=self.handle_buffer_available       # handler function
             )]
 
         # TODO: un-hardcode string index
-        USBInterface.__init__(
-                self,
-                phy,
-                0,          # interface number
-                0,          # alternate setting
-                USBClass(phy), # interface class: vendor-specific
-                0xff,       # subclass: vendor-specific
-                0xff,       # protocol: vendor-specific
-                0,          # string index
-                self.endpoints,
-                descriptors
+        super(USBSaharaInterface, self).__init__(
+                phy=phy,
+                interface_number=0,          # interface number
+                interface_alternate=0,          # alternate setting
+                interface_class=0xff,
+                interface_subclass=0xff,       # subclass: vendor-specific
+                interface_protocol=0xff,       # protocol: vendor-specific
+                interface_string_index=0,          # string index
+                endpoints=endpoints,
+                usb_class=None
         )
-
-    def send_data(self, data):
-        self.debug("TX: "+str(binascii.hexlify(data)))
-        self.phy.send_on_endpoint(3, data)
 
     def bytes_as_hex(self, b, delim=" "):
         return delim.join(["%02x" % x for x in b])
 
-    def handle_data_available(self, data):
-        if (self.switch>=2):
-            if (len(self.buffer)<self.bytestoread):
-                self.buffer+=bytes(data)
-                if (len(self.buffer)==self.bytestoread):
-                   data=self.buffer
-                   self.buffer=bytes(b'')
-                   self.debug("Complete RX")
-                   packet = struct.pack('<IIIII', 0x3, 0x14, 0xD, self.curoffset, 0x1000)
-                   self.debug("Sending Packet")
-                   self.send_data(packet)
-                   self.debug("Done sending")
-                else:
-                   self.debug("Queueing, total: %x of %x" % (len(self.buffer),self.bytestoread))
-                   return
-            else:
-                data=self.buffer
-                self.buffer=bytes(b'')
-                self.debug("Complete RX")
-
+    def handle_payload(self,data):
         #print("RX: ")
         #rec=binascii.hexlify(data)
         #print(rec)
-        if len(data) == 0:
-            return
-        opcode=data[0]
+        if type(data[0])==int:
+            opcode=data[0]
+        else:
+            opcode=ord(data[0])
+            
         if (self.switch==0 and opcode==0x3A):
             self.info("Got download request.")
             init= b"\x7E\x02\x6A\xD3\x7E"
-            self.send_data(init)
+            return init
         elif (self.switch==0):
             self.info("Opcode : %x" % opcode)
             if (self.count==0):
                 self.info("Pre init.")
                 init = b"\x01\x00\x00\x00\x30\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-                self.send_data(init)
                 self.count += 1
+                return init
             elif opcode == self.SAHARA_SWITCH_MODE: #0xC
                 self.info("Got SAHARA_SWITCH_self.")
                 request = struct.Struct('<III')
@@ -185,18 +162,17 @@ class USBSaharaInterface(USBInterface):
                     self.info("SAHARA_MODE_IMAGE_TX_COMPLETE")
                     reply = struct.Struct('<IIIIIIIIIIII')
                     packet = reply.pack(0x01,0x30,0x02,0x01,0x400,0x1,0x0,0x0,0x0,0x0,0x0,0x0)
-                    self.send_data(packet)
+                    return packet
                 elif (req[2]==self.SAHARA_MODE_COMMAND): #3
                     self.info("SAHARA_MODE_COMMAND")
                     init = b"\x01\x00\x00\x00\x30\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-                    self.send_data(init)
+                    return init
                     #self.count=0
                     #self.switch=0
                 '''
                 elif (req[2]==self.SAHARA_MODE_MEMORY_DEBUG): #2
                     request=request
                 '''
-                self.info("Done SAHARA_SWITCH_self.")
 
             elif opcode==self.SAHARA_HELLO_RSP: #02
                 self.info("Got SAHARA_HELLO_RSP")
@@ -204,17 +180,17 @@ class USBSaharaInterface(USBInterface):
                 req = request.unpack(bytes(data[:24]))
                 if (req[5]==0x3): #mode
                     packet = struct.pack('<II', 0xB, 0x8)
-                    self.send_data(packet)
+                    self.count += 1
+                    return packet
                 elif (req[5]==0x0 or req[5]==0x1): #mode, send loader
                     packet = struct.pack('<IIIII', 0x3, 0x14, 0xD, 0x0, 0x50)
-                    self.send_data(packet)
                     self.switch=1
                     self.bytestoread=0x50
+                    self.count += 1
+                    return packet
                 #elif (req[5]==0x1): #mode
                 #    packet = struct.pack('<II', 0xB, 0x8)
                 #    self.send_data(packet)
-                self.info("Done SAHARA_HELLO_RSP.")
-                self.count += 1
             elif opcode == self.SAHARA_EXECUTE_REQ: #0D
                 self.info("Got SAHARA_EXECUTE_REQ")
                 request = struct.Struct('<III')
@@ -241,8 +217,7 @@ class USBSaharaInterface(USBInterface):
                     packet = reply.pack(self.SAHARA_EXECUTE_RSP, 0x10, self.SAHARA_EXEC_CMD_READ_DEBUG_DATA, 0x40)
                 '''
                 
-                self.send_data(packet)
-                self.info("Done SAHARA_EXECUTE_REQ.")
+                return packet
             elif opcode == self.SAHARA_EXECUTE_DATA: #0xF
                 self.info("Got SAHARA_EXECUTE_DATA.")
                 request = struct.Struct('<III')
@@ -252,10 +227,17 @@ class USBSaharaInterface(USBInterface):
                     packet = reply.pack(self.serial)
                 elif req[2] == self.SAHARA_EXEC_CMD_MSM_HW_ID_READ: #2
                     reply = struct.Struct('8s8s8s')
-                    packet = reply.pack(self.hwid, self.hwid, self.hwid)
+                    hwidstr=struct.pack("<Q",self.hwid)
+                    if type(hwidstr)==str:
+                        hwidstr=str(hwidstr)
+                    packet = reply.pack(hwidstr, hwidstr, hwidstr)
                 elif req[2] == self.SAHARA_EXEC_CMD_OEM_PK_HASH_READ: #3
                     reply = struct.Struct('32s32s32s')
-                    packet = reply.pack(self.hash, self.hash, self.hash)
+                    if type(self.hash)==str:
+                        hash=str(self.hash)
+                    else:
+                        hash=self.hash
+                    packet = reply.pack(hash, hash, hash)
                 elif req[2] == self.SAHARA_EXEC_CMD_GET_SOFTWARE_VERSION_SBL: #7
                     reply = struct.Struct('<I')
                     packet = reply.pack(self.sblversion)
@@ -267,8 +249,7 @@ class USBSaharaInterface(USBInterface):
                 elif req[2] == self.SAHARA_EXEC_CMD_READ_DEBUG_DATA: #6
                     packet = reply.pack(self.SAHARA_EXECUTE_RSP, 0x10, self.SAHARA_EXEC_CMD_READ_DEBUG_DATA, 0x40)
                 '''
-                self.send_data(packet)
-                self.info("Done SAHARA_EXECUTE_DATA.")
+                return packet
         elif self.switch==1:
                 self.info("Loader read Init")
                 request = struct.Struct('<IIIIIIII')
@@ -288,7 +269,7 @@ class USBSaharaInterface(USBInterface):
                 self.loader+=bytes(data)
                 packet = struct.pack('<IIIII', 0x3, 0x13, 0xD, self.curoffset, 0x1000)
                 self.bytestoread=0x1000
-                self.send_data(packet)
+                return packet
         elif self.switch==2:
                 self.info("ELF read")
                 x=self.elfstart
@@ -310,7 +291,7 @@ class USBSaharaInterface(USBInterface):
                 self.switch=3
                 packet = struct.pack('<IIIII', 0x3, 0x13, 0xD, self.curoffset, 0x1000)
                 self.bytestoread=0x1000
-                self.send_data(packet)
+                return packet
         elif self.switch==3:
                 self.loader+=bytes(data)
                 self.bytestotal-=len(data)
@@ -322,21 +303,49 @@ class USBSaharaInterface(USBInterface):
                    self.bytestoread=toread
                    self.info("Bytes left for reading : %x" % self.bytestotal)
                 else:
-                    self.send_data(struct.pack('<IIII', 0x4, 0x10, 0xD, 0x0))
                     self.switch = 0
                     self.bytestoread = 0
-                    hwidstr = ''.join('{:02X}'.format(x) for x in self.hwid)
-                    with open(hwidstr + ".bin", "wb") as ft:
+                    hwidf = "{0:0{1}X}".format(self.hwid,16)+".bin"
+                    with open(hwidf, "wb") as ft:
                         ft.write(self.loader[0:self.reallen])
-                        self.info("We received all loader, stored as: %s" % (hwidstr + ".bin"))
+                        self.info("We received all loader, stored as: %s" % (hwidf))
                     self.info("All loader done.")
+                    return (struct.pack('<IIII', 0x4, 0x10, 0xD, 0x0))
+                    
+    def handle_data_available(self, data):
+        if len(data) == 0:
+            return
+        if (self.switch>=2):
+            if (len(self.buffer)<self.bytestoread):
+                self.buffer+=bytes(data)
+                if (len(self.buffer)==self.bytestoread):
+                   data=self.buffer
+                   self.buffer=bytes(b'')
+                   self.debug("Complete RX, sending ack")
+                   packet = struct.pack('<IIIII', 0x3, 0x14, 0xD, self.curoffset, 0x1000)
+                   self.send_on_endpoint(3, packet)
+                else:
+                   self.verbose("Queueing, total: %x of %x" % (len(self.buffer),self.bytestoread))
+                   return
+            else:
+                data=self.buffer
+                self.buffer=bytes(b'')
+                self.debug("Complete RX")
+
+        resp=self.handle_payload(data)
+        if resp:
+            self.debug("TX: "+str(binascii.hexlify(resp)))
+            self.send_on_endpoint(3, resp)
+            #self.endpoints[1].send(resp)
 
     def handle_buffer_available(self):
-             if self.count==0:
-                self.info("Buffer got called")
-                init = b"\x01\x00\x00\x00\x30\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-                self.endpoints[1].send(init)
-                self.count += 1
+        if self.count==0:
+            self.info("Buffer got called")
+            init = b"\x01\x00\x00\x00\x30\x00\x00\x00\x02\x00\x00\x00\x01\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            self.endpoints[1].send(init)
+            #self.send_on_endpoint(3,init)
+            self.count += 1
+               
 
 class USBSaharaDevice(USBDevice):
     name = "USB QC Sahara EDL Device"
@@ -352,8 +361,9 @@ class USBSaharaDevice(USBDevice):
         #oneplus one 3t
         hash = bytearray.fromhex("c0c66e278fe81226585252b851370eabf8d4192f0f335576c3028190d49d14d4")
         serial = 0x8d3e01ed
-        hwid = bytearray.fromhex("B93D702AE1F00500")
+        hwid = 0x0005F0E12A703DB9
         sblversion = 0x00000002
+
 
         #Unfused hash:
         #hash = bytearray.fromhex("CC3153A80293939B90D02D3BF8B23E0292E452FEF662C74998421ADAD42A380F"
@@ -362,29 +372,27 @@ class USBSaharaDevice(USBDevice):
 
         interface = USBSaharaInterface(phy,hash,serial,hwid,sblversion)
 
-        config = USBConfiguration(
+        config = [ 
+                USBConfiguration(
                 phy=phy,
                 configuration_index=1,                                          # index
                 configuration_string_or_index="Sahara",                                   # string desc
                 interfaces=[ interface ]                               # interfaces
+                )
+        ]
+
+        super(USBSaharaDevice, self).__init__(
+                phy=phy,
+                device_class=USBClass.Unspecified,                      # device class
+                device_subclass=0,                      # device subclass
+                protocol_rel_num=0,                      # protocol release number
+                max_packet_size_ep0=64,                     # max packet size for endpoint 0
+                vendor_id=0x05C6,                 # vendor id
+                product_id=0x9008,                 # product id
+                device_rev=0x0100,                 # device revision
+                manufacturer_string="Qualcomm CDMA Technologies MSM",                # manufacturer string
+                product_string="QHUSB__BULK",               # product string
+                serial_number_string="12345",   # serial number string
+                configurations=config,
+                usb_vendor = USBSaharaVendor(phy=phy)
         )
-
-        USBDevice.__init__(
-                self,
-                phy,
-                0,                      # device class
-                0,                      # device subclass
-                0,                      # protocol release number
-                64,                     # max packet size for endpoint 0
-                0x05C6,                 # vendor id: HP
-                0x9008,                 # product id: HP50G
-                0x0100,                 # device revision
-                "Qualcomm CDMA Technologies MSM", # manufacturer string
-                "QHUSB__BULK",        # product string
-                "",                # serial number string
-                [ config ]
-        )
-
-        self.device_vendor = USBSaharaVendor(phy)
-        self.device_vendor.set_device(self)
-

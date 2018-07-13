@@ -6,7 +6,6 @@ import traceback
 import binascii
 import inspect
 
-
 class StageLogger(object):
 
     def __init__(self, filename):

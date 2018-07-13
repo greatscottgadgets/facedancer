@@ -39,8 +39,8 @@ class USB(object):
         0x0b: DescriptorType.hid
     }
     
-    def interface_class_to_descriptor_type(interface_class):
-        return USB.if_class_to_desc_type.get(interface_class, None)
+def interface_class_to_descriptor_type(interface_class):
+    return USB.if_class_to_desc_type.get(interface_class, None)
 
 
 class State(object):

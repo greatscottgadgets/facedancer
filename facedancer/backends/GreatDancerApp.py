@@ -4,11 +4,20 @@
 
 import sys
 import codecs
+import binascii
 
 from facedancer.app.core import *
 from facedancer.usb.USBDevice import USBDeviceRequest
 from facedancer.usb.USBEndpoint import USBEndpoint
 
+PYTHON_VERSION = None
+if (sys.version_info >= (3,0)):
+    PYTHON_VERSION = 3
+    print("Python Version 3.x\n")
+else:
+    PYTHON_VERSION = 2
+    print("Python Version 2.x\n")
+    
 class GreatDancerApp(FacedancerApp):
     app_name = "GreatDancer"
     app_num = 0x00 # This doesn't have any meaning for us.
@@ -228,6 +237,7 @@ class GreatDancerApp(FacedancerApp):
 
 
     def send_on_endpoint(self, ep_num, data, blocking=True):
+        global PYTHON_VERSION
         """
         Sends a collection of USB data on a given endpoint.
 
@@ -235,8 +245,11 @@ class GreatDancerApp(FacedancerApp):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        self.verbose("sending on %s" % ("{}: {}".format(ep_num, data)))
-
+        if PYTHON_VERSION == 3:
+            self.verbose("sending on %s" % ("{}: {}".format(ep_num, data)))
+        else:
+            self.verbose("sending on %d : %s" % (ep_num, binascii.hexlify(str(data))))
+        
         self._wait_until_ready_to_send(ep_num)
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
 

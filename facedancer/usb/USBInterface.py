@@ -3,8 +3,8 @@
 # Contains class definition for USBInterface.
 
 import struct
-from .USB import *
-from .USBClass import USBClass
+from facedancer.usb.USB import interface_class_to_descriptor_type, DescriptorType, USBDescribable
+from facedancer.usb.USBClass import USBClass
 from facedancer.fuzz.helpers import mutable
 
 class USBInterface(USBDescribable):
@@ -67,7 +67,7 @@ class USBInterface(USBDescribable):
         Constructs a USBClass object from a legacy informtion set.
         """
 
-        iclass_desc_num = USB.interface_class_to_descriptor_type(interface_class)
+        iclass_desc_num = interface_class_to_descriptor_type(interface_class)
 
         if iclass_desc_num and descriptors:
             descriptor = descriptors[iclass_desc_num]
@@ -169,10 +169,10 @@ class USBInterface(USBDescribable):
             self.string_index
         ) 
 
-        #if self.iclass:
-        if self.iclass.class_number:
-            #iclass_desc_num = USB.interface_class_to_descriptor_type(self.iclass)
-            iclass_desc_num = USB.interface_class_to_descriptor_type(self.iclass.class_number)
+        if self.iclass:
+        #if self.iclass.class_number:
+            iclass_desc_num = interface_class_to_descriptor_type(self.iclass)
+            #iclass_desc_num = USB.interface_class_to_descriptor_type(self.iclass.class_number)
             if iclass_desc_num:
                 desc = self.descriptors[iclass_desc_num]
                 if callable(desc):
