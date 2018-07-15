@@ -4,9 +4,7 @@ USB Billboard implementation
 Based on USB_Billboard_Revision_1_0_20140801.pdf
 All references in this script ar to this pdf.
 '''
-import struct
-from facedancer.usb.USBDevice import *
-from facedancer.usb.USBClass import *
+from facedancer.usb.USBDevice import USBDevice
 from facedancer.usb.USBConfiguration import *
 from facedancer.usb.USBBos import USBBinaryObjectStore
 from facedancer.usb.USBDeviceCapability import USBDeviceCapability,DCContainerId

@@ -176,7 +176,7 @@ class USBKeyboardInterface(USBInterface):
             if self.keys:
                 letter = self.keys.pop(0)
             else:
-                letter = '\x00'
+                letter = b'\x00'
             self.type_letter(letter)
 
     def type_letter(self, letter, modifiers=0):

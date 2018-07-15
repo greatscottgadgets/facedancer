@@ -162,17 +162,14 @@ class USBInterface(USBDescribable):
             self.number,
             self.alternate,
             bNumEndpoints,
-            #self.iclass,
             self.iclass.class_number,
             self.subclass,
             self.protocol,
             self.string_index
         ) 
 
-        if self.iclass:
-        #if self.iclass.class_number:
-            iclass_desc_num = interface_class_to_descriptor_type(self.iclass)
-            #iclass_desc_num = USB.interface_class_to_descriptor_type(self.iclass.class_number)
+        if self.iclass.class_number:
+            iclass_desc_num = interface_class_to_descriptor_type(self.iclass.class_number)
             if iclass_desc_num:
                 desc = self.descriptors[iclass_desc_num]
                 if callable(desc):

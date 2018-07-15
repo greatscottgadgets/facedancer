@@ -8,7 +8,7 @@ from facedancer.usb.USB import *
 from facedancer.fuzz.helpers import mutable
 
 class USBBinaryObjectStore(USBDescribable):
-
+    name = "USBBinaryObjectStore"
     def __init__(self, phy, capabilities):
         '''
         :param phy: Physical connection

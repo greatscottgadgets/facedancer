@@ -424,7 +424,7 @@ class USBDevice(USBDescribable):
 
     @mutable('string_descriptor')
     def get_string_descriptor(self, num):
-        print(self.name,'get_string_descriptor: %#x (%#x)' % (num, len(self.strings)))
+        self.verbose('get_string_descriptor: %#x (%#x)' % (num, len(self.strings)))
         s = None
         if num <= len(self.strings):
             s = self.strings[num - 1].encode('utf-16')
@@ -521,7 +521,7 @@ class USBDevice(USBDescribable):
 
         # notify the device of the recofiguration, in case
         # it needs to e.g. set up endpoints accordingly
-        self.phy.configured(self.configuration)
+        self.phy.configured(self.configuration) #<---- this should work but will lead to timeouts
 
     # USB 2.0 specification, section 9.4.4 (p 282 of pdf)
     def handle_get_interface_request(self, req):

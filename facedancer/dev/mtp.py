@@ -112,7 +112,7 @@ class USBMtpInterface(USBInterface):
 
         # OS String descriptor
         # self.add_string_with_id(50, 'MTP'.encode('utf-16') + b'\x00\x00')
-        self.add_string_with_id(0xee, 'MSFT100'.encode('utf-16') + b'\x00\x00')
+        self.add_string_with_id(0xee, bytes('MSFT100'.encode('utf-16')) + b'\x00\x00')
 
     def handle_ep1_data_available(self, data):
         resps = self.api.handle_payload(data)
