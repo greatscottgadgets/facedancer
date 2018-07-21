@@ -131,7 +131,7 @@ class USBCDCClass(USBClass):
 
     def setup_local_handlers(self):
         self.local_handlers = {
-            '''
+            
             self.SEND_ENCAPSULATED_COMMAND: self.handle_setter,
             self.GET_ENCAPSULATED_RESPONSE: stage('cdc_get_encapsulated_response', self.handle_getter),
             self.SET_COMM_FEATURE: self.handle_setter,
@@ -178,7 +178,7 @@ class USBCDCClass(USBClass):
             self.SET_MAX_DATAGRAM_SIZE: self.handle_setter,
             self.GET_CRC_MODE: stage('cdc_get_crc_mode', self.handle_getter),
             self.SET_CRC_MODE: self.handle_setter,
-            '''
+            
         }
         self.params = {}
 
@@ -196,7 +196,7 @@ class USBCDCClass(USBClass):
         key = (param_id, req.value, req.index)
         if key in self.params:
             return self.params[key]
-        return '\x00' * req.length
+        return b'\x00' * req.length
 
     def handle_clear(self, req):
         param_id = self.get_param_id_from_request(req.request)
@@ -432,6 +432,6 @@ class USBCDCDevice(USBDevice):
         '''
         by default, send management notification endpoint
         '''
-        print(self.name,'sending network connection notification')
+        self.debug('sending network connection notification')
         resp = build_notification(0xa1, NotificationCodes.NetworkConnection, 1, self.bDataInterface)
         self.send_on_endpoint(3, resp)

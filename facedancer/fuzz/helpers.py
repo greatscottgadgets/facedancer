@@ -5,7 +5,14 @@ This module contains helpers for fuzzing
 import traceback
 import binascii
 import inspect
+import sys
 
+PYTHON_VERSION = None
+if (sys.version_info >= (3,0)):
+    PYTHON_VERSION = 3
+else:
+    PYTHON_VERSION = 2
+    
 class StageLogger(object):
 
     def __init__(self, filename):
@@ -45,8 +52,12 @@ def mutable(stage, silent=False):
     def wrap_f(func):
         func_self = None
         if inspect.ismethod(func):
-            func_self = func.im_self
-            func = func.im_func
+            if PYTHON_VERSION==2:
+                func_self = func.im_self
+                func = func.im_func
+            else:
+                func_self = func.__self__
+                func = func.__func__
 
         def wrapper(*args, **kwargs):
             if func_self is None:

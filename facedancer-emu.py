@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
+import sys
 
 from facedancer import FacedancerUSBApp
-from facedancer.dev.audio import *
-from facedancer.dev.cdc import *
-from facedancer.dev.cdc_acm import *
-from facedancer.dev.qc_edl import *
-from facedancer.dev.ftdi import *
-from facedancer.dev.keyboard import *
-from facedancer.dev.iphone import *
-from facedancer.dev.serial import *
-from facedancer.dev.switch_TAS import *
-from facedancer.dev.mass_storage import *
-from facedancer.dev.ums_doublefetch import *
-from facedancer.dev.billboard import *
-from facedancer.dev.cdc_dl import *
-from facedancer.dev.hub import *
-from facedancer.dev.printer import *
-from facedancer.dev.mtp import *
-from facedancer.dev.vendor_specific import *
-from facedancer.dev.smartcard import *
+from devices.audio import USBAudioDevice
+from devices.cdc import USBCDCDevice
+from devices.cdc_acm import USBCdcAcmDevice
+from devices.cdc_dl import USBCdcDlDevice
+from devices.qc_edl import USBSaharaDevice
+from devices.ftdi import USBFtdiDevice
+from devices.keyboard import USBKeyboardDevice
+from devices.iphone import USBiPhoneDevice
+from devices.serial import USBSerialDevice
+from devices.switch_TAS import USBSwitchTASDevice
+from devices.mass_storage import USBMassStorageDevice, RawDiskImage
+from devices.ums_doublefetch import DoubleFetchImage
+from devices.billboard import USBBillboardDevice
+
+from devices.hub import USBHubDevice
+from devices.printer import USBPrinterDevice
+from devices.mtp import USBMtpDevice
+from devices.vendor_specific import USBVendorSpecificDevice
+from devices.smartcard import USBSmartcardDevice
 
 targets=[
     ["Audio", USBAudioDevice],
@@ -34,13 +36,12 @@ targets=[
     ["iPhone",USBiPhoneDevice],
     ["Keyboard",USBKeyboardDevice],
     ["MassStorage",USBMassStorageDevice],
+    ["MassStorage-DoubleFetch",USBMassStorageDevice],
     ["Serial",USBSerialDevice],
     ["Smartcard",USBSmartcardDevice],
     ["SwitchTAS",USBSwitchTASDevice],
     ["MTP",USBMtpDevice],
-    ["Printer",USBPrinterDevice],
-    ["Vendor",USBVendorSpecificDevice]
-
+    ["Printer",USBPrinterDevice]
 ]
 
 def showtypes():
@@ -63,6 +64,14 @@ def main(argv):
     parser.add_argument(
         '--filename2', '-file2',
         help='Additional Filename',
+        default='')
+    parser.add_argument(
+        '--vid', '-vid',
+        help='Vendor ID',
+        default='')
+    parser.add_argument(
+        '--pid', '-pid',
+        help='Product ID',
         default='')
 
     parser.add_argument(
@@ -109,13 +118,13 @@ def main(argv):
         #   # kpartx -d /dev/loopX
         #   # losetup -d /dev/loopX
         if args.filename=='':
-            print("Usage: facedancer-emu.py -device MassStorage -file disk.img");
+            print("\nUsage: facedancer-emu.py -device MassStorage -file examples/fat32.3M.stick.img");
             sys.exit(1);
         i = RawDiskImage(args.filename, 512, verbose=int(args.verbose))
         d = func(phy, i)
-    elif args.device=="UMS-DoubleFetch":
+    elif args.device=="MassStorage-DoubleFetch":
         if args.filename=='' or args.filename2=='':
-            print("Usage: facedancer-emu.py -device UMS-DoubleFetch -file valid_firmware -file2 hacked_firmware");
+            print("\nUsage: facedancer-emu.py -device MassStorage-DoubleFetch -file valid_firmware -file2 hacked_firmware");
             sys.exit(1);
         i = DoubleFetchImage(args.filename, args.filename2)
         d = func(phy, i)

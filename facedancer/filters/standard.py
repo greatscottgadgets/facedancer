@@ -20,14 +20,14 @@ class USBProxySetupFilters(USBProxyFilter):
     GET_DESCRIPTOR_REQUEST = 6
     RECIPIENT_DEVICE = 0
 
-    DESCRIPTOR_CONFIRGUATION = 0x02
+    DESCRIPTOR_CONFIGURATION = DescriptorType.configuration
 
     def __init__(self, device, verbose=0):
         self.device = device
         self.configurations = {}
         self.verbose = verbose
 
-    def filter_control_in(self, req, data, stalled):
+    def filter_control_in(self, phy, req, data, stalled):
 
         if stalled:
             return req, data, stalled
@@ -44,9 +44,10 @@ class USBProxySetupFilters(USBProxyFilter):
             # If this is a configuration descriptor, store information relevant
             # to the configuration. We'll need this to set up the endpoint
             # hardware on the facedancer device.
-            if descriptor_type == self.DESCRIPTOR_CONFIRGUATION and req.length >= 32:
-                configuration = USBDescribable.from_binary_descriptor(data)
-                self.configurations[configuration.configuration_index] = configuration
+            if descriptor_type == self.DESCRIPTOR_CONFIGURATION and req.length >= 32:
+                configuration = USBDescribable.from_binary_descriptor(phy,data)
+                if configuration is not None:
+                    self.configurations[configuration._configuration_index] = configuration
 
                 if self.verbose > 1:
                     print("-- Storing configuration {} --".format(configuration))

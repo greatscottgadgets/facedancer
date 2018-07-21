@@ -26,7 +26,7 @@ class SwitchControllerWorkWithFacedancer21Filter(USBProxyFilter):
     GET_DESCRIPTOR_REQUEST = 6
     DESCRIPTOR_CONFIGURATION = 0x02
 
-    def filter_control_in(self, req, data, stalled):
+    def filter_control_in(self, phy, req, data, stalled):
 
         if stalled:
             return req, data, stalled
@@ -41,7 +41,7 @@ class SwitchControllerWorkWithFacedancer21Filter(USBProxyFilter):
             # If this is the configuration descriptor, modify the endpoint descritors
             # to switch EP1 and EP2.
             if descriptor_type == self.DESCRIPTOR_CONFIGURATION and req.length >= 32:
-                configuration = USBConfiguration.from_binary_descriptor(data)
+                configuration = USBConfiguration.from_binary_descriptor(phy, data)
 
                 # Swap EP2 and EP1.
                 ep2, ep1 = configuration.interfaces[0].endpoints
@@ -100,8 +100,8 @@ class SwitchControllerInvertXFilter(USBProxyFilter):
 def main():
 
     # Create a new proxy/MITM connection for the Switch Wired Pro Controller.
-    u = FacedancerUSBApp(verbose=1)
-    d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1, verbose=2)
+    u = FacedancerUSBApp()
+    d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1)
 
     # Apply our filter before the standard filters so we impact configuration
     # of the target device.

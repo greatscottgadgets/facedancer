@@ -8,6 +8,7 @@ from .USBClass import USBClass
 
 class USBCSInterface(USBDescribable):
     name = "CSinterface"
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.cs_interface
 
     def __init__(self, name, phy, cs_config):
         super(USBCSInterface, self).__init__(phy)
@@ -37,16 +38,16 @@ class USBCSInterface(USBDescribable):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
-            Generates an interface object from a descriptor.
+        Creates an endpoint object from a description of that endpoint.
         """
-        interface_number, alternate_setting, num_endpoints, interface_class, \
-                interface_subclass, interface_protocol, interface_string_index \
-                = struct.unpack("xxBBBBBBB", data)
-        return cls(interface_number, alternate_setting, interface_class,
-                   interface_subclass, interface_protocol, interface_string_index)
+        print("CSInterface")
+        # Parse the core descriptor into its components...
+        length, descriptor_type = struct.unpack("BB", data[:2])
+        cs_config = data[2:length]
 
+        return cls("", phy, cs_config)
 
 
     def __repr__(self):

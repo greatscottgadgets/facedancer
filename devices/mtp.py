@@ -74,7 +74,7 @@ class USBMtpInterface(USBInterface):
                 ),
             ],
         )
-        self.object = MtpObject.from_fs_recursive('mtp_fs')
+        self.object = MtpObject.from_fs_recursive('mtp_fs/')
         # self.object = MtpObject.from_fs_recursive('mtp_fs/eits.mp3')
         self.storage_info = MtpStorageInfo(
             st_type=1,

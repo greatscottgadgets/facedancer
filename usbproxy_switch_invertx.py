@@ -34,8 +34,8 @@ class SwitchControllerInvertXFilter(USBProxyFilter):
 def main():
 
     # Create a new proxy/MITM connection for the Switch Wired Pro Controller.
-    u = FacedancerUSBApp(verbose=1)
-    d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1, verbose=2)
+    u = FacedancerUSBApp()
+    d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1)
 
     # Apply the standard filters that make USBProork.
     d.add_filter(USBProxySetupFilters(d, verbose=2))

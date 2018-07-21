@@ -89,6 +89,7 @@ class USBSaharaInterface(USBInterface):
         self.buffer=bytes(b'')
         self.loader=bytes(b'')
         self.receive_buffer = bytes(b'')
+        self.packets_to_send = []
 
         endpoints = [
         USBEndpoint(
@@ -134,11 +135,13 @@ class USBSaharaInterface(USBInterface):
         #print("RX: ")
         #rec=binascii.hexlify(data)
         #print(rec)
+        if len(data)==0:
+            return
         if type(data[0])==int:
             opcode=data[0]
         else:
             opcode=ord(data[0])
-            
+
         if (self.switch==0 and opcode==0x3A):
             self.info("Got download request.")
             init= b"\x7E\x02\x6A\xD3\x7E"
@@ -309,7 +312,7 @@ class USBSaharaInterface(USBInterface):
                     with open(hwidf, "wb") as ft:
                         ft.write(self.loader[0:self.reallen])
                         self.info("We received all loader, stored as: %s" % (hwidf))
-                    self.info("All loader done.")
+                    self.switch=4
                     return (struct.pack('<IIII', 0x4, 0x10, 0xD, 0x0))
                     
     def handle_data_available(self, data):
@@ -334,9 +337,13 @@ class USBSaharaInterface(USBInterface):
 
         resp=self.handle_payload(data)
         if resp:
-            self.debug("TX: "+str(binascii.hexlify(resp)))
-            self.send_on_endpoint(3, resp)
+            self.packets_to_send.append(resp)
+            #self.send_on_endpoint(3, resp)
             #self.endpoints[1].send(resp)
+
+        if self.switch==4:
+            self.info("All loader done.")
+            exit(0)
 
     def handle_buffer_available(self):
         if self.count==0:
@@ -345,6 +352,11 @@ class USBSaharaInterface(USBInterface):
             self.endpoints[1].send(init)
             #self.send_on_endpoint(3,init)
             self.count += 1
+        if self.packets_to_send:
+            self.debug("TX: "+str(binascii.hexlify(self.packets_to_send[0])))
+            to_send = self.packets_to_send.pop(0)
+            self.endpoints[1].send(to_send)
+
                
 
 class USBSaharaDevice(USBDevice):

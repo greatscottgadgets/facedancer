@@ -21,7 +21,7 @@ class HIDClass(USBClass):
     """
 
     HID_CLASS_NUMBER            = 3
-    DESCRIPTOR_TYPE_NUMBER      = 0x21
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.hid
 
     def __init__(self, raw_descriptor):
         self.raw_descriptor = raw_descriptor
@@ -30,11 +30,11 @@ class HIDClass(USBClass):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
         Creates an endpoint object from a description of that endpoint.
         """
-        return cls(data)
+        return cls(phy, data)
 
 
     def get_descriptor(self):

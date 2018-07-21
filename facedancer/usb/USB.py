@@ -10,6 +10,7 @@ import logging
 start_time = time.time()
 
 class DescriptorType(object):
+    none = 0x00
     device = 0x01
     configuration = 0x02
     string = 0x03
@@ -110,7 +111,7 @@ class USBDescribable(object):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
         Attempts to create a USBDescriptor subclass from the given raw
         descriptor data.
@@ -119,7 +120,7 @@ class USBDescribable(object):
         for subclass in cls.__subclasses__():
             # If this subclass handles our binary descriptor, use it to parse the given descriptor.
             if subclass.handles_binary_descriptor(data):
-                return subclass.from_binary_descriptor(data)
+                return subclass.from_binary_descriptor(phy,data)
 
         return None
 

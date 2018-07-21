@@ -493,7 +493,7 @@ class USBSmartcardDevice(USBDevice):
                     configuration_index=1,
                     configuration_string_or_index='Emulated Smartcard',
                     interfaces=[
-                        USBSmartcardInterface(phy)
+                        USBSmartcardInterface(phy=phy)
                     ]
                 )
             ]

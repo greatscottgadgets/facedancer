@@ -129,25 +129,24 @@ class USBVendorSpecificDevice(USBDevice):
             vendor_id=vid,
             product_id=pid,
             device_rev=rev,
-            manufacturer_string='FD. VID:0x%04x' % vid,
-            product_string='FD. PID:0x%04x' % pid,
+            manufacturer_string=('FD. VID:0x%04x' % vid),
+            product_string=('FD. PID:0x%04x' % pid),
             serial_number_string='123456',
             configurations=[
                 USBConfiguration(
                     phy=phy,
-                    index=1,
-                    string='Vendor Specific Conf',
+                    configuration_index=1,
+                    configuration_string_or_index='Vendor Specific Conf',
                     interfaces=self.get_interfaces(),
                     attributes=USBConfiguration.ATTR_SELF_POWERED,
                 )
             ],
         )
 
-    def handle_request(self, buf):
+    def handle_request(self, req):
         '''
         override the handle_request - in case a request is directed to an endpoint - we mark as supported
         '''
-        req = USBDeviceRequest(buf)
 
         # figure out the intended recipient
         req_type = req.get_type()
@@ -159,7 +158,7 @@ class USBVendorSpecificDevice(USBDevice):
                 #self.phy.stall_ep0()
                 return
 
-        return super(USBVendorSpecificDevice, self).handle_request(buf)
+        return req
 
     def handle_data_available(self, ep_num, data):
         '''

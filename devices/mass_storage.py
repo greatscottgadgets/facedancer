@@ -195,7 +195,7 @@ class USBMassStorageClass(USBClass):
     name = "USB mass storage class"
 
     UMS_CLASS_NUMBER            = 8
-    DESCRIPTOR_TYPE_NUMBER      = 0
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.none
 
     def __init__(self, phy):
         super(USBMassStorageClass,self).__init__(phy, self.UMS_CLASS_NUMBER, None, self.DESCRIPTOR_TYPE_NUMBER)

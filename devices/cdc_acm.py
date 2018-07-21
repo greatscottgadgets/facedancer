@@ -8,19 +8,20 @@ import struct
 from binascii import unhexlify
 import facedancer
 
-from facedancer.usb.USB import *
-from facedancer.usb.USBDevice import *
-from facedancer.usb.USBConfiguration import *
-from facedancer.usb.USBInterface import *
-from facedancer.usb.USBEndpoint import *
-from facedancer.usb.USBVendor import *
-from facedancer.usb.USBCSInterface import *
+#from facedancer.usb.USB import *
+#from facedancer.usb.USBDevice import *
+#from facedancer.usb.USBConfiguration import *
+from facedancer.usb.USBClass import USBClass
+from facedancer.usb.USBInterface import USBInterface
+from facedancer.usb.USBEndpoint import USBEndpoint
+#from facedancer.usb.USBVendor import *
+#from facedancer.usb.USBCSInterface import *
 
-from facedancer.dev.cdc import USBCDCDevice
-from facedancer.dev.cdc import CommunicationClassSubclassCodes
-from facedancer.dev.cdc import CommunicationClassProtocolCodes
-from facedancer.dev.cdc import DataInterfaceClassProtocolCodes
-from facedancer.dev.cdc import FunctionalDescriptor as FD
+from devices.cdc import USBCDCDevice
+from devices.cdc import CommunicationClassSubclassCodes
+from devices.cdc import CommunicationClassProtocolCodes
+from devices.cdc import DataInterfaceClassProtocolCodes
+from devices.cdc import FunctionalDescriptor as FD
 
 
 class USBCdcAcmDevice(USBCDCDevice):

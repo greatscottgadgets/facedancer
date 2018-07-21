@@ -16,7 +16,7 @@ from facedancer.fuzz.helpers import mutable
 class USBConfiguration(USBDescribable):
 
     name = 'Configuration'
-
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.configuration
     ATTR_BASE = 0x80
     ATTR_SELF_POWERED = ATTR_BASE | 0x40
     ATTR_REMOTE_WAKEUP = ATTR_BASE | 0x20
@@ -51,14 +51,14 @@ class USBConfiguration(USBDescribable):
                 self.usb_vendor = i.usb_vendor
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
         Generates a new USBConfiguration object from a configuration descriptor,
         handling any attached subordiate descriptors.
 
         data: The raw bytes for the descriptor to be parsed.
         """
-
+        print("Configuration")
         length = data[0]
 
         # Unpack the main colleciton of data into the descriptor itself.
@@ -66,12 +66,12 @@ class USBConfiguration(USBDescribable):
             attributes, max_power = struct.unpack('<xBHBBBBB', data[0:length])
 
         # Extract the subordinate descriptors, and parse them.
-        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
-        return cls(index, string_index, interfaces, attributes, max_power)
+        interfaces = cls._parse_subordinate_descriptors(phy, data[length:total_length])
+        return cls(phy, index, string_index, interfaces, attributes, max_power)
 
 
     @classmethod
-    def _parse_subordinate_descriptors(cls, data):
+    def _parse_subordinate_descriptors(cls, phy, data):
         """
         Generates descriptor objects from the list of subordinate desciptors.
 
@@ -86,7 +86,7 @@ class USBConfiguration(USBDescribable):
 
             # Determine the length and type of the next descriptor.
             length          = data[0]
-            descriptor = USBDescribable.from_binary_descriptor(data[:length])
+            descriptor = USBDescribable.from_binary_descriptor(phy, data[:length])
 
             # If we have an interface descriptor, add it to our list of interfaces.
             if isinstance(descriptor, USBInterface):

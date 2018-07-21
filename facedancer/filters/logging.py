@@ -19,7 +19,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
 
 
-    def filter_control_in(self, req, data, stalled):
+    def filter_control_in(self, phy, req, data, stalled):
         """
         Log IN control requests without modification.
         """

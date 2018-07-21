@@ -9,6 +9,8 @@ from facedancer.fuzz.helpers import mutable
 
 class USBDeviceCapability(USBDescribable):
     name = 'DeviceCapability'
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.device_capability
+
     WIRELESS_USB = 0x01
     USB_20_EXTENSION = 0x02
     SUPERSPEED_USB = 0x03
@@ -44,6 +46,15 @@ class USBDeviceCapability(USBDescribable):
         )
         return d + self.cap_data
 
+    @classmethod
+    def from_binary_descriptor(cls, phy, data):
+        """
+            Generates an interface object from a descriptor.
+        """
+        print("DeviceCapability")
+        bLength, bDescriptorType, cap_type = struct.unpack("BBB", data[:3])
+
+        return cls(phy,cap_type, data[3:])
 
 #
 # Specific device capability classes

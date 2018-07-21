@@ -7,6 +7,7 @@ from .USB import *
 
 class USBEndpoint(USBDescribable):
     name = 'Endpoint'
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.endpoint
 
     DESCRIPTOR_TYPE_NUMBER      = 0x05
 
@@ -52,11 +53,11 @@ class USBEndpoint(USBDescribable):
         }
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
         Creates an endpoint object from a description of that endpoint.
         """
-
+        print("Endpoint")
         # Parse the core descriptor into its components...
         address, attributes, max_packet_size, interval = struct.unpack("xxBBHB", data)
 
@@ -67,7 +68,7 @@ class USBEndpoint(USBDescribable):
         sync_type     = attributes >> 2 & 0b1111
         usage_type    = attributes >> 4 & 0b11
 
-        return cls(number, direction, transfer_type, sync_type, usage_type,
+        return cls(phy,number, direction, transfer_type, sync_type, usage_type,
                    max_packet_size, interval)
 
 

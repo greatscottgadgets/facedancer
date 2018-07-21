@@ -9,6 +9,7 @@ from facedancer.fuzz.helpers import mutable
 
 class USBInterface(USBDescribable):
     name = "Interface"
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.interface
 
     def __init__(self, phy, interface_number, interface_alternate, interface_class,
             interface_subclass, interface_protocol, interface_string_index,
@@ -42,12 +43,15 @@ class USBInterface(USBDescribable):
         } 
         
         self.configuration = None
-        
+
         if self.iclass and self.iclass.class_descriptor_number:
             descriptor = self.iclass.get_descriptor()
 
             if descriptor:
                 self.descriptors[self.iclass.class_descriptor_number] = descriptor
+
+        self.usb_class = usb_class
+        self.usb_vendor = usb_vendor
 
         for e in self.endpoints:
             e.interface = self
@@ -78,14 +82,15 @@ class USBInterface(USBDescribable):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
             Generates an interface object from a descriptor.
         """
+        print("Interface")
         interface_number, alternate_setting, num_endpoints, interface_class, \
                 interface_subclass, interface_protocol, interface_string_index \
                 = struct.unpack("xxBBBBBBB", data)
-        return cls(interface_number, alternate_setting, interface_class,
+        return cls(phy,interface_number, alternate_setting, interface_class,
                    interface_subclass, interface_protocol, interface_string_index)
 
 

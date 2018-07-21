@@ -8,6 +8,7 @@ from facedancer.fuzz.helpers import mutable
 
 class USBCSEndpoint(USBDescribable):
     name = 'CSEndpoint'
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.cs_endpoint
 
     def __init__(self, name, phy, cs_config):
         super(USBCSEndpoint, self).__init__(phy)
@@ -35,3 +36,15 @@ class USBCSEndpoint(USBDescribable):
         length = len(self.cs_config) + 2
         response = struct.pack('BB', length & 0xff, descriptor_type) + self.cs_config
         return response
+
+    @classmethod
+    def from_binary_descriptor(cls, phy, data):
+        """
+        Creates an endpoint object from a description of that endpoint.
+        """
+        print("CSEndpoint")
+        # Parse the core descriptor into its components...
+        length, descriptor_type = struct.unpack("BB", data[:2])
+        cs_config = data[2:length]
+
+        return cls("", phy, cs_config)

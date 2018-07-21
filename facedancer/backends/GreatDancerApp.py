@@ -745,10 +745,11 @@ class GreatDancerApp(FacedancerApp):
     def configured(self, configuration):
         """
         Callback that's issued when a USBDevice is configured, e.g. by the
-        SET_CONFIGRUATION request. Allows us to apply the new configuration.
+        SET_CONFIGURATION request. Allows us to apply the new configuration.
 
         configuration: The configruation applied by the SET_CONFIG request.
         """
+
         self._configure_endpoints(configuration)
         self.configuration = configuration
 

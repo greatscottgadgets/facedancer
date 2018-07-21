@@ -8,11 +8,11 @@ from binascii import unhexlify
 from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBClass import USBClass
 from facedancer.usb.USBEndpoint import USBEndpoint
-from facedancer.dev.cdc import USBCDCDevice
-from facedancer.dev.cdc import CommunicationClassSubclassCodes
-from facedancer.dev.cdc import CommunicationClassProtocolCodes
-from facedancer.dev.cdc import DataInterfaceClassProtocolCodes
-from facedancer.dev.cdc import FunctionalDescriptor as FD
+from devices.cdc import USBCDCDevice
+from devices.cdc import CommunicationClassSubclassCodes
+from devices.cdc import CommunicationClassProtocolCodes
+from devices.cdc import DataInterfaceClassProtocolCodes
+from devices.cdc import FunctionalDescriptor as FD
 
 
 class USBCdcDlDevice(USBCDCDevice):

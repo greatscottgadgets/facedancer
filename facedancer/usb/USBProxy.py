@@ -39,7 +39,7 @@ class USBProxyFilter:
         return req, stalled
 
 
-    def filter_control_in(self, req, data, stalled):
+    def filter_control_in(self, phy, req, data, stalled):
         """
         Filters the data response from the proxied device during an IN control
         request. This allows us to modify the data returned from the proxied
@@ -179,7 +179,7 @@ class USBProxyDevice(USBDevice):
         self.phy.connect(self, max_ep0_packet_size)
 
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
-        self.state = USB.state_powered
+        self.state = State.powered
 
 
     def configured(self, configuration):
@@ -255,7 +255,7 @@ class USBProxyDevice(USBDevice):
 
         # Run filters here.
         for f in self.filter_list:
-            req, data, stalled = f.filter_control_in(req, data, stalled)
+            req, data, stalled = f.filter_control_in(self.phy, req, data, stalled)
 
         #... and proxy it to our victim.
         if stalled:

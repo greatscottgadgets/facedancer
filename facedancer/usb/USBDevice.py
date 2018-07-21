@@ -15,7 +15,7 @@ import struct
 class USBDevice(USBDescribable):
     name = "Device"
 
-    DESCRIPTOR_TYPE_NUMBER    = 0x01
+    DESCRIPTOR_TYPE_NUMBER = DescriptorType.device
     DESCRIPTOR_LENGTH         = 0x12
 
     def __init__(self, phy, device_class=0, device_subclass=0,
@@ -109,11 +109,11 @@ class USBDevice(USBDescribable):
         self.scheduler.add_task(lambda : self.phy.service_irqs())
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, phy, data):
         """
         Creates a USBDevice object from its descriptor.
         """
-
+        print("Device")
         # Pad the descriptor out with zeroes to the full length of a configuration descriptor.
         if len(data) < cls.DESCRIPTOR_LENGTH:
             padding_necessary = cls.DESCRIPTOR_LENGTH - len(data)
@@ -132,7 +132,7 @@ class USBDevice(USBDescribable):
         spec_version = (spec_version_msb << 8) | spec_version_lsb
         device_rev = (device_rev_msb << 8) | device_rev_lsb
 
-        return cls(None, device_class, device_subclass, device_protocol, max_packet_size_ep0,
+        return cls(phy, device_class, device_subclass, device_protocol, max_packet_size_ep0,
                    vendor_id, product_id, device_rev, manufacturer_string_index, product_string_index,
                    serial_number_string_index, configurations, spec_version=spec_version)
 
@@ -266,7 +266,7 @@ class USBDevice(USBDescribable):
             elif recipient_type == Request.recipient_endpoint:
                 recipient = self.endpoints.get(index, None)
                 if recipient is None:
-                    print(self.name, 'Failed to get endpoint recipient at index: %d' % index)
+                    self.warning('Failed to get endpoint recipient at index: %d' % index)
             elif recipient_type == Request.recipient_other:
                 recipient = self.configuration.interfaces[0]  # HACK for Hub class
             handler_entity = recipient
@@ -332,7 +332,7 @@ class USBDevice(USBDescribable):
 
     # USB 2.0 specification, section 9.4.5 (p 282 of pdf)
     def handle_get_status_request(self, req):
-        print("received GET_STATUS request")
+        self.verbose("received GET_STATUS request")
 
         # self-powered and remote-wakeup (USB 2.0 Spec section 9.4.5)
         response = b'\x03\x00'
@@ -360,8 +360,7 @@ class USBDevice(USBDescribable):
 
         # This print really shouldn't be here-- this is the critical path!
         #if self.verbose > 2:
-        #    print(self.name, "received SET_ADDRESS request for address",
-        #            self.address)
+        self.verbose("received SET_ADDRESS request for address", self.address)
 
         self.set_address(self.address)
 
@@ -514,7 +513,10 @@ class USBDevice(USBDescribable):
         self.endpoints = { }
         for i in self.configuration.interfaces:
             for e in i.endpoints:
-                self.endpoints[e.number] = e
+                if e.transfer_type==e.transfer_type_isochronous:
+                    self.warning("Isochronous transfer isn't yet supported by greatfet firmware !")
+                else:
+                    self.endpoints[e.number] = e
 
         # HACK: blindly acknowledge request
         self.ack_status_stage()
@@ -582,6 +584,78 @@ class USBDeviceRequest:
             self.length
         )
         return s
+
+    def __repr__(self):
+        direction_marker = "<" if self.get_direction() == 1 else ">"
+
+        # Pretty print, where possible.
+        type = self.get_type_string()
+        recipient = self.get_recipient_string()
+        request = self.get_request_number_string()
+        value = self.get_value_string()
+
+        s = "%s, %s request to %s (%s: value=%s, index=%x, length=%d)" \
+            % (direction_marker, type, recipient, request,
+               value, self.index, self.length)
+        return s
+
+    def get_type_string(self):
+        return self.setup_request_types[self.get_type()]
+
+    def get_recipient_string(self):
+        return self.setup_request_receipients[self.get_type()]
+
+    def get_request_number_string(self):
+        if self.get_type() == 0:
+            return self._get_standard_request_number_string()
+        else:
+            type = self.get_type_string()
+            return "{} request {}".format(type, self.request)
+
+    _standard_req_descriptions = {
+        0: 'GET_STATUS',
+        1: 'CLEAR_FEATURE',
+        3: 'SET_FEATURE',
+        5: 'SET_ADDRESS',
+        6: 'GET_DESCRIPTOR',
+        7: 'SET_DESCRIPTOR',
+        8: 'GET_CONFIGRUATION',
+        9: 'SET_CONFIGURATION',
+        10: 'GET_INTERFACE',
+        11: 'SET_INTERFACE',
+        12: 'SYNCH_FRAME'
+    }
+
+    _descriptor_number_description = {
+        1: 'DEVICE',
+        2: 'CONFIGURATION',
+        3: 'STRING',
+        4: 'INTERFACE',
+        5: 'ENDPOINT',
+        6: 'DEVICE_QUALIFIER',
+        7: 'OTHER_SPEED_CONFIG',
+        8: 'POWER',
+        33: 'HID',
+        34: 'REPORT',
+    }
+
+    def _get_standard_request_number_string(self):
+        return self._standard_req_descriptions[self.request]
+
+    def get_value_string(self):
+        # If this is a GET_DESCRIPTOR request, parse it.
+        if self.get_type() == 0 and self.request == 6:
+            description = self._get_descriptor_number_string()
+            return "{} descriptor".format(description)
+        else:
+            return "%x" % self.value
+
+    def _get_descriptor_number_string(self):
+        try:
+            descriptor_index = self.value >> 8
+            return self._descriptor_number_description[descriptor_index]
+        except KeyError:
+            return "unknown descriptor 0x%x" % self.value
 
     def raw(self):
         """returns request as bytes"""

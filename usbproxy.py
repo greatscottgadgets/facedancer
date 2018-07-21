@@ -25,12 +25,16 @@ def main():
     parser.add_argument('-p', dest='productid', metavar='<ProductID>',
                         type=vid_pid, help="Product ID of device",
                         required=True)
+    parser.add_argument('-verbose', dest='verbose', metavar='<Verbose>',
+                        help='Debug level',default='0')
     args = parser.parse_args()
     quirks = []
 
     # Create a new USBProxy device.
-    u = FacedancerUSBApp(verbose=1)
-    d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, verbose=2, quirks=quirks)
+    u = FacedancerUSBApp()
+    u.set_log_level(int(args.verbose))
+
+    d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, quirks=quirks)
 
     # Add our standard filters.
     # TODO: Make the PrettyPrintFilter switchable?
