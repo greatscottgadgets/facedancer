@@ -32,6 +32,7 @@ class USBEndpoint(USBDescribable):
             usage_type, max_packet_size, interval, handler=None, nak_callback=None, cs_endpoints=None,usb_class=None, usb_vendor=None):
 
         super(USBEndpoint, self).__init__(phy)
+
         self.number             = number
         self.direction          = direction
         self.transfer_type      = transfer_type
@@ -133,7 +134,8 @@ class USBEndpoint(USBDescribable):
         return self.max_packet_size
 
     def send_packet(self, data, blocking=False):
-        self.phy.send_on_endpoint(self.number, data, blocking=blocking)
+        dev = self.interface.configuration._device
+        dev.phy.send_on_endpoint(self.number, data, blocking=blocking)
 
     def send(self, data):
         # Send the relevant data one packet at a time,
@@ -146,6 +148,7 @@ class USBEndpoint(USBDescribable):
             self.send_packet(packet)
 
     def recv(self):
-        data = self.phy.read_from_endpoint(self.number)
+        dev = self.interface.configuration._device
+        data = dev.phy.read_from_endpoint(self.number)
         return data
 

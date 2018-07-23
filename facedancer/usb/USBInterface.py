@@ -147,7 +147,7 @@ class USBInterface(USBDescribable):
             n = min(n, len(response))
             self.phy.send_on_endpoint(0, response[:n])
 
-            self.verbose("sent", n, "bytes in response")
+            self.verbose("sent %d bytes in response" % n)
 
     def handle_set_interface_request(self, req):
         self.debug('Received SET_INTERFACE request')

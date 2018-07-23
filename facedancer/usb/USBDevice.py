@@ -248,33 +248,41 @@ class USBDevice(USBDescribable):
         self.debug("received request %s" % repr(req))
 
         # figure out the intended recipient
-        req_type = req.get_type()
         recipient_type = req.get_recipient()
         recipient = None
-        handler_entity = None
 
-        if req_type == Request.type_standard:    # for standard requests we lookup the recipient by index
-            index = req.get_index()
-            if recipient_type == Request.recipient_device:
+        index = req.get_index()
+        if recipient_type == Request.recipient_device:
+            recipient = self
+        elif recipient_type == Request.recipient_interface:
+            index = index & 0xff
+            if index < len(self.configuration.interfaces):
+                recipient = self.configuration.interfaces[index]
+            else:
+                self.warning('Failed to get interface recipient at index: %d' % index)
+        elif recipient_type == Request.recipient_endpoint:
+            if index == 0:
                 recipient = self
-            elif recipient_type == Request.recipient_interface:
-                index = index & 0xff
-                if index < len(self.configuration.interfaces):
-                    recipient = self.configuration.interfaces[index]
-                else:
-                    self.warning('Failed to get interface recipient at index: %d' % index)
-            elif recipient_type == Request.recipient_endpoint:
+            else:
                 recipient = self.endpoints.get(index, None)
-                if recipient is None:
-                    self.warning('Failed to get endpoint recipient at index: %d' % index)
-            elif recipient_type == Request.recipient_other:
-                recipient = self.configuration.interfaces[0]  # HACK for Hub class
-            handler_entity = recipient
+            if recipient is None:
+                self.warning('Failed to get endpoint recipient at index: %d' % index)
+        elif recipient_type == Request.recipient_other:
+            recipient = self.configuration.interfaces[0]  # HACK for Hub class
 
+        if not recipient:
+            self.warning('invalid recipient, stalling')
+            self.phy.stall_ep0()
+            return
+
+        req_type = req.get_type()
+        handler_entity = None
+        if req_type == Request.type_standard:    # for standard requests we lookup the recipient by index
+            handler_entity = recipient
         elif req_type == Request.type_class:    # for class requests we take the usb_class handler from the configuration
-            handler_entity = self.usb_class
+                handler_entity = self.usb_class
         elif req_type == Request.type_vendor:   # for vendor requests we take the usb_vendor handler from the configuration
-            handler_entity = self.usb_vendor
+                handler_entity = self.usb_vendor
 
         if not handler_entity:
             self.warning("received request %s" % req)
@@ -513,10 +521,10 @@ class USBDevice(USBDescribable):
         self.endpoints = { }
         for i in self.configuration.interfaces:
             for e in i.endpoints:
-                if e.transfer_type==e.transfer_type_isochronous:
-                    self.warning("Isochronous transfer isn't yet supported by greatfet firmware !")
-                else:
-                    self.endpoints[e.number] = e
+                #if e.transfer_type==e.transfer_type_isochronous:
+                #    self.warning("Isochronous transfer isn't yet supported by greatfet firmware !")
+                #else:
+                     self.endpoints[e.number] = e
 
         # HACK: blindly acknowledge request
         self.ack_status_stage()
