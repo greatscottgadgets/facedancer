@@ -246,9 +246,9 @@ class GreatDancerApp(FacedancerApp):
         blocking: If true, this function will wait for the transfer to complete.
         """
         if PYTHON_VERSION == 3:
-            self.verbose("sending on %s" % ("{}: {}".format(ep_num, data)))
+            self.info("sending on %s" % ("{}: {}".format(ep_num, data)))
         else:
-            self.verbose("sending on %d : %s" % (ep_num, binascii.hexlify(str(data))))
+            self.info("sending on %d : %s" % (ep_num, binascii.hexlify(str(data))))
         
         self._wait_until_ready_to_send(ep_num)
         self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
