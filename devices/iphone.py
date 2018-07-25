@@ -154,7 +154,7 @@ class USBiPhoneDevice(USBDevice):
                 phy=phy,
                 configuration_index=1,                                          # index
                 configuration_string_or_index="iPhone",                                     # string desc
-                interfaces=[ interface0 ]                               # interfaces
+                interfaces=[ interface0, interface1, interface2 ]                               # interfaces
             ),
             USBConfiguration(
                 phy=phy,
