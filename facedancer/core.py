@@ -107,10 +107,97 @@ class FacedancerApp:
         pass
 
 
+def FacedancerUSBHostApp(verbose=0, quirks=None):
+    """
+    Convenience function that automatically creates a FacedancerApp
+    based on the BOARD environment variable and some crude internal
+    automagic.
+
+    verbose: Sets the verbosity level of the relevant app. Increasing
+        this from zero yields progressively more output.
+    """
+    return FacedancerUSBHost.autodetect(verbose, quirks)
+
+
+class FacedancerUSBHost:
+    """
+    Base class for FaceDancer host connections-- extended to provide actual
+    connections to each host.
+    """
+
+    @classmethod
+    def autodetect(cls, verbose=0, quirks=None):
+        """
+        Convenience function that automatically creates the apporpriate
+        sublass based on the BOARD environment variable and some crude internal
+        automagic.
+
+        verbose: Sets the verbosity level of the relevant app. Increasing
+            this from zero yields progressively more output.
+        """
+
+        # TODO: Filter this out into some kind of autodetecting base class...
+
+        if 'BACKEND' in os.environ:
+            backend_name = os.environ['BACKEND'].lower()
+        else:
+            backend_name = None
+
+        # Iterate over each subclass of FacedancerApp until we find one
+        # that seems appropriate.
+        subclass = cls._find_appropriate_subclass(backend_name)
+
+        if subclass:
+            if verbose > 0:
+                print("Using {} backend.".format(subclass.app_name))
+
+            return subclass(verbose=verbose, quirks=quirks)
+        else:
+            raise DeviceNotFoundError()
+
+
+    @classmethod
+    def _find_appropriate_subclass(cls, backend_name):
+
+        # TODO: Filter this out into some kind of autodetecting base class...
+
+        # Recursive case: if we have any subnodes, see if they are
+        # feed them to this function.
+        for subclass in cls.__subclasses__():
+
+            # Check to see if the subnode has any appropriate children.
+            appropriate_class = subclass._find_appropriate_subclass(backend_name)
+
+            # If it does, that's our answer!
+            if appropriate_class:
+                return appropriate_class
+
+        # Base case: check the current node.
+        if cls.appropriate_for_environment(backend_name):
+            return cls
+        else:
+            return None
+
+
+
+    @classmethod
+    def appropriate_for_environment(cls, backend_name=None):
+        """
+        Returns true if the current class is likely to be the appropriate
+        class to connect to a facedancer given the board_name and other
+        environmental factors.
+
+        board: The name of the backend, as typically retreived from the BACKEND
+            environment variable, or None to try figuring things out based
+            on other environmental factors.
+        """
+        return False
+
+
 
 class FacedancerBasicScheduler(object):
     """
-    Most basic scheduler for Facedancer decivices-- and the schedule which is
+    Most basic scheduler for Facedancer devices-- and the schedule which is
     created implicitly if no other scheduler is provided. Executes each of its
     tasks in order, over and over.
     """
