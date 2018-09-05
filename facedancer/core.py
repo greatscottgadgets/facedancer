@@ -7,6 +7,7 @@
 import os
 
 from .errors import *
+from .USBDevice import USBDevice
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -74,9 +75,6 @@ class FacedancerApp:
             return None
 
 
-
-
-
     @classmethod
     def appropriate_for_environment(cls, backend_name=None):
         """
@@ -124,6 +122,36 @@ class FacedancerUSBHost:
     Base class for FaceDancer host connections-- extended to provide actual
     connections to each host.
     """
+
+    # TODO: remove this redundancy; these should be somewhere common
+    # Endpoint directions
+    ENDPOINT_DIRECTION_OUT  = 0x00
+    ENDPOINT_DIRECTION_IN = 0x80
+
+    # Endpoint types
+    ENDPOINT_TYPE_CONTROL = 0
+
+    # Packet IDs
+    PID_SETUP = 2
+    PID_OUT = 0
+    PID_IN = 1
+
+    # USB Request Types
+    REQUEST_TYPE_STANDARD = 0
+    REQUEST_TYPE_CLASS = 1
+    REQUEST_TYPE_VENDOR = 2
+    REQUEST_TYPE_RESERVED = 3
+
+    # USB Request Recipients
+    REQUEST_RECIPIENT_DEVICE = 0
+    REQUEST_RECIPIENT_INTERFACE = 1
+    REQUEST_RECIPIENT_ENDPOINT = 2
+    REQUEST_RECIPIENT_OTHER = 3
+
+    # USB Standard Requests
+    STANDARD_REQUEST_GET_STATUS = 0
+    STANDARD_REQUEST_GET_DESCRIPTOR = 6
+
 
     @classmethod
     def autodetect(cls, verbose=0, quirks=None):
@@ -179,7 +207,6 @@ class FacedancerUSBHost:
             return None
 
 
-
     @classmethod
     def appropriate_for_environment(cls, backend_name=None):
         """
@@ -192,6 +219,59 @@ class FacedancerUSBHost:
             on other environmental factors.
         """
         return False
+
+
+    @classmethod
+    def _build_request_type(cls, is_in, req_type, recipient):
+        """
+        Builds the request type field for a USB request.
+        """
+
+        request_type = 0
+
+        if is_in:
+            request_type |= cls.ENDPOINT_DIRECTION_IN
+
+        request_type |= (req_type << 5)
+        request_type |= (recipient)
+
+        return request_type
+
+
+    @classmethod
+    def _build_setup_request(cls, is_in, request_type, recipient, request, value, index, length):
+        # And send a setup request:
+        #       uint8_t request_type;
+        #       uint8_t request;
+        #       uint16_t value;
+        #       uint16_t index;
+        #       uint16_t length;
+
+        def split(value):
+            value_high  = value >> 8
+            value_low = value & 0xFF
+            return [value_low, value_high]
+
+        setup_request = [cls._build_request_type(is_in, request_type, recipient), request]
+        setup_request.extend(split(value))
+        setup_request.extend(split(index))
+        setup_request.extend(split(length))
+        return setup_request
+
+
+    def get_descriptor(self, descriptor_type, descriptor_index,
+                       language_id, max_length):
+        """ Reads up to max_length bytes of a device's descriptors. """
+
+        return self.control_request_in(
+                self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
+                self.STANDARD_REQUEST_GET_DESCRIPTOR,
+                (descriptor_type << 8) | descriptor_index, language_id, max_length)
+
+
+    def get_device_descriptor(self, max_length=18):
+        """ Returns the device's device descriptor. """
+        return self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
 
 
 

@@ -6,7 +6,6 @@ from .USB import *
 from .USBClass import *
 from .USBConfiguration import USBConfiguration
 
-from .core import FacedancerBasicScheduler
 
 
 import time
@@ -78,6 +77,7 @@ class USBDevice(USBDescribable):
         if scheduler:
             self.scheduler = scheduler
         else:
+            from .core import FacedancerBasicScheduler
             self.scheduler = FacedancerBasicScheduler()
 
         # Add our IRQ-servicing task to the scheduler's list of tasks to be serviced.
