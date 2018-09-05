@@ -4,8 +4,14 @@
 
 from facedancer import FacedancerUSBHostApp
 
+# Enumerate and configure the attached device.
 u = FacedancerUSBHostApp(verbose=3)
-u.initialize_device(assign_address=1, configure=True)
+u.initialize_device(assign_address=1, apply_configuration=1)
+
+# At this point, we can perform whatever communications we need to to use the target device.
+# Usually, this is accomplsihed using the send_on_endpoint and read_from_endpoint functions
+# for non-control requests, and the control_request_in and control_request out functions
+# for control requests.
 
 # Print the device state.
 print("Device initialized: ")

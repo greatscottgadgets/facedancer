@@ -227,8 +227,13 @@ class FacedancerUSBHost:
 
     @classmethod
     def _build_request_type(cls, is_in, req_type, recipient):
-        """
-        Builds the request type field for a USB request.
+        """ Builds the request type field for a USB request.
+
+        is_in -- True iff this is a DEVICE-to-HOST request.
+        req_type -- The type of request to be used.
+        recipient -- The context in which this request should be interprted.
+
+        returns -- a request_type byte
         """
 
         request_type = 0
@@ -244,7 +249,9 @@ class FacedancerUSBHost:
 
     @classmethod
     def _build_setup_request(cls, is_in, request_type, recipient, request, value, index, length):
-        # And send a setup request:
+        """ Builds a setup request packet from the standard USB request fields. """
+
+        # Fields:
         #       uint8_t request_type;
         #       uint8_t request;
         #       uint16_t value;
@@ -264,6 +271,15 @@ class FacedancerUSBHost:
 
 
     def control_request_in(self, request_type, recipient, request, value=0, index=0, length=0):
+        """ Performs an IN control request.
+
+        request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
+        recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
+        request -- The request number to be performed.
+        value, index -- The standad USB request arguments, to be included in the setup packet. Their meaning varies
+            depending on the request.
+        length -- The maximum length of data expected in response, or 0 if we don't expect any data back.
+        """
 
         # Create the raw setup request, and send it.
         setup_request = self._build_setup_request(True, request_type, recipient,
@@ -297,6 +313,15 @@ class FacedancerUSBHost:
 
 
     def control_request_out(self, request_type, recipient, request, value=0, index=0, data=[]):
+        """ Performs an OUT control request.
+
+        request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
+        recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
+        request -- The request number to be performed.
+        value, index -- The standad USB request arguments, to be included in the setup packet. Their meaning varies
+            depending on the request.
+        data -- The data to be transmitted with this control request.
+        """
 
         # Create the raw setup request, and send it.
         setup_request = self._build_setup_request(False, request_type, recipient,
@@ -311,13 +336,17 @@ class FacedancerUSBHost:
         self.read_from_endpoint(0, 0, data_packet_pid=1)
 
 
-    def initialize_device(self, configure=False, assign_address=None):
+    def initialize_device(self, apply_configuration=0, assign_address=0):
         """
         Sets up a conenction to a directly-attached USB device.
 
-        reset -- true if we should issue a host reset as part of the initialization process
-        returns -- true iff we've detected a connected device
+        apply_configuration -- If non-zero, the configuration with the given 
+            index will be applied to the relevant device.
+        assign_address -- If non-zero, the device will be assigned the given
+            address as part of the enumeration/initialization process.
         """
+
+        # TODO: support timeouts in waiting for a connection
 
         # Repeatedly attempt to connect to any connected devices.
         while not self.device_is_connected():
@@ -341,8 +370,8 @@ class FacedancerUSBHost:
 
         # If we're auto-configuring the device, read the full configuration descriptor,
         # assign the first configuration, and then set up endpoints accordingly
-        if configure:
-            self.apply_configuration(1)
+        if apply_configuration:
+            self.apply_configuration(apply_configuration)
 
 
     def get_descriptor(self, descriptor_type, descriptor_index,
