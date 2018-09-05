@@ -293,7 +293,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         self.device.vendor_request_out(self.vendor_requests.USBHOST_SET_UP_ENDPOINT, data=packet)
 
 
-    def _initialize_control_endpoint(self, device_address=None, device_speed=None, max_packet_size=None):
+    def initialize_control_endpoint(self, device_address=None, device_speed=None, max_packet_size=None):
         """
         Set up the device's control endpoint, so we can use it for e.g. enumeration.
         """
@@ -308,7 +308,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         self.set_up_endpoint(0 | self.DIRECTION_IN, self.ENDPOINT_TYPE_CONTROL, max_packet_size)
 
 
-    def initialize_device(self, finish_enumeration=False):
+    def initialize_device(self, configure=False, assign_address=None):
         """
         Sets up a conenction to a directly-attached USB device.
 
@@ -327,10 +327,17 @@ class GreatDancerHostApp(FacedancerUSBHost):
         # Set up the device to work.
         if self.verbose > 3:
             print("Initializing control endpoint...")
-        self._initialize_control_endpoint()
+        self.initialize_control_endpoint()
 
-        # TODO: finish enumeration
+        # If we've been asked to assign an address,
+        # set the device's address, and reinitialize the control endpoint
+        # with the updated address.
+        if assign_address:
+            self.set_address(assign_address)
+            self.initialize_control_endpoint()
 
+        # TODO: if configure is true, read the full configuration descriptor,
+        # assign the first configuration, and then set up endpoints accordingly
 
 
     def send_on_endpoint(self, endpoint_number, data, is_setup=False,

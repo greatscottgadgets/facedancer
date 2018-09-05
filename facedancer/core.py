@@ -150,6 +150,7 @@ class FacedancerUSBHost:
 
     # USB Standard Requests
     STANDARD_REQUEST_GET_STATUS = 0
+    STANDARD_REQUEST_SET_ADDRESS = 5
     STANDARD_REQUEST_GET_DESCRIPTOR = 6
 
 
@@ -259,7 +260,7 @@ class FacedancerUSBHost:
         return setup_request
 
 
-    def control_request_in(self, request_type, recipient, request, value, index, length):
+    def control_request_in(self, request_type, recipient, request, value=0, index=0, length=0):
 
         # Create the raw setup request, and send it.
         setup_request = self._build_setup_request(True, request_type, recipient,
@@ -289,11 +290,10 @@ class FacedancerUSBHost:
             return data
 
         else:
-            self.read_from_endpoint(0, 0)
+            self.read_from_endpoint(0, 0, data_packet_pid=1)
 
 
-
-    def control_request_out(self, request_type, recipient, request, value, index, data):
+    def control_request_out(self, request_type, recipient, request, value=0, index=0, data=[]):
 
         # Create the raw setup request, and send it.
         setup_request = self._build_setup_request(False, request_type, recipient,
@@ -305,7 +305,7 @@ class FacedancerUSBHost:
             self.send_on_endpoint(0, data)
 
         # And try to read a ZLP from the host for ACK'ing purposes.
-        self.read_from_endpoint(0, 0)
+        self.read_from_endpoint(0, 0, data_packet_pid=1)
 
 
     def get_descriptor(self, descriptor_type, descriptor_index,
@@ -324,6 +324,20 @@ class FacedancerUSBHost:
         raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
         return USBDevice.from_binary_descriptor(raw_descriptor)
 
+
+    def set_address(self, device_address):
+        """
+        Sets the device's address.
+
+        Note that all endpoints must be set up again after issuing the new address;
+        the easiest way to do this is to call apply_configuration().
+
+        device_address -- the address to apply to the given device
+        """
+        self.control_request_out(
+                self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
+                self.STANDARD_REQUEST_SET_ADDRESS, value=device_address)
+        self.last_device_address = device_address
 
 
 
