@@ -15,8 +15,9 @@ from .HIDClass import HIDClass
 class USBConfiguration(USBDescribable):
 
     DESCRIPTOR_TYPE_NUMBER    = 0x02
+    DESCRIPTOR_SIZE_BYTES     = 9
 
-    def __init__(self, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=0xe0, max_power=250):
+    def __init__(self, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=0xe0, max_power=250, total_descriptor_lengths=9):
         self.configuration_index        = configuration_index
 
         if isinstance(configuration_string_or_index, str):
@@ -30,6 +31,7 @@ class USBConfiguration(USBDescribable):
 
         self.attributes = attributes
         self.max_power = max_power
+        self.total_descriptor_lengths = total_descriptor_lengths
 
         self.device = None
 
@@ -54,7 +56,7 @@ class USBConfiguration(USBDescribable):
 
         # Extract the subordinate descriptors, and parse them.
         interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
-        return cls(index, string_index, interfaces, attributes, max_power)
+        return cls(index, string_index, interfaces, attributes, max_power, total_length)
 
 
     @classmethod

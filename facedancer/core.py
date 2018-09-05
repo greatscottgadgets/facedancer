@@ -8,6 +8,8 @@ import os
 
 from .errors import *
 from .USBDevice import USBDevice
+from .USBConfiguration import USBConfiguration
+from .USBEndpoint import USBEndpoint
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -152,6 +154,7 @@ class FacedancerUSBHost:
     STANDARD_REQUEST_GET_STATUS = 0
     STANDARD_REQUEST_SET_ADDRESS = 5
     STANDARD_REQUEST_GET_DESCRIPTOR = 6
+    STANDARD_REQUEST_SET_CONFIGURATION = 9
 
 
     @classmethod
@@ -308,6 +311,40 @@ class FacedancerUSBHost:
         self.read_from_endpoint(0, 0, data_packet_pid=1)
 
 
+    def initialize_device(self, configure=False, assign_address=None):
+        """
+        Sets up a conenction to a directly-attached USB device.
+
+        reset -- true if we should issue a host reset as part of the initialization process
+        returns -- true iff we've detected a connected device
+        """
+
+        # Repeatedly attempt to connect to any connected devices.
+        while not self.device_is_connected():
+            self.bus_reset()
+
+        # Assume the default device addresses, and read the device's speed.
+        self.last_device_address = 0
+        self.last_device_speed = self.current_device_speed()
+
+        # Set up the device to work.
+        if self.verbose > 3:
+            print("Initializing control endpoint...")
+        self.initialize_control_endpoint()
+
+        # If we've been asked to assign an address,
+        # set the device's address, and reinitialize the control endpoint
+        # with the updated address.
+        if assign_address:
+            self.set_address(assign_address)
+            self.initialize_control_endpoint()
+
+        # If we're auto-configuring the device, read the full configuration descriptor,
+        # assign the first configuration, and then set up endpoints accordingly
+        if configure:
+            self.apply_configuration(1)
+
+
     def get_descriptor(self, descriptor_type, descriptor_index,
                        language_id, max_length):
         """ Reads up to max_length bytes of a device's descriptors. """
@@ -325,9 +362,25 @@ class FacedancerUSBHost:
         return USBDevice.from_binary_descriptor(raw_descriptor)
 
 
-    def set_address(self, device_address):
+    def get_configuration_descriptor(self, index=0, include_subordinates=True):
+        """ Returns the device's configuration desctriptor.
+
+        include_subordinate -- if true, subordinate descriptors will also be returned
         """
-        Sets the device's address.
+
+        # Read just the raw configuration descriptor.
+        raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, USBConfiguration.DESCRIPTOR_SIZE_BYTES)
+
+        # If we want to include the subordinate descriptors, read-read the configuration descriptor with an updated length.
+        if include_subordinates:
+            descriptor = USBConfiguration.from_binary_descriptor(raw_descriptor)
+            raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, descriptor.total_descriptor_lengths)
+
+        return USBConfiguration.from_binary_descriptor(raw_descriptor)
+
+
+    def set_address(self, device_address):
+        """ Sets the device's address.
 
         Note that all endpoints must be set up again after issuing the new address;
         the easiest way to do this is to call apply_configuration().
@@ -338,6 +391,44 @@ class FacedancerUSBHost:
                 self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
                 self.STANDARD_REQUEST_SET_ADDRESS, value=device_address)
         self.last_device_address = device_address
+
+
+    def set_configuration(self, index):
+        """ Sets the device's active configuration.
+
+        Note that this does not configure the host for the given configuration.
+        Most of the time, you probably want apply_configuration, which does.
+
+        index -- the index of the configuration to apply
+        """
+        self.control_request_out(
+                self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
+                self.STANDARD_REQUEST_SET_CONFIGURATION, value=index)
+
+
+    def apply_configuration(self, index, set_configuration=True):
+        """ Applies a device's configuration. Necessary to use endpoints other
+            than the control endpoint.
+
+        index -- The configuration index to apply.
+        set_configuration -- If true, also informs the device of the change.
+            Setting this to false can allow the host to update its view of all
+            endpoints without communicating with the device -- e.g. to update the
+            device's address.
+        """
+
+        # Read the full set of descriptors for the given configuration...
+        # TODO: don't assume that the indices increment nicely from 1?
+        configuration = self.get_configuration_descriptor(index - 1)
+
+        # If we're informing the device of the change, do so.
+        if set_configuration:
+            self.set_configuration(index)
+
+        # Locally, set up our endpoints to handle device communication.
+        for interface in configuration.interfaces:
+            for endpoint in interface.endpoints:
+                self.set_up_endpoint(endpoint)
 
 
 

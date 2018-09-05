@@ -5,7 +5,7 @@
 from facedancer import FacedancerUSBHostApp
 
 u = FacedancerUSBHostApp(verbose=3)
-u.initialize_device(assign_address=1)
+u.initialize_device(assign_address=1, configure=True)
 
 # Print the device state.
 print("Device initialized: ")
@@ -17,3 +17,12 @@ print("\tLine state: {}".format(u.current_line_state(as_string=True)))
 
 
 print("Attached device: {}".format(u.get_device_descriptor()))
+
+
+configuration = u.get_configuration_descriptor()
+print("Applied first configuration: {}".format(configuration))
+for interface in configuration.interfaces:
+    print("\t - {}".format(interface))
+
+    for endpoint in interface.endpoints:
+        print("\t\t - {}".format(endpoint))

@@ -243,12 +243,16 @@ class GreatDancerHostApp(FacedancerUSBHost):
         return line_state
 
 
-    def set_up_endpoint(self, endpoint_address, endpoint_type, max_packet_size,
+    def set_up_endpoint(self, endpoint_address_or_object, endpoint_type=None, max_packet_size=None,
                         device_address=None, endpoint_speed=None, handle_data_toggle=None,
                         is_control_endpoint=None):
         """
         Sets up an endpoint for use. Can be used to initialize an endpoint or to update
-        its parameters.
+        its parameters. Two forms exist:
+
+        endpoint_object -- a USBEndpoint object with the parameters to be populated
+
+        or
 
         endpoint_address -- the address of the endpoint to be setup; including the direction bit
         endpoint_type -- one of the ENDPOINT_TYPE constants that specifies the transfer mode on
@@ -266,6 +270,18 @@ class GreatDancerHostApp(FacedancerUSBHost):
         TODO: eventually support hubs / more than one device?
         """
 
+        if isinstance(endpoint_address_or_object, USBEndpoint):
+            endpoint = endpoint_address_or_object
+
+            # Figure out the endpoint address from its direction and number.
+            endpoint_address = endpoint.number
+            if endpoint.direction == endpoint.direction_in:
+                endpoint_address |= self.DIRECTION_IN
+
+            self.set_up_endpoint(endpoint_address, endpoint.transfer_type, endpoint.max_packet_size)
+            return
+
+        endpoint_address = endpoint_address_or_object
         endpoint_number = endpoint_address & 0x7f
 
         if endpoint_number > 15:
@@ -308,36 +324,6 @@ class GreatDancerHostApp(FacedancerUSBHost):
         self.set_up_endpoint(0 | self.DIRECTION_IN, self.ENDPOINT_TYPE_CONTROL, max_packet_size)
 
 
-    def initialize_device(self, configure=False, assign_address=None):
-        """
-        Sets up a conenction to a directly-attached USB device.
-
-        reset -- true if we should issue a host reset as part of the initialization process
-        returns -- true iff we've detected a connected device
-        """
-
-        # Repeatedly attempt to connect to any connected devices.
-        while not self.device_is_connected():
-            self.bus_reset()
-
-        # Assume the default device addresses, and read the device's speed.
-        self.last_device_address = 0
-        self.last_device_speed = self.current_device_speed()
-
-        # Set up the device to work.
-        if self.verbose > 3:
-            print("Initializing control endpoint...")
-        self.initialize_control_endpoint()
-
-        # If we've been asked to assign an address,
-        # set the device's address, and reinitialize the control endpoint
-        # with the updated address.
-        if assign_address:
-            self.set_address(assign_address)
-            self.initialize_control_endpoint()
-
-        # TODO: if configure is true, read the full configuration descriptor,
-        # assign the first configuration, and then set up endpoints accordingly
 
 
     def send_on_endpoint(self, endpoint_number, data, is_setup=False,

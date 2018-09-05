@@ -30,3 +30,7 @@ class USBClass:
     def get_descriptor(self):
         return self.descriptor
 
+
+    def __repr__(self):
+        return "class {}".format(self.class_number)
+
