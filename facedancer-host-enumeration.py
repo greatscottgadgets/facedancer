@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# facedancer-keyboard.py
+# Simplest possible example of using the FaceDancer host API.
 
 from facedancer import FacedancerUSBHostApp
 
@@ -21,12 +21,13 @@ print("\tPort is: {}".format("Enabled" if u.port_is_enabled() else "Disabled"))
 print("\tPort power is: {}".format("On" if (u.port_is_powered()) else "Off"))
 print("\tLine state: {}".format(u.current_line_state(as_string=True)))
 
-
+# Print information about the attached device...
 print("Attached device: {}".format(u.get_device_descriptor()))
 
-
+# .. and its configuration.
 configuration = u.get_configuration_descriptor()
-print("Applied first configuration: {}".format(configuration))
+print("Using first configuration: {}".format(configuration))
+
 for interface in configuration.interfaces:
     print("\t - {}".format(interface))
 
