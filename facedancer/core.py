@@ -259,6 +259,55 @@ class FacedancerUSBHost:
         return setup_request
 
 
+    def control_request_in(self, request_type, recipient, request, value, index, length):
+
+        # Create the raw setup request, and send it.
+        setup_request = self._build_setup_request(True, request_type, recipient,
+                                                  request, value, index, length)
+
+        if self.verbose > 4:
+            print("Issuing setup packet: {}".format(setup_request))
+
+        self.send_on_endpoint(0, setup_request, True, data_packet_pid=0)
+
+        if self.verbose > 4:
+            print("Done.")
+
+        # If we have a data stage, issue it:
+        if length:
+
+            if self.verbose > 4:
+                print("Reading response... ")
+
+            data = self.read_from_endpoint(0, length, data_packet_pid=1)
+
+            if self.verbose > 4:
+                print("Got response: {}".format(data))
+
+            # and give the host an opportunity to ACK by sending a ZLP.
+            self.send_on_endpoint(0, [], data_packet_pid=1)
+            return data
+
+        else:
+            self.read_from_endpoint(0, 0)
+
+
+
+    def control_request_out(self, request_type, recipient, request, value, index, data):
+
+        # Create the raw setup request, and send it.
+        setup_request = self._build_setup_request(False, request_type, recipient,
+                                                  request, value, index, len(data))
+        self.send_on_endpoint(0, setup_request, True)
+
+        # If we have a data stage, issue it:
+        if data:
+            self.send_on_endpoint(0, data)
+
+        # And try to read a ZLP from the host for ACK'ing purposes.
+        self.read_from_endpoint(0, 0)
+
+
     def get_descriptor(self, descriptor_type, descriptor_index,
                        language_id, max_length):
         """ Reads up to max_length bytes of a device's descriptors. """
@@ -271,7 +320,10 @@ class FacedancerUSBHost:
 
     def get_device_descriptor(self, max_length=18):
         """ Returns the device's device descriptor. """
-        return self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
+
+        raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
+        return USBDevice.from_binary_descriptor(raw_descriptor)
+
 
 
 

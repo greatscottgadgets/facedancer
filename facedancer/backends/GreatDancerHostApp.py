@@ -42,17 +42,23 @@ class GreatDancerHostApp(FacedancerUSBHost):
     LINE_STATE_K = 2
     LINE_STATE_SE1 = 3
 
-    SPEED_NAMES = {
-        0: "Full speed",
-        1: "Low speed",
-        2: "High speed",
-        3: "Disconnected"
-    }
-
-    DEVICE_SPEED_FULL = 0
-    DEVICE_SPEED_LOW = 1
+    DEVICE_SPEED_LOW = 0
+    DEVICE_SPEED_FULL = 1
     DEVICE_SPEED_HIGH = 2
     DEVICE_SPEED_NONE = 3
+
+    STATUS_REG_SPEED_VALUES = {
+        0: DEVICE_SPEED_FULL,
+        1: DEVICE_SPEED_LOW,
+        2: DEVICE_SPEED_HIGH,
+        3: DEVICE_SPEED_NONE
+    }
+    DEVICE_SPEED_NAMES = {
+        DEVICE_SPEED_FULL: "Full speed",
+        DEVICE_SPEED_LOW: "Low speed",
+        DEVICE_SPEED_HIGH: "High speed",
+        DEVICE_SPEED_NONE: "Disconnected"
+    }
 
     SPEED_REQUESTS = {
         0: 1,
@@ -206,12 +212,16 @@ class GreatDancerHostApp(FacedancerUSBHost):
             returns a DEVICE_SPEED_* constant.
         """
 
-        port_speed = \
+
+        port_speed_raw = \
             (self._port_status() >> self.PORT_STATUS_REGISTER_SPEED_SHIFT) & \
             self.PORT_STATUS_REGISTER_SPEED_MASK
 
+        # Translate from a GreatFET format device speed to a FaceDancer one.
+        port_speed = self.STATUS_REG_SPEED_VALUES[port_speed_raw]
+
         if as_string:
-            port_speed = self.SPEED_NAMES[port_speed]
+            port_speed = self.DEVICE_SPEED_NAMES[port_speed]
 
         return port_speed
 
@@ -343,11 +353,10 @@ class GreatDancerHostApp(FacedancerUSBHost):
 
         # Issue the actual send itself.
         # TODO: validate length
+
         self.device.vendor_request_out(self.vendor_requests.USBHOST_SEND_ON_ENDPOINT,
                                        index=endpoint_number, value=(data_packet_pid << 8) | pid_token,
                                        data=data)
-
-        print(endpoint_number)
 
         # ... and if we're blocking, also finish it.
         if blocking:
@@ -358,10 +367,6 @@ class GreatDancerHostApp(FacedancerUSBHost):
             # XXX: This isn't entirely correct-- it'll clear too much status.
             while not complete:
                 status = self._get_write_status()
-
-                if status:
-                    print("stalls: {}".format(bin(status & 0xff)))
-                    print("completes: {}".format(bin((status >> 16) & 0xff)))
 
                 stalled  = (status >> endpoint_number) & 0x1
                 complete = (status >> (endpoint_number + 16)) & 0x1
@@ -419,54 +424,3 @@ class GreatDancerHostApp(FacedancerUSBHost):
                                              index=endpoint_number, length=length)
         return data.tostring()
 
-
-
-    def control_request_in(self, request_type, recipient, request, value, index, length):
-
-        # Create the raw setup request, and send it.
-        setup_request = self._build_setup_request(True, request_type, recipient,
-                                                  request, value, index, length)
-
-        if self.verbose > 4:
-            print("Issuing setup packet: {}".format(setup_request))
-
-        self.send_on_endpoint(0, setup_request, True, data_packet_pid=0)
-
-        if self.verbose > 4:
-            print("Done.")
-
-        # If we have a data stage, issue it:
-        if length:
-
-            if self.verbose > 4:
-                print("Reading response... ")
-
-            data = self.read_from_endpoint(0, length, data_packet_pid=1)
-
-
-            print("Got response: {}".format(data))
-
-            # and give the host an opportunity to ACK by sending a ZLP.
-            print("ACK'ing...")
-            self.send_on_endpoint(0, [], data_packet_pid=1)
-            return data
-
-        else:
-            print("ACK'ing...")
-            self.read_from_endpoint(0, 0)
-
-
-
-    def control_request_out(self, request_type, recipient, request, value, index, data):
-
-        # Create the raw setup request, and send it.
-        setup_request = self._build_setup_request(False, request_type, recipient,
-                                                  request, value, index, len(data))
-        self.send_on_endpoint(0, setup_request, True)
-
-        # If we have a data stage, issue it:
-        if data:
-            self.send_on_endpoint(0, data)
-
-        # And try to read a ZLP from the host for ACK'ing purposes.
-        self.read_from_endpoint(0, 0)

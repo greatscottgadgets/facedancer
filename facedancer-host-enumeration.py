@@ -4,7 +4,7 @@
 
 from facedancer import FacedancerUSBHostApp
 
-u = FacedancerUSBHostApp(verbose=5)
+u = FacedancerUSBHostApp(verbose=3)
 u.initialize_device()
 
 # Print the device state.

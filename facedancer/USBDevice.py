@@ -419,6 +419,9 @@ class USBDevice(USBDescribable):
     def handle_synch_frame_request(self, req):
         print(self.name, "received SYNCH_FRAME request")
 
+    def __repr__(self):
+        return "<USBDevice object; vid=0x{:04x}, pid=0x{:04x}>".format(self.vendor_id, self.product_id)
+
 
 class USBDeviceRequest:
 
