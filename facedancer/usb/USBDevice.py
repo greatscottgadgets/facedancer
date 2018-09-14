@@ -6,7 +6,6 @@ from facedancer.usb.USB import *
 from facedancer.usb.USBClass import *
 from facedancer.usb.USBConfiguration import USBConfiguration
 
-from facedancer.app.core import FacedancerBasicScheduler
 from facedancer.fuzz.helpers import mutable
 import traceback
 import time
@@ -103,6 +102,7 @@ class USBDevice(USBDescribable):
         if scheduler:
             self.scheduler = scheduler
         else:
+            from facedancer.app.core import FacedancerBasicScheduler
             self.scheduler = FacedancerBasicScheduler(self.phy)
 
         # Add our IRQ-servicing task to the scheduler's list of tasks to be serviced.
@@ -549,6 +549,9 @@ class USBDevice(USBDescribable):
     # USB 2.0 specification, section 9.4.11 (p 288 of pdf)
     def handle_synch_frame_request(self, req):
         self.debug("received SYNCH_FRAME request")
+
+    def __repr__(self):
+        return "<USBDevice object; vid=0x{:04x}, pid=0x{:04x}>".format(self.vendor_id, self.product_id)
 
 
 class USBDeviceRequest:

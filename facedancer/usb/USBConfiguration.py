@@ -17,11 +17,12 @@ class USBConfiguration(USBDescribable):
 
     name = 'Configuration'
     DESCRIPTOR_TYPE_NUMBER = DescriptorType.configuration
+    DESCRIPTOR_SIZE_BYTES  = 9
     ATTR_BASE = 0x80
     ATTR_SELF_POWERED = ATTR_BASE | 0x40
     ATTR_REMOTE_WAKEUP = ATTR_BASE | 0x20
     
-    def __init__(self, phy, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=ATTR_SELF_POWERED, max_power=0x32):
+    def __init__(self, phy, configuration_index=0, configuration_string_or_index=0, interfaces=None, attributes=ATTR_SELF_POWERED, max_power=0x32, total_descriptor_lengths=9):
         super(USBConfiguration, self).__init__(phy)
 
         self._configuration_index        = configuration_index
@@ -37,7 +38,8 @@ class USBConfiguration(USBDescribable):
 
         self._attributes = attributes
         self._max_power = max_power
-
+        self.total_descriptor_lengths = total_descriptor_lengths
+        
         self._device = None
         self.usb_class = None
         self.usb_vendor = None
@@ -67,7 +69,7 @@ class USBConfiguration(USBDescribable):
 
         # Extract the subordinate descriptors, and parse them.
         interfaces = cls._parse_subordinate_descriptors(phy, data[length:total_length])
-        return cls(phy, index, string_index, interfaces, attributes, max_power)
+        return cls(phy, index, string_index, interfaces, attributes, max_power, total_length)
 
 
     @classmethod

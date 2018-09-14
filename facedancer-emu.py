@@ -24,7 +24,7 @@ from devices.mtp import USBMtpDevice
 from devices.vendor_specific import USBVendorSpecificDevice
 from devices.smartcard import USBSmartcardDevice
 
-from umap2.fuzz.helpers import StageLogger, set_stage_logger
+from facedancer.fuzz.helpers import StageLogger, set_stage_logger
 
 targets=[
     ["Audio", USBAudioDevice],
