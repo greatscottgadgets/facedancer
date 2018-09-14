@@ -126,7 +126,7 @@ class USBDevice(USBDescribable):
                 serial_number_string_index, num_configurations = struct.unpack("<xxBBBBBBHHBBBBBB", data)
 
         # FIXME: generate better placeholder configurations
-        configurations  = [USBConfiguration()] * num_configurations
+        configurations  = [USBConfiguration(phy)] * num_configurations
 
         # Generate our BCD arguments.
         spec_version = (spec_version_msb << 8) | spec_version_lsb
