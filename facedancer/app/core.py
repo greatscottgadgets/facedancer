@@ -5,10 +5,12 @@
 # and GoodFETMonitorApp.
 
 import os
+import time
 import logging
 from .errors import *
 from facedancer.utils.ulogger import get_logger
-
+from kitty.remote.rpc import RpcClient
+from facedancer.fuzz.helpers import StageLogger, set_stage_logger
 
 def FacedancerUSBApp(loglevel=0, quirks=None):
     """
@@ -27,6 +29,9 @@ class FacedancerApp(object):
     name = "FacedancerApp"
     app_num = 0x00
     log_level = 0
+    fuzzer=None
+    count = 0
+
     @classmethod
     def set_log_level(self,loglevel):
         self.log_level=loglevel
@@ -36,12 +41,12 @@ class FacedancerApp(object):
     def get_log_level(self):
         return self.log_level
 
-    @classmethod
     def get_mutation(self, stage, data=None):
-        '''
-        mutation is only needed when fuzzing
-        '''
+        if self.fuzzer:
+            data = {} if data is None else data
+            return self.fuzzer.get_mutation(stage=stage, data=data)
         return None
+
 
     @classmethod
     def usb_function_supported(self, reason=None):
@@ -119,7 +124,92 @@ class FacedancerApp(object):
         """
         return False
 
+    # Fuzzer start
+    def get_fuzzer(self,fhost,fport):
+        fuzzer = RpcClient(host=fhost,port=int(fport))
+        fuzzer.start()
+        return fuzzer
 
+    def send_heartbeat(self):
+        heartbeat_file = 'heartbeat'
+        if os.path.isdir(os.path.dirname(heartbeat_file)):
+            with open(heartbeat_file, 'a'):
+                os.utime(heartbeat_file, None)
+
+    def check_connection_commands(self):
+        '''
+        :return: whether performed reconnection
+        '''
+        if self._should_disconnect():
+            self.phy.disconnect()
+            self._clear_disconnect_trigger()
+            # wait for reconnection request; no point in returning to service_irqs loop while not connected!
+            while not self._should_reconnect():
+                self._clear_disconnect_trigger()  # be robust to additional disconnect requests
+                time.sleep(0.1)
+        # now that we received a reconnect request, flow into the handling of it...
+        # be robust to reconnection requests, whether received after a disconnect request, or standalone
+        # (not sure this is right, might be better to *not* be robust in the face of possible misuse?)
+        if self._should_reconnect():
+            self.phy.connect(self.dev)
+            self._clear_reconnect_trigger()
+            return True
+        return False
+
+    def _should_reconnect(self):
+        if self.fuzzer:
+            if os.path.isfile('trigger_reconnect'):
+                return True
+        return False
+
+    def _clear_reconnect_trigger(self):
+        trigger = 'trigger_reconnect'
+        if os.path.isfile(trigger):
+            os.remove(trigger)
+
+    def _should_disconnect(self):
+        if self.fuzzer:
+            if os.path.isfile('trigger_disconnect'):
+                return True
+        return False
+
+    def _clear_disconnect_trigger(self):
+        trigger = 'trigger_disconnect'
+        if os.path.isfile(trigger):
+            os.remove(trigger)
+
+    # Fuzzer end
+    
+    # Stages start
+    
+    
+    def setstage(self, stage_file_name):
+        self.stage=True
+        self.start_time = time.time()
+        stage_logger = StageLogger(stage_file_name)
+        stage_logger.start()
+        set_stage_logger(stage_logger)
+
+    
+    def should_stop_phy(self):
+        if self.fuzzer:
+            self.count = (self.count + 1) % 50
+            self.check_connection_commands()
+            if self.count == 0:
+                self.send_heartbeat()
+            return False
+        elif self.stage:
+            stop_phy = False
+            passed = int(time.time() - self.start_time)
+            if passed > 5:
+                self.logger.info('have been waiting long enough (over %d secs.), disconnect' % (passed))
+                stop_phy = True
+            return stop_phy
+        else:
+            return False
+            
+    # Stages end
+          
     def __init__(self, device, loglevel=0):
         self.device = device
         self.loglevel = loglevel
@@ -159,13 +249,14 @@ class FacedancerApp(object):
 
 class FacedancerBasicScheduler(object):
     """
-    Most basic scheduler for Facedancer decivices-- and the schedule which is
+    Most basic scheduler for Facedancer devices-- and the schedule which is
     created implicitly if no other scheduler is provided. Executes each of its
     tasks in order, over and over.
     """
 
-    def __init__(self):
+    def __init__(self,phy):
         self.tasks = []
+        self.phy=phy
 
 
     def add_task(self, callback):
@@ -186,3 +277,5 @@ class FacedancerBasicScheduler(object):
         while True:
             for task in self.tasks:
                 task()
+            if self.phy.should_stop_phy():
+                break

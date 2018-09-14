@@ -1,7 +1,7 @@
 '''
 CDC Device tempaltes
 '''
-from facedancer.dev.cdc import FunctionalDescriptor, CommunicationClassSubclassCodes
+from devices.cdc import FunctionalDescriptor, CommunicationClassSubclassCodes
 from facedancer.usb.USBClass import USBClass
 from facedancer.usb.USB import DescriptorType
 from kitty.model import UInt8, LE16, RandomBytes, BitField, Static

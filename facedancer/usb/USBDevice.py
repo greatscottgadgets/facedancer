@@ -103,7 +103,7 @@ class USBDevice(USBDescribable):
         if scheduler:
             self.scheduler = scheduler
         else:
-            self.scheduler = FacedancerBasicScheduler()
+            self.scheduler = FacedancerBasicScheduler(self.phy)
 
         # Add our IRQ-servicing task to the scheduler's list of tasks to be serviced.
         self.scheduler.add_task(lambda : self.phy.service_irqs())
@@ -248,9 +248,9 @@ class USBDevice(USBDescribable):
         self.debug("received request %s" % repr(req))
 
         # figure out the intended recipient
+        req_type = req.get_type()
         recipient_type = req.get_recipient()
         recipient = None
-
         index = req.get_index()
         if recipient_type == Request.recipient_device:
             recipient = self
@@ -274,15 +274,14 @@ class USBDevice(USBDescribable):
             self.warning('invalid recipient, stalling')
             self.phy.stall_ep0()
             return
-
         req_type = req.get_type()
         handler_entity = None
         if req_type == Request.type_standard:    # for standard requests we lookup the recipient by index
             handler_entity = recipient
         elif req_type == Request.type_class:    # for class requests we take the usb_class handler from the configuration
-                handler_entity = self.usb_class
+            handler_entity = self.usb_class
         elif req_type == Request.type_vendor:   # for vendor requests we take the usb_vendor handler from the configuration
-                handler_entity = self.usb_vendor
+            handler_entity = self.usb_vendor
 
         if not handler_entity:
             self.warning("received request %s" % req)
@@ -524,7 +523,7 @@ class USBDevice(USBDescribable):
                 #if e.transfer_type==e.transfer_type_isochronous:
                 #    self.warning("Isochronous transfer isn't yet supported by greatfet firmware !")
                 #else:
-                     self.endpoints[e.number] = e
+                    self.endpoints[e.number] = e
 
         # HACK: blindly acknowledge request
         self.ack_status_stage()

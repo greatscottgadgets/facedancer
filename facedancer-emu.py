@@ -24,6 +24,8 @@ from devices.mtp import USBMtpDevice
 from devices.vendor_specific import USBVendorSpecificDevice
 from devices.smartcard import USBSmartcardDevice
 
+from umap2.fuzz.helpers import StageLogger, set_stage_logger
+
 targets=[
     ["Audio", USBAudioDevice],
     ["Billboard", USBBillboardDevice],
@@ -41,7 +43,8 @@ targets=[
     ["Smartcard",USBSmartcardDevice],
     ["SwitchTAS",USBSwitchTASDevice],
     ["MTP",USBMtpDevice],
-    ["Printer",USBPrinterDevice]
+    ["Printer",USBPrinterDevice],
+    ["Vendor",USBVendorSpecificDevice]
 ]
 
 def showtypes():
@@ -73,7 +76,12 @@ def main(argv):
         '--pid', '-pid',
         help='Product ID',
         default='')
-
+    
+    parser.add_argument(
+        '--makestage', '-ms',
+        help='Make fuzzing stage file',
+        default='')
+        
     parser.add_argument(
         '--verbose', '-verbose',
         help='Debug level',
@@ -99,9 +107,13 @@ def main(argv):
         print("Wrong devicetype given.")
         showtypes()
         exit(0)
-        
+     
+    
     phy = FacedancerUSBApp()
+    if args.makestage!="":
+        phy.setstage(args.makestage)
     print(phy)
+    
     
     if args.device=="MassStorage":
         #
@@ -128,6 +140,13 @@ def main(argv):
             sys.exit(1);
         i = DoubleFetchImage(args.filename, args.filename2)
         d = func(phy, i)
+    elif args.device=="Vendor":
+        if args.vid=='' or args.pid=='':
+            print("\nUsage: facedancer-emu.py -device Vendor -vid 0x1234 -pid 0x5678");
+            sys.exit(1);
+        vvid = int(args.vid, 16)
+        vpid = int(args.pid, 16)
+        d = func(phy, vid=vvid, pid=vpid)
     else:
         d = func(phy)
 

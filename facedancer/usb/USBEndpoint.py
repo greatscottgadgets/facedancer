@@ -32,7 +32,6 @@ class USBEndpoint(USBDescribable):
             usage_type, max_packet_size, interval, handler=None, nak_callback=None, cs_endpoints=None,usb_class=None, usb_vendor=None):
 
         super(USBEndpoint, self).__init__(phy)
-
         self.number             = number
         self.direction          = direction
         self.transfer_type      = transfer_type

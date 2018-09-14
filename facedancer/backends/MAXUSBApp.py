@@ -205,8 +205,6 @@ class MAXUSBApp(FacedancerApp):
             self.connected_device.handle_nak(3)
             self.clear_irq_bit(self.reg_pin_control, in_nak | self.ep3_in_nak)
 
-
-
     def set_address(self, address, defer=False):
         """
         Sets the device address of the Facedancer. Usually only used during
