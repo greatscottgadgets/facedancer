@@ -8,6 +8,7 @@ import codecs
 import struct
 
 from facedancer.app.core import FacedancerUSBHost
+from facedancer.usb.USBEndpoint import USBEndpoint
 
 class GreatDancerHostApp(FacedancerUSBHost):
     """
