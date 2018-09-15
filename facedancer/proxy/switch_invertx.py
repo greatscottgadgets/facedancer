@@ -2,7 +2,6 @@
 #
 # facedancer-usbproxy.py
 
-from facedancer import FacedancerUSBApp
 from facedancer.usb.USBConfiguration import USBConfiguration
 from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBEndpoint import USBEndpoint
@@ -29,27 +28,3 @@ class SwitchControllerInvertXFilter(USBProxyFilter):
             pass
 
         return ep_num, data
-
-
-def main():
-
-    # Create a new proxy/MITM connection for the Switch Wired Pro Controller.
-    u = FacedancerUSBApp()
-    d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1)
-
-    # Apply the standard filters that make USBProork.
-    d.add_filter(USBProxySetupFilters(d, verbose=2))
-
-    d.add_filter(SwitchControllerInvertXFilter())
-    d.add_filter(USBProxyPrettyPrintFilter(verbose=5))
-
-    d.connect()
-
-    try:
-        d.run()
-    # SIGINT raises KeyboardInterrupt
-    except KeyboardInterrupt:
-        d.disconnect()
-
-if __name__ == "__main__":
-    main()

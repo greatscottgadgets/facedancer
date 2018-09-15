@@ -2,7 +2,6 @@
 #
 # facedancer-usbproxy.py
 
-from facedancer import FacedancerUSBApp
 from facedancer.usb.USBConfiguration import USBConfiguration
 from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBEndpoint import USBEndpoint
@@ -73,52 +72,3 @@ class SwitchControllerWorkWithFacedancer21Filter(USBProxyFilter):
             ep_num = 2
 
         return ep_num, data
-
-
-
-class SwitchControllerInvertXFilter(USBProxyFilter):
-    """
-    Sample filter that inverts the X axis on a switch controller.
-    Demonstrates how dead simple this is. :)
-    """
-
-    # Joystick up:   b'\x00\x00\x0f\x80\xff\x80\x80\x00'
-    # Joystick down: b'\x00\x00\x0f\x80\x00\x80\x80\x00'
-
-    def filter_in(self, ep_num, data):
-
-        # Invert the X axis...
-        try:
-            data[3] = 0xff - data[3]
-        except:
-            pass
-
-        return ep_num, data
-
-
-
-def main():
-
-    # Create a new proxy/MITM connection for the Switch Wired Pro Controller.
-    u = FacedancerUSBApp()
-    d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1)
-
-    # Apply our filter before the standard filters so we impact configuration
-    # of the target device.
-    d.add_filter(SwitchControllerWorkWithFacedancer21Filter())
-
-    d.add_filter(USBProxySetupFilters(d, verbose=2))
-
-    d.add_filter(SwitchControllerInvertXFilter())
-    d.add_filter(USBProxyPrettyPrintFilter(verbose=5))
-
-    d.connect()
-
-    try:
-        d.run()
-    # SIGINT raises KeyboardInterrupt
-    except KeyboardInterrupt:
-        d.disconnect()
-
-if __name__ == "__main__":
-    main()
