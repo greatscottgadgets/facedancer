@@ -9,8 +9,11 @@ class USBEndpoint(USBDescribable):
 
     DESCRIPTOR_TYPE_NUMBER      = 0x05
 
+    # FIXME: get rid of the lowercase constants
     direction_out               = 0x00
     direction_in                = 0x01
+    DIRECTION_OUT               = 0x00
+    DIRECTION_IN                = 0x01
 
     transfer_type_control       = 0x00
     transfer_type_isochronous   = 0x01
@@ -85,7 +88,7 @@ class USBEndpoint(USBDescribable):
     def handle_clear_feature_request(self, req):
         print("received CLEAR_FEATURE request for endpoint", self.number,
                 "with value", req.value)
-        self.interface.configuration.device.maxusb_app.send_on_endpoint(0, b'')
+        self.interface.configuration.device.facedancer_device.send_on_endpoint(0, b'')
 
     def set_interface(self, interface):
         self.interface = interface
@@ -111,10 +114,12 @@ class USBEndpoint(USBDescribable):
 
     def send_packet(self, data, blocking=False):
         dev = self.interface.configuration.device
-        dev.maxusb_app.send_on_endpoint(self.number, data, blocking=blocking)
+        dev.facedancer_device.send_on_endpoint(self.number, data, blocking=blocking)
 
 
     def send(self, data):
+        # TODO: check to see if this requires packetization
+
         # Send the relevant data one packet at a time,
         # chunking if we're larger than the max packet size.
         # This matches the behavior of the MAX3420E.
@@ -126,6 +131,6 @@ class USBEndpoint(USBDescribable):
 
     def recv(self):
         dev = self.interface.configuration.device
-        data = dev.maxusb_app.read_from_endpoint(self.number)
+        data = dev.facedancer_device.read_from_endpoint(self.number)
         return data
 

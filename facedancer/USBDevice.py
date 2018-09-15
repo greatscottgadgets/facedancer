@@ -23,6 +23,7 @@ class USBDevice(USBDescribable):
             serial_number_string="", configurations=[], descriptors={},
             spec_version=0x0002, verbose=0, quirks=[], scheduler=None):
         self.maxusb_app = maxusb_app
+        self.facedancer_device = maxusb_app
         self.verbose = verbose
 
         self.quirks = quirks[:]
@@ -87,7 +88,7 @@ class USBDevice(USBDescribable):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, device=None):
         """
         Creates a USBDevice object from its descriptor.
         """
@@ -110,7 +111,7 @@ class USBDevice(USBDescribable):
         spec_version = (spec_version_msb << 8) | spec_version_lsb
         device_rev = (device_rev_msb << 8) | device_rev_lsb
 
-        return cls(None, device_class, device_subclass, device_protocol, max_packet_size_ep0,
+        return cls(device, device_class, device_subclass, device_protocol, max_packet_size_ep0,
                    vendor_id, product_id, device_rev, manufacturer_string_index, product_string_index,
                    serial_number_string_index, configurations, spec_version=spec_version)
 

@@ -374,6 +374,14 @@ class FacedancerUSBHost:
             self.apply_configuration(apply_configuration)
 
 
+    def get_active_configuration(self, length=1):
+        """ Returns the active configuration number for the device. """
+        return self.control_request_in(
+                self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
+                self.STANDARD_REQUEST_GET_CONFIGURATION,
+                0, 0, length)
+
+
     def get_descriptor(self, descriptor_type, descriptor_index,
                        language_id, max_length):
         """ Reads up to max_length bytes of a device's descriptors. """
@@ -388,13 +396,15 @@ class FacedancerUSBHost:
         """ Returns the device's device descriptor. """
 
         raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
-        return USBDevice.from_binary_descriptor(raw_descriptor)
+        return USBDevice.from_binary_descriptor(raw_descriptor, device=self)
 
 
-    def get_configuration_descriptor(self, index=0, include_subordinates=True):
+    def get_configuration_descriptor(self, index=0, include_subordinates=True, device=True):
         """ Returns the device's configuration desctriptor.
 
         include_subordinate -- if true, subordinate descriptors will also be returned
+        device -- If True, the device descriptor will also be queried. If None, no device
+            will be set. Othrwise, the parameter should be a USBDevice object, which should be used.
         """
 
         # Read just the raw configuration descriptor.
@@ -405,7 +415,14 @@ class FacedancerUSBHost:
             descriptor = USBConfiguration.from_binary_descriptor(raw_descriptor)
             raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, descriptor.total_descriptor_lengths)
 
-        return USBConfiguration.from_binary_descriptor(raw_descriptor)
+        # Parse the binary descriptor into a configuration.
+        configuration = USBConfiguration.from_binary_descriptor(raw_descriptor)
+
+        if device is True
+        if device is not None:
+            configuration.set_device(device)
+
+        return configuration
 
 
     def set_address(self, device_address):
@@ -420,6 +437,16 @@ class FacedancerUSBHost:
                 self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
                 self.STANDARD_REQUEST_SET_ADDRESS, value=device_address)
         self.last_device_address = device_address
+
+
+    def get_status(self, recipient=None, length=2):
+        """ Reads the device's status.
+        """
+        if recipient is None:
+            recipient = self.REQUEST_RECIPIENT_DEVICE
+        return self.control_request_in(
+                self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
+                self.STANDARD_REQUEST_GET_STATUS, length=length)
 
 
     def set_configuration(self, index):
