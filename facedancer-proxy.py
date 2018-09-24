@@ -63,7 +63,8 @@ def main():
         d = USBProxyDevice(u, idVendor=0x0f0d, idProduct=0x00c1, quirks=quirks)
     else:
         if args.vendorid==None or args.productid==None:
-            print("Error: -v and -p are required")
+            print("Error: -v and -p are required, or use -mode instead:")
+            showtypes()
             exit(0)
         d = USBProxyDevice(u, idVendor=args.vendorid, idProduct=args.productid, quirks=quirks)
     

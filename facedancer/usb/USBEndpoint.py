@@ -133,8 +133,8 @@ class USBEndpoint(USBDescribable):
         return 64
 
     def send_packet(self, data, blocking=False):
-        dev = self.interface.configuration._device
-        dev.phy.send_on_endpoint(self.number, data, blocking=blocking)
+        #dev = self.interface.configuration._device
+        self.phy.send_on_endpoint(self.number, data, blocking=blocking)
 
     def send(self, data):
         # Send the relevant data one packet at a time,
