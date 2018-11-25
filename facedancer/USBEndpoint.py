@@ -68,6 +68,13 @@ class USBEndpoint(USBDescribable):
     def set_handler(self, handler):
         self.handler = handler
 
+
+    def get_address(self):
+        """ Returns the address for the given endpoint. """
+        direction_mask = 0x80 if self.direction == USBEndpoint.direction_in else 0x00
+        return self.number | direction_mask
+
+
     def __repr__(self):
         # TODO: make these nice string representations
         transfer_type = self.transfer_type
@@ -92,7 +99,7 @@ class USBEndpoint(USBDescribable):
 
     # see Table 9-13 of USB 2.0 spec (pdf page 297)
     def get_descriptor(self):
-        address = (self.number & 0x0f) | (self.direction << 7) 
+        address = (self.number & 0x0f) | (self.direction << 7)
         attributes = (self.transfer_type & 0x03) \
                    | ((self.sync_type & 0x03) << 2) \
                    | ((self.usage_type & 0x03) << 4)
