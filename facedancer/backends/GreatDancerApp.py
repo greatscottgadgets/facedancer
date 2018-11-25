@@ -1,6 +1,4 @@
-# MAXUSBApp.py
-#
-# Contains class definition for MAXUSBApp.
+# GreatDancerApp.py
 
 import sys
 import time
@@ -13,6 +11,10 @@ from ..USBDevice import USBDeviceRequest
 from ..USBEndpoint import USBEndpoint
 
 class GreatDancerApp(FacedancerApp):
+    """
+    Backend for using GreatFET devices as FaceDancers.
+    """
+
     app_name = "GreatDancer"
     app_num = 0x00 # This doesn't have any meaning for us.
 
@@ -56,7 +58,7 @@ class GreatDancerApp(FacedancerApp):
         try:
             import greatfet
             gf = greatfet.GreatFET()
-            return True
+            return gf.supports_api('greatdancer')
         except ImportError:
             sys.stderr.write("NOTE: Skipping GreatFET-based devices, as the greatfet python module isn't installed.\n")
             return False
@@ -79,7 +81,10 @@ class GreatDancerApp(FacedancerApp):
 
         FacedancerApp.__init__(self, device, verbose)
         self.connected_device = None
-        self.vendor_requests = greatfet.protocol.vendor_requests
+
+        # Grab the raw API object from the GreatFET object.
+        # This has the low-level RPCs used for raw USB control.
+        self.api = device.apis.greatdancer
 
         # Initialize a dictionary that will store the last setup
         # whether each endpoint is currently stalled.
@@ -145,28 +150,7 @@ class GreatDancerApp(FacedancerApp):
             self.read_from_endpoint(endpoint_number)
 
 
-    @staticmethod
-    def _generate_endpoint_config_quad(endpoint):
-        """
-        Generates a four-bite command used to configure a single GreatDancer endpoint.
-
-        endpoint: A USBEndpoint object that contains the endpoint 
-                configruation to be applied.
-        """
-
-        # Figure out the endpoint's address.
-        direction_mask = 0x80 if endpoint.direction == USBEndpoint.direction_in else 0x00
-        address = endpoint.number | direction_mask
-
-        # Figure out the two bytes of the maximum packet size.
-        max_packet_size_h = endpoint.max_packet_size >> 8
-        max_packet_size_l = endpoint.max_packet_size & 0xFF;
-
-        # Generate the relevant packet.
-        return [address, max_packet_size_l, max_packet_size_h, endpoint.transfer_type]
-
-
-    def _generate_endpoint_config_command(self, config):
+    def _generate_endpoint_config_arguments(self, config):
         """
         Generates the data content for an Endpoint Configuration command that will
         set up the GreatDancer's endpoints to match the active configuration.
@@ -174,7 +158,7 @@ class GreatDancerApp(FacedancerApp):
         config: A USBConfiguration object that represents the configuration being
             applied to the GreatDancer.
         """
-        command = []
+        arguments = []
 
         for interface in config.interfaces:
             for endpoint in interface.endpoints:
@@ -182,9 +166,10 @@ class GreatDancerApp(FacedancerApp):
                 if self.verbose > 0:
                     print ("Setting up endpoint {} (direction={}, transfer_type={})".format(endpoint.number, endpoint.direction, endpoint.transfer_type))
 
-                command.extend(self._generate_endpoint_config_quad(endpoint))
+                triple = (endpoint.get_address(), endpoint.max_packet_size, endpoint.transfer_type,)
+                arguments.append(triple)
 
-        return command
+        return arguments
 
 
     def connect(self, usb_device, max_ep0_packet_size=64):
@@ -205,7 +190,7 @@ class GreatDancerApp(FacedancerApp):
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CONNECT, value=max_ep0_packet_size, index=quirks)
+        self.api.connect(max_ep0_packet_size, quirks)
         self.connected_device = usb_device
 
         if self.verbose > 0:
@@ -214,7 +199,7 @@ class GreatDancerApp(FacedancerApp):
 
     def disconnect(self):
         """ Disconnects the GreatDancer from its target host. """
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_DISCONNECT)
+        self.api.disconnect()
 
 
     def _wait_until_ready_to_send(self, ep_num):
@@ -245,7 +230,7 @@ class GreatDancerApp(FacedancerApp):
             print("sending on {}: {}".format(ep_num, data))
 
         self._wait_until_ready_to_send(ep_num)
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SEND_ON_ENDPOINT, index=ep_num, data=data)
+        self.api.send_on_endpoint(ep_num, bytes(data))
 
         # If we're blocking, wait until the transfer completes.
         if blocking:
@@ -273,6 +258,18 @@ class GreatDancerApp(FacedancerApp):
         return self._finish_primed_read_on_endpoint(ep_num)
 
 
+    @staticmethod
+    def _endpoint_address(ep_num, direction):
+        """
+        Returns the endpoint number that corresponds to a given directio
+        and address.
+        """
+        if direction:
+            return ep_num | 0x80
+        else:
+            return ep_num
+
+
     def stall_endpoint(self, ep_num, direction=0):
         """
         Stalls the provided endpoint, as defined in the USB spec.
@@ -285,7 +282,7 @@ class GreatDancerApp(FacedancerApp):
             print("Stalling EP{} {}".format(ep_num, in_vs_out))
 
         self.endpoint_stalled[ep_num] = True
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_STALL_ENDPOINT, index=ep_num, value=direction)
+        self.api.stall_endpoint(self._endpoint_address(ep_num, direction))
 
 
     def stall_ep0(self):
@@ -303,8 +300,8 @@ class GreatDancerApp(FacedancerApp):
         address: The address that the GreatDancer should assume.
         defer: True iff the set_addres request should wait for an active transaction to finish.
         """
-        index = 1 if defer else 0
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SET_ADDRESS, value=address, index=index)
+
+        self.api.set_address(address, 1 if defer else 0)
 
 
     @staticmethod
@@ -320,15 +317,6 @@ class GreatDancerApp(FacedancerApp):
         return int(status_hex, 16)
 
 
-    def _fetch_status_register(self, register_number):
-        """
-        Fetches a status register from the GreatDacner, and returns it
-        as an integer.
-        """
-        raw_status = self.device.vendor_request_in(self.vendor_requests.GREATDANCER_GET_STATUS, index=register_number, length=4)
-        return self._decode_usb_register(raw_status)
-
-
     def _fetch_irq_status(self):
         """
         Fetch the USB controller's pending-IRQ bitmask, which indicates
@@ -336,7 +324,7 @@ class GreatDancerApp(FacedancerApp):
 
         returns: A raw integer bitmap.
         """
-        return self._fetch_status_register(self.GET_USBSTS)
+        return self.api.get_status(self.GET_USBSTS)
 
 
     def _fetch_setup_status(self):
@@ -346,7 +334,7 @@ class GreatDancerApp(FacedancerApp):
 
         returns: A raw integer bitmap.
         """
-        return self._fetch_status_register(self.GET_ENDPTSETUPSTAT)
+        return self.api.get_status(self.GET_ENDPTSETUPSTAT)
 
 
     def _handle_setup_events(self):
@@ -380,7 +368,7 @@ class GreatDancerApp(FacedancerApp):
         self.endpoint_stalled[endpoint_number] = False
 
         # Read the data from the SETUP stage...
-        data = self.device.vendor_request_in(self.vendor_requests.GREATDANCER_READ_SETUP, length=8, index=endpoint_number)
+        data = self.api.read_setup(endpoint_number)
         request = USBDeviceRequest(data)
 
         # If this is an OUT request, handle the data stage,
@@ -413,7 +401,7 @@ class GreatDancerApp(FacedancerApp):
 
         returns: A raw integer bitmap.
         """
-        return self._fetch_status_register(self.GET_ENDPTCOMPLETE)
+        return self.api.get_status(self.GET_ENDPTCOMPLETE)
 
 
     def _transfer_is_complete(self, endpoint_number, direction):
@@ -496,18 +484,7 @@ class GreatDancerApp(FacedancerApp):
         endpoint_number: The endpoint to read from.
         """
 
-        # Figure out how much data we'll need to read from the endpoint...
-        raw_length = self.device.vendor_request_in(self.vendor_requests.GREATDANCER_GET_NONBLOCKING_LENGTH, index=endpoint_number, length=4)
-        length = self._decode_usb_register(raw_length)
-
-        # If there's no data available, we don't need to waste time reading anyting
-        # the GreatDancer. Return an empty packet.
-        if length == 0:
-            return b''
-
-        # Otherwise, read the data from the endpoint and return it.
-        data = self.device.vendor_request_in(self.vendor_requests.GREATDANCER_FINISH_NONBLOCKING_READ, index=endpoint_number, length=length)
-        return data.tostring()
+        return self.api.finish_nonblocking_read(endpoint_number)
 
 
     def _clean_up_transfers_for_endpoint(self, endpoint_number, direction):
@@ -528,7 +505,7 @@ class GreatDancerApp(FacedancerApp):
             print("Cleaning up transfers on {}".format(endpoint_number))
 
         # Ask the device to clean up any transaction descriptors related to the transfer.
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_CLEAN_UP_TRANSFER, index=endpoint_number, value=direction)
+        self.api.clean_up_transfer(self._endpoint_address(endpoint_number, direction))
 
 
     def _is_control_endpoint(self, endpoint_number):
@@ -587,7 +564,7 @@ class GreatDancerApp(FacedancerApp):
         Queries the GreatFET for a bitmap describing the endpoints that are not
         currently primed, and thus ready to be primed again.
         """
-        return self._fetch_status_register(self.GET_ENDPTSTATUS)
+        return self.api.get_status(self.GET_ENDPTSTATUS)
 
 
     def _fetch_endpoint_nak_status(self):
@@ -595,7 +572,7 @@ class GreatDancerApp(FacedancerApp):
         Queries the GreatFET for a bitmap describing the endpoints that have issued
         a NAK since the last time this was checked.
         """
-        return self._fetch_status_register(self.GET_ENDPTNAK)
+        return self.api.get_status(self.GET_ENDPTNAK)
 
 
     def _prime_out_endpoint(self, endpoint_number):
@@ -604,7 +581,7 @@ class GreatDancerApp(FacedancerApp):
 
         endpoint_number: The endpoint that should be primed.
         """
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_START_NONBLOCKING_READ, index=endpoint_number)
+        self.api.start_nonblocking_read(endpoint_number)
 
 
     def _handle_transfer_readiness(self):
@@ -690,7 +667,7 @@ class GreatDancerApp(FacedancerApp):
         if self.verbose > 0:
             print("-- Reset requested! --")
 
-        self.device.vendor_request_out(self.vendor_requests.GREATDANCER_BUS_RESET)
+        self.api.bus_reset()
 
 
     def _handle_nak_events(self):
@@ -721,15 +698,15 @@ class GreatDancerApp(FacedancerApp):
         """
         Configures the GreatDancer's endpoints to match the provided configuration.
 
-        configurat: The USBConfigruation object that describes the endpoints provided.
+        configurate: The USBConfigruation object that describes the endpoints provided.
         """
-        endpoint_config_command = self._generate_endpoint_config_command(configuration)
+        endpoint_triplets = self._generate_endpoint_config_arguments(configuration)
 
         # If we need to issue a configuration command, issue one.
         # (If there are no endpoints other than control, this command will be
         #  empty, and we can skip this.)
-        if endpoint_config_command:
-            self.device.vendor_request_out(self.vendor_requests.GREATDANCER_SET_UP_ENDPOINTS, data=endpoint_config_command)
+        if endpoint_triplets:
+            self.api.set_up_endpoints(*endpoint_triplets)
 
 
     def configured(self, configuration):
