@@ -522,12 +522,12 @@ class USBDeviceRequest:
         # If this is a GET_DESCRIPTOR request, parse it.
         if self.get_type() == 0 and self.request == 6:
             descriptor_index = self.value & 0xff
-            description = self._get_descriptor_number_string()
+            description = self.get_descriptor_number_string()
             return "{} descriptor (index=0x{:02x})".format(description, descriptor_index)
         else:
             return "%x" % self.value
 
-    def _get_descriptor_number_string(self):
+    def get_descriptor_number_string(self):
         try:
             descriptor_index = self.value >> 8
             return self._descriptor_number_description[descriptor_index]
