@@ -162,6 +162,9 @@ class USBDevice(USBDescribable):
 
     def run(self):
         self.scheduler.run()
+    
+    def stop(self):
+        self.scheduler.stop()
 
     def ack_status_stage(self, blocking=False):
         self.maxusb_app.ack_status_stage(blocking=blocking)
