@@ -467,10 +467,11 @@ class FacedancerBasicScheduler(object):
     created implicitly if no other scheduler is provided. Executes each of its
     tasks in order, over and over.
     """
+    do_exit = False
 
     def __init__(self):
         self.tasks = []
-        self. do_exit = False
+        self.do_exit = False
 
 
     def add_task(self, callback):
@@ -488,8 +489,8 @@ class FacedancerBasicScheduler(object):
         Run the main scheduler stack.
         """
 
-        self. do_exit = False
-        while not do_exit:
+        self.do_exit = False
+        while not self.do_exit:
             for task in self.tasks:
                 task()
 
