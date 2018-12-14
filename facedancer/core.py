@@ -470,6 +470,7 @@ class FacedancerBasicScheduler(object):
 
     def __init__(self):
         self.tasks = []
+        self. do_exit = False
 
 
     def add_task(self, callback):
@@ -487,8 +488,16 @@ class FacedancerBasicScheduler(object):
         Run the main scheduler stack.
         """
 
-        while True:
+        self. do_exit = False
+        while not do_exit:
             for task in self.tasks:
                 task()
+
+
+    def stop(self):
+        """
+        Stop the scheduler on next loop.
+        """
+        self.do_exit = True
 
 
