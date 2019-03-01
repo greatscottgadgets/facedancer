@@ -132,7 +132,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         """
         Sets up our host to talk to the device, including turning on VBUS.
         """
-        self.device.vendor_request_out(self.vendor_requests.USBHOST_CONNECT)
+        self.device.comms.vendor_request_out(self.vendor_requests.USBHOST_CONNECT)
 
 
     def bus_reset(self, delay=0.500):
@@ -147,7 +147,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         # Note: we need to wait a reset delay before and after the bus reset.
         # This allows the host to initialize _and_ then allows the device to settle.
         time.sleep(delay)
-        self.device.vendor_request_out(self.vendor_requests.USBHOST_BUS_RESET)
+        self.device.comms._vendor_request_out(self.vendor_requests.USBHOST_BUS_RESET)
         time.sleep(delay)
 
 
@@ -169,7 +169,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         Fetches a status register from the GreatDacner, and returns it
         as an integer.
         """
-        raw_status = self.device.vendor_request_in(self.vendor_requests.USBHOST_GET_STATUS, index=register_number, length=4)
+        raw_status = self.device.comms._vendor_request_in(self.vendor_requests.USBHOST_GET_STATUS, index=register_number, length=4)
         return self._decode_usb_register(raw_status)
 
 
@@ -307,7 +307,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         # Issue the configuration packet.
         packet = struct.pack("<BBBBBHB", endpoint_schedule, device_address, endpoint_address,
                              endpoint_speed, is_control_endpoint, max_packet_size, handle_data_toggle)
-        self.device.vendor_request_out(self.vendor_requests.USBHOST_SET_UP_ENDPOINT, data=packet)
+        self.device.comms._vendor_request_out(self.vendor_requests.USBHOST_SET_UP_ENDPOINT, data=packet)
 
 
     def initialize_control_endpoint(self, device_address=None, device_speed=None, max_packet_size=None):
@@ -348,7 +348,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         # Issue the actual send itself.
         # TODO: validate length
 
-        self.device.vendor_request_out(self.vendor_requests.USBHOST_SEND_ON_ENDPOINT,
+        self.device.comms._vendor_request_out(self.vendor_requests.USBHOST_SEND_ON_ENDPOINT,
                                        index=endpoint_number, value=(data_packet_pid << 8) | pid_token,
                                        data=data)
 
@@ -383,7 +383,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         """
 
         # Start the request...
-        self.device.vendor_request_out(self.vendor_requests.USBHOST_START_NONBLOCKING_READ,
+        self.device.comms._vendor_request_out(self.vendor_requests.USBHOST_START_NONBLOCKING_READ,
                                        index=(data_packet_pid << 8) | endpoint_number, value=expected_read_size)
 
         # ... and if we're blocking, also finish it.
@@ -402,7 +402,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
                 raise IOError("Stalled!")
 
         # Figure out how muhc to read.
-        raw_length = self.device.vendor_request_in(self.vendor_requests.USBHOST_GET_NONBLOCKING_LENGTH,
+        raw_length = self.device.comms._vendor_request_in(self.vendor_requests.USBHOST_GET_NONBLOCKING_LENGTH,
                                                    index=endpoint_number, length=4)
         length = self._decode_usb_register(raw_length)
 
@@ -414,6 +414,6 @@ class GreatDancerHostApp(FacedancerUSBHost):
             return b''
 
         # Otherwise, read the data from the endpoint and return it.
-        data = self.device.vendor_request_in(self.vendor_requests.USBHOST_FINISH_NONBLOCKING_READ,
+        data = self.device.comms._vendor_request_in(self.vendor_requests.USBHOST_FINISH_NONBLOCKING_READ,
                                              index=endpoint_number, length=length)
         return data.tostring()

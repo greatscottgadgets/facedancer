@@ -173,7 +173,6 @@ class USBDevice(USBDescribable):
 
     def connect(self):
         self.phy.connect(self)
-
         # skipping State.attached may not be strictly correct (9.1.1.{1,2})
         self.state = State.powered
 
@@ -184,6 +183,9 @@ class USBDevice(USBDescribable):
 
     def run(self):
         self.scheduler.run()
+
+    def stop(self):
+        self.scheduler.stop()
 
     def ack_status_stage(self, blocking=False):
         self.phy.ack_status_stage(blocking=blocking)
@@ -304,11 +306,12 @@ class USBDevice(USBDescribable):
                 self.error('0x%02x: %s' % (k, handler_entity.request_handlers[k]))
             self.error('invalid handler, stalling')
             self.phy.stall_ep0()
-        try:
-            handler(req)
-        except:
-            traceback.print_exc()
-            raise
+        else:
+            try:
+                handler(req)
+            except:
+                traceback.print_exc()
+                raise
 
     def handle_data_available(self, ep_num, data):
         if self.state == State.configured and ep_num in self.endpoints:
@@ -655,12 +658,12 @@ class USBDeviceRequest:
     def get_value_string(self):
         # If this is a GET_DESCRIPTOR request, parse it.
         if self.get_type() == 0 and self.request == 6:
-            description = self._get_descriptor_number_string()
+            description = self.get_descriptor_number_string()
             return "{} descriptor".format(description)
         else:
             return "%x" % self.value
 
-    def _get_descriptor_number_string(self):
+    def get_descriptor_number_string(self):
         try:
             descriptor_index = self.value >> 8
             return self._descriptor_number_description[descriptor_index]

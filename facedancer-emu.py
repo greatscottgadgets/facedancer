@@ -17,13 +17,13 @@ from devices.switch_TAS import USBSwitchTASDevice
 from devices.mass_storage import USBMassStorageDevice, RawDiskImage
 from devices.ums_doublefetch import DoubleFetchImage
 from devices.billboard import USBBillboardDevice
-
 from devices.hub import USBHubDevice
 from devices.printer import USBPrinterDevice
 from devices.mtp import USBMtpDevice
 from devices.vendor_specific import USBVendorSpecificDevice
 from devices.smartcard import USBSmartcardDevice
-
+from devices.usbprocontroller import USBProControllerDevice
+from facedancer.utils.spiflash import SPIFlash
 from facedancer.fuzz.helpers import StageLogger, set_stage_logger
 
 targets=[
@@ -44,7 +44,8 @@ targets=[
     ["SwitchTAS",USBSwitchTASDevice],
     ["MTP",USBMtpDevice],
     ["Printer",USBPrinterDevice],
-    ["Vendor",USBVendorSpecificDevice]
+    ["Vendor",USBVendorSpecificDevice],
+    ["ProController",USBProControllerDevice]
 ]
 
 def showtypes():
@@ -147,6 +148,8 @@ def main(argv):
         vvid = int(args.vid, 16)
         vpid = int(args.pid, 16)
         d = func(phy, vid=vvid, pid=vpid)
+    elif args.device=="ProController":
+        d = func(phy, spi_flash=SPIFlash())
     else:
         d = func(phy)
 

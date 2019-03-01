@@ -75,6 +75,11 @@ class USBEndpoint(USBDescribable):
     def set_handler(self, handler):
         self.handler = handler
 
+    def get_address(self):
+        """ Returns the address for the given endpoint. """
+        direction_mask = 0x80 if self.direction == USBEndpoint.direction_in else 0x00
+        return self.number | direction_mask
+
     def __repr__(self):
         # TODO: make these nice string representations
         transfer_type = self.transfer_type

@@ -1,4 +1,4 @@
-# FaceDancer 2.2
+# FaceDancer 2.3
 
 This repository houses the next generation of FaceDancer software. Descended from
 the original GoodFET-based FaceDancer, this repository provides a python module 
@@ -53,13 +53,13 @@ the software know which type of FaceDancer board you'd like to use. If this vari
 isn't set, the software will try to guess for you based on what's connected. It doesn't
 always make the best guesses, so you're probably better off setting it yourself.
 
-Next, you can run any of the pre-made scripts, e.g. ```facedancer-serial.py```.
+Next, you can run any of the pre-made scripts, e.g. ```facedancer-emu.py```.
 
 For example:
 
 ```sh
 export BACKEND=goodfet
-./facedancer-serial.py
+./facedancer-emu.py -device "FTDI"
 ```
 
 ## What boards are currently supported?
@@ -104,3 +104,50 @@ including:
 ## Contributions?
 
 ... are always welcome. Shoot us a PR!
+
+## Installation
+
+* Install Mtp
+```
+cd Mtp
+sudo python setup.py install
+sudo python3 setup.py install
+cd ..
+mkdir mtp_fs
+```
+
+* Install kitty (modified to work with Python3)
+```
+cd kitty
+sudo python setup.py install
+sudo python3 setup.py install
+```
+
+* Install pyusb
+```
+sudo pip install pyusb
+sudo pip3 install pyusb
+```
+
+* Install greatfet drivers (for Greatfet Only)
+```
+git clone https://github.com/greatscottgadgets/greatfet --recursive
+cd libgreat/host
+sudo python setup.py install
+sudo python3 setup.py install
+cd ../../firmware/libopencm3
+make
+cd ../../host
+sudo python setup.py install
+sudo python3 setup.py install
+```
+
+* Upgrade greatfet firmware (if legacy)
+```
+sudo apt-get install gcc-arm-none-eabi
+cd ../firmware/greatfet_usb
+mkdir build
+cd build
+cmake .. -DBOARD=GREATFET_ONE
+make greatfet_usb-flash
+```

@@ -4,6 +4,7 @@ import argparse
 import sys
 import time
 import traceback
+import logging
 
 from facedancer import FacedancerUSBApp
 from devices.audio import USBAudioDevice
@@ -25,6 +26,8 @@ from devices.printer import USBPrinterDevice
 from devices.mtp import USBMtpDevice
 from devices.vendor_specific import USBVendorSpecificDevice
 from devices.smartcard import USBSmartcardDevice
+from devices.usbprocontroller import USBProControllerDevice
+from facedancer.utils.spiflash import SPIFlash
 
 targets=[
     ["Audio", USBAudioDevice],
@@ -52,11 +55,11 @@ def showtypes():
     for entry in targets:
         print("\t\"%s\"" % (entry[0]))
 
-class ScanApp(FacedancerUSBApp):
-    def __init__(self, options):
-        super(ScanApp, self).__init__(options)
+class ScanApp():
+    def __init__(self):
         self.current_usb_function_supported = False
         self.start_time = 0
+        self.logger = logging.getLogger('facedancer')
 
     def usb_function_supported(self, reason=None):
         self.current_usb_function_supported = True
@@ -64,24 +67,32 @@ class ScanApp(FacedancerUSBApp):
     def run(self):
         self.logger.always('Scanning host for supported devices')
         supported = []
-            
-        for device_name in targets:
-            if device_name == 'Printer':
-                # skip printer ATM
+        phy = FacedancerUSBApp()
+        phy.should_stop_phy=self.should_stop_phy
+        phy.set_log_level(int(100))
+
+        for device in targets:
+            if device[0] in ['Printer','MassStorage','MassStorage-DoubleFetch','Vendor']:
+                # skip those devices ATM
                 continue
-            self.logger.always('Testing support: %s' % (device_name))
+            self.logger.always('Testing support: %s' % (device[0]))
+            self.start_time = time.time()
             try:
-                self.start_time = time.time()
-                d = entry[1](self)
+                func=device[1]
+                if device[0] == "ProController":
+                    d = func(phy, spi_flash=SPIFlash())
+                else:
+                    d = func(phy)
                 d.connect()
+
                 d.run()
-                d.disconnect() 
+                d.disconnect()
             except:
                 self.logger.error(traceback.format_exc())
-            self.disconnect()
+                d.disconnect()
             if self.current_usb_function_supported:
                 self.logger.always('Device is SUPPORTED')
-                supported.append(device_name)
+                supported.append(device[0])
             self.current_usb_function_supported = False
             time.sleep(2)
         if len(supported):
@@ -91,17 +102,17 @@ class ScanApp(FacedancerUSBApp):
                 self.logger.always('%d. %s' % (i + 1, device_name))
         self.logger.warning('Note: printer is not tested at the moment')
 
-        def should_stop_phy(self):
-            stop_phy = False
-            passed = int(time.time() - self.start_time)
-            if passed > 5:
-                self.logger.info('have been waiting long enough (over %d secs.), disconnect' % (passed))
-                stop_phy = True
-            return stop_phy
+    def should_stop_phy(self):
+        stop_phy = False
+        passed = int(time.time() - self.start_time)
+        if passed > 5:
+            self.logger.info('have been waiting long enough (over %d secs.), disconnect' % (passed))
+            stop_phy = True
+        return stop_phy
 
         
 def main(argv):
-    phy = ScanApp(__doc__)
+    phy = ScanApp()
     phy.run()
     
 if __name__ == '__main__':
