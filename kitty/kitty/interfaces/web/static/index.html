@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="static/favicon.ico">
+    <title>Kitty Fuzzer</title>
+</head>
+<body>
+
+    <div id="body">
+        <script src="js/jquery-1.11.1.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/hexdump.js"></script>
+        <script src="js/jszip.min.js"></script>
+        <script src="js/filesaver.min.js"></script>
+        <script src="js/cytoscape.min.js"></script>
+
+        <!-- Title -->
+        <h1>Kitty Fuzzer <div id="kitty_version"></div> - <div id="fuzzer_name">Name Not Supported Yet</div></h1>
+
+        <!-- Alert if fuzzer not available -->
+        <div align="center" class="alert alert-danger alert-large" id="error_message">Fuzzer Not Available<br/></div>
+
+        <!--- Main table -->
+        <div class="container-fluid">
+            <div class="col-lg-20">
+                <table class="table table-bordered table-striped">
+                    <colgroup>
+                    <col class="col-lg-3"/>
+                    <col class="col-lg-5"/>
+                    <col class="col-lg-3"/>
+                    <row class="row-lg-2"/>
+                    <row class="row-lg-2"/>
+                </colgroup>
+                <tbody>
+                    <!-- top row -->
+                    <tr class="row-lg-2">
+                        <!-- session info -->
+                        <td>
+                            <div class="panel panel-danger kitty-cell">
+                                <div class="panel-heading">Session Info</div>
+                                <table class="table table-hover table-striped table-responsive info-table">
+                                    <colgroup>
+                                    <col class="col-lg-2"/>
+                                    <col class="col-lg-3"/>    
+                                </colgroup>
+                                <tbody>
+                                    <tr><td>Test numbers</td><td id="test_list_str">N/A</td></tr>
+                                    <tr><td>Current Index</td><td id="current_index">N/A</td></tr>
+                                    <tr><td>Start Time</td><td id="start_time">N/A</td></tr>
+                                    <tr><td>ETA</td><td id="eta">N/A</td></tr>
+                                </tbody>
+                            </table>
+                            <table class="table table-hover table-striped table-responsive info-table", id="progress_table">
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar progress-bar-large progress-bar-danger" role="progress-bar" id="progress_bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <button id="pause_button" type="button" class="btn btn-default btn-danger"></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                    <!-- stage graph -->
+                    <td>
+                        <div class="panel panel-danger kitty-cell">
+                            <div class="panel-heading">Fuzzing Stages</div>
+                            <div class="unknown-data-size" id="stages-graph"></div>
+                        </div>
+                    </td>
+                    <!-- reports -->
+                    <td>
+                        <div class="panel panel-danger kitty-cell">
+                            <div class="panel-heading">
+                                Reports (<span id="failure_count" style="align:right;"></span>)
+                            </div>
+                            <div class="unknown-data-size" id="report-table">
+                                <table id="reports" class="table table-bordered table-striped table-responsive">
+                                    <colgroup>
+                                        <col class="col-lg-2"/>
+                                    </colgroup>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button id="export_all" type="button" class="btn btn-danger" onclick="exportAllReports()">Export All reports</button>
+                        </div>
+                    </td>
+                </tr>  <!-- top row end -->
+                <!-- bottom row -->
+                <tr class="row-lg-2">
+                    <!-- template structure -->
+                    <td>
+                        <div class="panel panel-danger kitty-cell">
+                            <div class="panel-heading">Template Structure</div>
+                            <div class="monospaced-text unknown-data-size" id="template_structure"></div>
+                        </div>
+                    </td>
+                    <!-- current payload -->
+                    <td>
+                        <div class="panel panel-danger kitty-cell">
+                            <div class="panel-heading">Current Payload</div>
+                            <div class="unknown-data-size monospaced-text" id="current_payload_hexdump"></div>
+                        </div>
+                    </td>
+                    <!-- target info -->
+                    <td>
+                        <div class="panel panel-danger kitty-cell">
+                            <div class="panel-heading">Target Information</div>
+                        </div>
+                    </td>
+                </tr> <!-- bottom row end -->
+            </tbody>
+        </table>
+    </div> <!-- col-lg-20 -->
+</div> <!-- container -->
+
+<!-- update the stages graph -->
+<script type="text/javascript">
+    var state = {
+        template_info: {},
+        reports: new Array()
+    };
+
+    function renderStageGraph(elements) {
+        var cy = cytoscape({
+            container: $('#stages-graph'),
+
+            boxSelectionEnabled: false,
+            autounselectify: true,
+            selectable: false,
+
+            style: cytoscape.stylesheet()
+            .selector('node')
+            .css({
+                'content': 'data(id)',
+                'background-color': '#f2dede',
+            })
+            .selector('edge')
+            .css({
+                'target-arrow-shape': 'triangle',
+                'width': 3,
+                'line-color': '#f2dede',
+                'target-arrow-color': '#f2dede',
+                'background-color': '#f2dede',
+            })
+            .selector('.highlighted')
+            .css({
+                'background-color': '#c9302c',
+                'line-color': '#c9302c',
+                'target-arrow-color': '#c9302c',
+                'transition-property': 'background-color, line-color, target-arrow-color',
+                'transition-duration': '0.1s'
+            }),
+
+            elements: elements,
+
+            layout: {
+                name: 'circle',
+                directed: true,
+                roots: 'Start',
+                padding: 10
+            }
+        });
+
+    };
+
+    function triggerStageGraphUpdate() {
+        $.getJSON('../api/stages.json', updateStageGraph);
+    }
+
+    function is_edge_in_path(curr_path, src, dst) {
+        return (
+            (curr_path.indexOf(dst) != -1) &&
+            (curr_path.indexOf(src) != -1) &&
+            ((curr_path.indexOf(src) + 1) == curr_path.indexOf(dst))
+        )
+    }
+
+    function get_edge_classes(curr_path, src, dst) {
+        if(is_edge_in_path(curr_path, src, dst))
+            return 'highlighted';
+        else
+            return '';
+    }
+
+    function has_node(elements, node) {
+        return elements.nodes.indexOf(node) != -1;
+    }
+
+    function add_node_if_missing(elements, node) {
+        if(has_node(elements, node) == false) {
+            elements.nodes.push({data: {id: node}});
+        }
+    }
+    
+    function updateStageGraph(resp) {
+        var curr_path = resp.current;
+        var all_stages = resp.stages;
+        /* Gather a list of all nodes in current path */
+        if(state.current_path === curr_path.toString())
+            return;
+        state.current_path = curr_path.toString();
+        var elements = {};
+        elements.nodes = new Array();
+        elements.edges = new Array();
+        curr_path.unshift('Start');
+        $.each(curr_path, function(idx, value) {
+            elements.nodes.push({data: {id: value}, classes: 'highlighted'});
+        });
+        /*
+        build all the edges, each entry in all_stages holds a
+        list of destinations from the key
+        */
+        $.each(all_stages, function(src, v) {
+            /* don't set the same edge twice, even if it occurs twice */
+            var cache = new Array();
+            $.each(v, function(idx, dst) {
+                /* highlight the edge if it is in current path */
+                var classes = get_edge_classes(curr_path, src, dst);
+                if(cache.indexOf(dst) == - 1) {
+                    elements.edges.push({
+                        data: {source: src, target: dst, id: src + '--' + dst},
+                        classes:classes,
+                    });
+                    add_node_if_missing(elements, dst);
+                    cache.push(dst);
+                }
+            });
+            add_node_if_missing(elements, src);
+        });
+        renderStageGraph(elements);
+    }
+    
+    function updateReports(reports) {
+        if(reports != state.reports) {
+            $('#reports tbody tr').remove();
+            state.reports = reports;
+            if (reports.length > 0) {
+                reports.sort(function(a, b){return a[0]-b[0]});
+                var tbody = $('#reports').find('tbody');
+                $.each(reports, function(index, entry) {
+                    var test_number = entry[0];
+                    tbody.append($('<tr>')
+                        .append($('<td>').text(test_number))
+                        .append($('<td>').text(entry[1]))
+                        .append($('<td>').text(entry[2]))
+                        .attr('onclick', "document.location = '" + "static/report.html?report_id=" + test_number +"';")
+                        .attr('style', 'cursor: pointer;')
+                        .attr('title', 'Show report ' + test_number)
+                    );
+                });    
+            }
+        }
+    }
+
+    /* Fetch all reports, return a dictionary - testname/report */
+    function getAllReports() {
+        var res = {};
+        $.each(state.reports, function(index, entry) {
+            var test_number = entry[0];
+            var report = $.ajax({
+                type: 'GET',
+                url: '../api/report?report_id=' + test_number,
+                async: false
+            }).responseText;
+            res[test_number] = report;
+        });
+        return res;
+    }
+
+    /* Store all reports into a single zip file */
+    function exportAllReports() {
+        var zip = new JSZip();
+        var filename = 'kitty_' + state.start_time.toString() + '_reports.zip';
+        var report_dir = zip.folder('reports');
+        var reports = getAllReports();
+        $.each(reports, function(test_number, report) {
+            report_dir.file('report_' + test_number.toString() + '.json', report);
+        });
+        var content = zip.generate({type:"blob"});
+        saveAs(content, filename);
+    }
+
+    function updatePauseState(paused) {
+        if(paused != state.paused) {
+            var btn_text = (paused == true) ? 'Resume' : 'Pause';
+            var btn_action = (paused == true) ? 'doResume();' : 'doPause();';
+            $('#pause_button').text(btn_text);
+            $('#pause_button').attr('onclick', btn_action);
+            state.paused = paused;
+        }            
+    }
+
+    function updateFieldFromDict(field, d) {
+        if(state[field] != d[field]) {
+            state[field] = d[field];
+            disp = state[field] == null ? '--' : state[field];
+            $('#' + field).text(disp);
+        }
+    }
+
+    function updateStats(stats) {
+        if(stats.start_time != state.start_time) {
+            updateFieldFromDict('kitty_version', stats);
+            updateFieldFromDict('test_list_str', stats);
+            updateFieldFromDict('fuzzer_name', stats);
+            state.start_time = stats.start_time;
+            $('#start_time').text(new Date(Math.floor(stats.start_time * 1000)).toISOString().slice(0,19).replace(/T|Z/g," "));    
+        }
+        updateFieldFromDict('failure_count', stats);
+        updateFieldFromDict('current_index', stats);
+    }
+
+    function updateCurrentPayload(test_details) {
+        var curr = test_details.node.value.rendered.base64;
+        if(state.current_payload != curr) {
+            $('#current_payload_hexdump').html(convertToHtml(Hexdump.dump(atob(curr))));
+            state.current_payload = curr;
+        }
+    }
+
+    function convertToHtml(text) {
+        var text = $('<div>').text(text).html();
+        text = text.replace(/ /g, '&nbsp;');
+        text = text.replace(/\n/g, '<br>');   
+        return text;
+    }
+
+    function updateTemplateStructure(test_details) {
+        var hash  = test_details['node']['hash'];
+        if(!state.waiting_for_template_structure) {
+            if(hash != state.template_info.hash) {
+                $.getJSON('api/template_info.json', function (data) {
+                    state.template_info = data;
+                    state.template_info.hash = hash;
+                    state.waiting_for_template_structure = false;
+                    setTimeout(performUpdate, 10);
+                });
+                state.waiting_for_template_structure = true;
+            }
+            else {
+                updateTemplateWithCurrentState(test_details);
+            }
+        }
+    }
+
+    function updateTemplateWithCurrentState(test_details) {
+        var tree_string = buildTree(state.template_info, test_details, 0, test_details.node.mutation.current_index);
+        $('#template_structure').html(tree_string);
+    }
+
+    function buildTree(node, test_details, depth, relative_mutation_index) {
+        var res = '';
+        var node_total_number = node.mutation.total_number;
+        var mutating = relative_mutation_index < node_total_number && relative_mutation_index > 0;
+        res += '&nbsp;'.repeat(depth * 2);
+        res += '<b>' + node.name + '</b>';
+        res += ' (' + node.field_type + ')';
+        if(mutating) {
+            if(node_total_number > 0) {
+                node_total_number -= 1;
+            }
+            res += '(' + relative_mutation_index.toString() + '/' + (node_total_number).toString() + ')';
+            res = '<span class="mutation-highlight">' + res + '</span>'; 
+        }
+        res += '<br>';
+        if(node.fields)
+            $.each(node.fields, function(index, value){
+                res += buildTree(value, test_details, depth + 1, relative_mutation_index);
+                relative_mutation_index -= value.mutation.total_number;
+            });
+
+        return res;
+    }        
+
+    function updateProgress(stats, eta) {
+        var start = stats.start_index;
+        var end = stats.end_index;
+        var current = stats.current_index;
+        var percent;
+        if(current == null) {
+            percent = 100;
+        }
+        else {
+            percent = Math.round(100.0 / (end - start) * (current - start));
+        }
+        $('#progress_bar').text(percent + '%');
+        $('#progress_bar').css('width', percent + '%').attr('aria-valuenow', percent); 
+        var msg;
+        if (current == null) {
+            msg = 'Fuzzing session completed';
+        }
+        else {
+            msg = eta;
+        }
+        $('#eta').text(msg);
+    }
+
+    function doPause() {
+        $.post('/api/action/pause');
+        $('#pause_button').disabled = true;
+    }
+
+    function doResume() {
+        $.post('/api/action/resume');
+        $('#pause_button').disabled = true;
+    }
+
+    function updateFuzzingStage(test_details){
+        if(test_details.sequence.current != state.current_sequence) {
+            test_details.sequence.current = state.current_sequence;
+            triggerStageGraphUpdate();
+        }
+    }
+
+    function processResponse(data) {
+        if($('#error_message').is(":visible"))
+            $('#error_message').hide({duration: 'fast', easing: 'linear'});
+        if(data.paused != null) {
+            updatePauseState(data.paused);
+        }
+        if(data.stats != null) {
+            updateStats(data.stats);
+            updateProgress(data.stats, data.eta);
+        }
+        if(data.current_test != null){
+            updateTemplateStructure(data.current_test);
+            updateFuzzingStage(data.current_test);
+            updateCurrentPayload(data.current_test);
+        }
+        if(data.reports_extended != null) {
+            updateReports(data.reports_extended);
+        }
+        setTimeout(performUpdate, 3000);
+    }
+
+    function handleFailure() {
+        if(!$('#error_message').is(":visible"))
+            $('#error_message').show();
+        setTimeout(performUpdate, 10000);
+    }
+
+    function performUpdate() {
+        $.getJSON('api/stats.json', processResponse).fail(handleFailure);
+    }
+
+    updatePauseState(false);
+    performUpdate();
+
+</script>
+</body>
+
+</html>

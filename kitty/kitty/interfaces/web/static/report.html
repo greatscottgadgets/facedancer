@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+    <link rel="icon" type="image/x-icon" href="static/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="static/favicon.ico">
+    <title>Kitty Report</title>
+</head>
+
+<body>
+    <script src="js/jquery-1.11.1.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="static/jquery.js"></script>
+
+    <div class="page-header">
+        <h2 id="report_name"></h2>
+    </div>
+
+
+    <div class="container" id="reports_container_table">
+        <div class="table" id="reports_container_table_body">
+            <!-- Main report -->
+            <div class="row">
+                <div class="container report-single-table">
+                    <div class="panel panel-danger">
+                        <div class="panel-heading">Main Report</div>
+                        <div class="table table-hover table-striped table-bordered" id="main_report_table">
+                            <div class="row report-row">
+                                <div class="report-cell-key col-sm-3">Issuer</div>
+                                <div class="report-cell-value col-sm-9" id="main_report_name"></div>
+                            </div>
+                            <div class="row report-row">
+                                <div class="report-cell-key col-sm-3">Status</div>
+                                <div class="report-cell-value col-sm-9" id="main_report_status"></div>
+                            </div>
+                            <div class="row report-row">
+                                <div class="report-cell-key col-sm-3">Reason</div>
+                                <div class="report-cell-value col-sm-9" id="main_report_reason"></div>
+                            </div>
+                            <div class="row report-row">
+                                <div class="report-cell-key col-sm-3">Fuzz Path</div>
+                                <div class="report-cell-value col-sm-9" id="main_report_fuzz_path"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+
+        /* Change a string to title case: 'hello world'-> 'Hello World' */
+        function toTitleCase(str) {
+            return str.replace(/_/g, ' ').replace(
+                /(\s|^|\/)([a-zA-Z])/g,
+                function(txt, a, b) {
+                    return a + b.toUpperCase();
+                }
+            );
+        }
+
+        /* Replace "bad" chars with '_' */
+        function sanitizeName(str) {
+            return str.replace(/\W+/g, '_');
+        }
+
+        /* Decode as base64 if the value is a string */
+        function kunescape(val) {
+            if((typeof val) == 'string') {
+                val = window.atob(val);
+            }
+            return val;
+        }
+
+        /* Check if value is a multiline value */
+        function is_multiline(val) {
+            if ((typeof val) == 'string') {
+                if(val.indexOf('\n') != -1) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /* Generate field id from base name and key */
+        function field_id_from_key(base_name, key) {
+            return base_name + '_' + key;
+        }
+        
+        /* Get field by the table name and the key */
+        function field_by_key(base_name, key) {
+            return $('#' + field_id_from_key(base_name, key));
+        }
+
+        /* Generate table id from base_name */
+        function table_id_from_name(base_name) {
+            return base_name + '_table';
+        }
+
+        /* Get table by the base_name */
+        function table_by_name(base_name) {
+            return $('#' + table_id_from_name(base_name));
+        }
+
+        /* Set a value in a field and return the field */
+        function set_value_in_field(field, value) {
+            value = kunescape(value);
+            if(is_multiline(value)) {
+                field.append($('<pre>').text(value));
+            }
+            else {
+                field.text(value);
+            }
+            return field;
+        }
+
+        /* Add a field to the table */
+        function add_to_table(base_name, key, value) {
+            if(key != 'sub_reports'){
+                $('<div>')
+                .append(
+                    $('<div>').addClass('report-cell-key col-sm-3').text(toTitleCase(key)),
+                    set_value_in_field(
+                        $('<div>').addClass('report-cell-value col-sm-9'),
+                        value
+                    )
+                )
+                .addClass('row report-row')
+                .appendTo(table_by_name(base_name));
+            }
+        }
+
+        /* Set value of existing field in the table */
+        function set_in_table(base_name, key, value) {
+            set_value_in_field(field_by_key(base_name, key), value);
+        }
+
+        function highlight_failed_row(base_name, key) {
+            var status_row = field_by_key(base_name, key);
+            status_row.parent().css('background', '#dc9696');
+        }
+
+        /* Fill a table from a report */
+        function fill_table(base_name, report, first_fields) {
+            var sub_reports = report.sub_reports;
+            var passed = false;
+            $.each(first_fields, function(idx, key){
+                set_in_table(base_name, key, report[key]);
+                if((key == 'status') && (window.atob(report[key]) == 'passed')) {
+                    passed = true;
+                }
+                delete report[key];
+            });
+            if(passed == false) {
+                highlight_failed_row(base_name, 'status');
+                highlight_failed_row(base_name, 'reason');
+            }
+            var keys = [];
+            for (var prop in report) {
+                keys.push(prop);
+            }
+            keys.sort();
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                var value = report[key];
+                if(sub_reports.indexOf(key) == -1) {
+                    add_to_table(base_name, key, value);
+                }
+            }
+        }
+
+        /* Create a table */
+        function create_table(name, title) {
+            $('<div class="row">')
+            .append(
+                $('<div>')
+                .addClass('container-fluid report-single-table')
+                .append(
+                    $('<div>')
+                    .addClass('panel panel-danger')
+                    .append(
+                        $('<div>')
+                        .addClass('panel-heading')
+                        .text(title)
+                    )
+                    .append(
+                        $('<div>', {id:table_id_from_name(name)})
+                        .addClass(
+                            'table table-hover table-striped table-bordered info-table'
+                        )
+                        .append(
+                            $('<div>')
+                            .addClass('row report-row')
+                            .append(
+                                $('<div>')
+                                .addClass('report-cell-key col-sm-3')
+                                .text('Issuer')
+                            )
+                            .append(
+                                $('<div>', {id: field_id_from_key(name, 'name')})
+                                .addClass('report-cell-value col-sm-9')
+                            )
+                        )
+                        .append(
+                            $('<div>')
+                            .addClass('row report-row')
+                            .append(
+                                $('<div>')
+                                .addClass('report-cell-key col-sm-3')
+                                .text('Status')
+                            )
+                            .append(
+                                $('<div>', {id: field_id_from_key(name, 'status')})
+                                .addClass('report-cell-value col-sm-9')
+                            )
+                        )
+                        .append(
+                            $('<div>')
+                            .addClass('row report-row')
+                            .append(
+                                $('<div>')
+                                .addClass('report-cell-key col-sm-3')
+                                .text('Reason')
+                            )
+                            .append(
+                                $('<div>', {id: field_id_from_key(name, 'reason')})
+                                .addClass('report-cell-value col-sm-')
+                            )
+                        )
+                    )
+                )
+            )
+            .appendTo($('#reports_container_table_body'));
+        }
+
+        /* Build tables and fill them for all reports */
+        function build_tables(response) {
+            var report = response.report;
+            var sub_reports = report.sub_reports;
+            $('#report_name').text('Report #' + report_num);
+            fill_table('main_report', report, ['name', 'status', 'reason', 'fuzz_path']);
+            sub_reports.sort();
+            $.each(sub_reports, function(idx, key){
+                subrep = report[key]
+                create_table(sanitizeName(key), toTitleCase(key));
+                fill_table(sanitizeName(key), subrep, ['name', 'status', 'reason']);
+            });
+        }
+
+        /* Handle failure to fetch report */
+        function handle_failure() {
+            alert('Failed to load report');
+        }
+
+        /* dirty dirty dirty dirty */
+        function get_report_num() {
+            return document.URL.split('=').slice(-1)[0];
+        }
+
+        var report_num = get_report_num();
+        document.title += ' #' + report_num;
+        $.getJSON('../api/report?report_id=' + report_num, build_tables).fail(handle_failure);
+    </script>
+</body>
+</html>
