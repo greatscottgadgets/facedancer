@@ -405,6 +405,7 @@ class GreatDancerApp(FacedancerApp):
 
         request = USBDeviceRequest(data)
         self.connected_device.handle_request(request)
+        #self.verbose(request)
 
         if not is_out and not self.endpoint_stalled[endpoint_number]:
             self.ack_status_stage(direction=self.DEVICE_TO_HOST)

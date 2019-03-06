@@ -1,4 +1,4 @@
-# FaceDancer 2.2
+# FaceDancer 2.3
 
 This repository houses the next generation of FaceDancer software. Descended from
 the original GoodFET-based FaceDancer, this repository provides a python module 
@@ -104,3 +104,52 @@ including:
 ## Contributions?
 
 ... are always welcome. Shoot us a PR!
+
+
+## Installation
+
+```
+	sudo apt install python-setuptools
+	sudo apt install python3-setuptools
+	sudo pip install pyusb pyserial
+	sudo pip3 install pyusb pyserial
+	sudo apt install python-yaml
+	sudo apt install python3-yaml
+	sudo apt install gcc-arm-none-eabi -y
+	git clone https://github.com/bkerler/Facedancer
+	cd Facedancer
+	git submodule init
+	git submodule update
+	cd Mtp
+	sudo python setup.py install
+	sudo python3 setup.py install
+	cd ../greatfet/libgreat/host
+	sudo python setup.py install
+	sudo python3 setup.py install
+	cd ../../
+	git submodule init
+	git submodule update
+	cd firmware/libopencm3
+	make
+	cd ../../host
+	sudo python setup.py install
+	sudo python3 setup.py install
+	cd ../../kitty
+	sudo python setup.py install
+	sudo python3 setup.py install
+	sudo cp greatfet/host/misc/54-greatfet.rules /etc/udev/rules.d/
+	sudo udevadm control -R
+```
+
+## Usage
+
+To list devices for emulation :
+```
+	./facedancer-emu.py
+```
+
+Example for emulating FTDI:
+```
+	./facedancer-emu.py -device "FTDI"
+	sudo gtkterm --speed 115200 --port /dev/ttyUSB0
+```
