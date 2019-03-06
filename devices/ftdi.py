@@ -2,7 +2,6 @@
 #
 # Contains class definitions to implement a USB FTDI chip.
 
-from facedancer.usb.USB import *
 from facedancer.usb.USBDevice import *
 from facedancer.usb.USBConfiguration import *
 from facedancer.usb.USBInterface import *
