@@ -577,7 +577,7 @@ class USBMassStorageInterface(USBInterface):
             num_blocks = cbw.cb[7] << 8 \
                          | cbw.cb[8]
 
-        self.verbose("<-- performing READ (10), lba", base_lba, "+", num_blocks, "block(s)")
+        self.verbose("<-- performing READ (10), lba "+str(base_lba)+" + "+str(num_blocks)+" block(s)")
 
         # Note that here we send the data directly rather than putting
         # something in 'response' and letting the end of the switch send
@@ -607,7 +607,7 @@ class USBMassStorageInterface(USBInterface):
 
             num_blocks = cbw.cb[7] << 8 \
                          | cbw.cb[8]
-        self.verbose("--> performing WRITE (10), lba", base_lba, "+", num_blocks, "block(s)")
+        self.verbose("--> performing WRITE (10), lba "+str(base_lba)+" + "+str(num_blocks)+" block(s)")
 
         # save for later
         self.write_cbw = cbw

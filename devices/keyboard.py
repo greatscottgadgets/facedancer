@@ -8,45 +8,7 @@ from facedancer.usb.USBConfiguration import USBConfiguration
 from facedancer.usb.USBInterface import USBInterface
 from facedancer.usb.USBEndpoint import USBEndpoint
 from facedancer.fuzz.helpers import mutable
-
-
-class Requests(object):
-    GET_REPORT = 0x01  # Mandatory
-    GET_IDLE = 0x02
-    GET_PROTOCOL = 0x03  # Ignored - only for boot device
-    SET_REPORT = 0x09
-    SET_IDLE = 0x0A
-    SET_PROTOCOL = 0x0B  # Ignored - only for boot device
-
-
-class USBKeyboardClass(USBClass):
-    name = 'KeyboardClass'
-
-    def setup_local_handlers(self):
-        self.local_handlers = {
-            Requests.GET_REPORT: self.handle_get_report,
-            Requests.GET_IDLE: self.handle_get_idle,
-            Requests.SET_REPORT: self.handle_set_report,
-            Requests.SET_IDLE: self.handle_set_idle,
-        }
-
-    @mutable('hid_get_report_response')
-    def handle_get_report(self, req):
-        response = b'\xff' * req.length
-        return response
-
-    @mutable('hid_get_idle_response')
-    def handle_get_idle(self, req):
-        return b''
-
-    @mutable('hid_set_report_response')
-    def handle_set_report(self, req):
-        return b''
-
-    @mutable('hid_set_idle_response')
-    def handle_set_idle(self, req):
-        return b''
-
+from facedancer.usb.HIDClass import HIDClass
 
 class USBKeyboardInterface(USBInterface):
     name = 'KeyboardInterface'
@@ -77,15 +39,14 @@ class USBKeyboardInterface(USBInterface):
                 DescriptorType.hid: self.get_hid_descriptor,
                 DescriptorType.report: self.get_report_descriptor
             },
-            usb_class=USBKeyboardClass(phy)
+            usb_class=HIDClass(phy)
         )
 
-        empty_preamble = [0x00] * 10
-        text = [0x0f, 0x00, 0x16, 0x00, 0x28, 0x00]
+        # "l<KEY UP>s<KEY UP><ENTER><KEY UP>"
+        empty_preamble = [ 0x00 ] * 32
+        text = [ 0x0f, 0x00, 0x16, 0x00, 0x28, 0x00 ]
 
-        self.keys = [chr(x) for x in empty_preamble + text]
-        self.call_count = 0
-        self.first_call = None
+        self.keys = [ chr(x) for x in empty_preamble + text ]
 
     @mutable('hid_descriptor')
     def get_hid_descriptor(self, *args, **kwargs):
@@ -163,21 +124,15 @@ class USBKeyboardInterface(USBInterface):
         return report_descriptor
 
     def handle_buffer_available(self):
-        #
-        # this is really ugly, but sometimes the host expects
-        # (during initialization) to get the report on ep0 and
-        # ignores the actual ep (2 in this case), we'll just
-        # wait for a little while... (see section 7.2.1 in HID spec)
-        #
-        if self.first_call is None:
-            self.first_call = time.time()
-        if time.time() - self.first_call > 2:
-            self.usb_function_supported('buffer available for keyboard report')
-            if self.keys:
-                letter = self.keys.pop(0)
-            else:
-                letter = b'\x00'
-            self.type_letter(letter)
+        if not self.keys:
+            return
+        self.usb_function_supported('buffer available for keyboard report')
+        if self.keys:
+            letter = self.keys.pop(0)
+        else:
+            letter = b'\x00'
+        self.type_letter(letter)
+
 
     def type_letter(self, letter, modifiers=0):
         data = struct.pack('<BBB', 0, 0, ord(letter))

@@ -126,6 +126,7 @@ class AudioStreaming(object):
         self.txq = Queue()
 
     def buffer_available(self):
+        self.phy.usb_function_supported()
         if self.txq.empty():
             self.phy.send_on_endpoint(self.tx_ep, b'\x00\x00\x00\x00\x00\x00\x00\x00')
         else:

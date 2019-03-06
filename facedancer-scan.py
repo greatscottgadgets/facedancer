@@ -30,6 +30,7 @@ from devices.usbprocontroller import USBProControllerDevice
 from facedancer.utils.spiflash import SPIFlash
 
 targets=[
+    ["Vendor",USBVendorSpecificDevice],
     ["Audio", USBAudioDevice],
     ["Billboard", USBBillboardDevice],
     ["CDC",USBCDCDevice],
@@ -46,8 +47,7 @@ targets=[
     ["Smartcard",USBSmartcardDevice],
     ["SwitchTAS",USBSwitchTASDevice],
     ["MTP",USBMtpDevice],
-    ["Printer",USBPrinterDevice],
-    ["Vendor",USBVendorSpecificDevice]
+    ["Printer",USBPrinterDevice]
 ]
 
 def showtypes():
@@ -56,7 +56,8 @@ def showtypes():
         print("\t\"%s\"" % (entry[0]))
 
 class ScanApp():
-    def __init__(self):
+    def __init__(self,phy):
+        self.phy = phy
         self.current_usb_function_supported = False
         self.start_time = 0
         self.logger = logging.getLogger('facedancer')
@@ -67,12 +68,13 @@ class ScanApp():
     def run(self):
         self.logger.always('Scanning host for supported devices')
         supported = []
-        phy = FacedancerUSBApp()
-        phy.should_stop_phy=self.should_stop_phy
-        phy.set_log_level(int(100))
+
+        self.phy.should_stop_phy=self.should_stop_phy
+
+        self.phy.set_log_level(int(100))
 
         for device in targets:
-            if device[0] in ['Printer','MassStorage','MassStorage-DoubleFetch','Vendor']:
+            if device[0] in ['Printer','MassStorage-DoubleFetch']:
                 # skip those devices ATM
                 continue
             self.logger.always('Testing support: %s' % (device[0]))
@@ -80,19 +82,26 @@ class ScanApp():
             try:
                 func=device[1]
                 if device[0] == "ProController":
-                    d = func(phy, spi_flash=SPIFlash())
+                    d = func(self.phy, spi_flash=SPIFlash())
+                elif device[0] == "MassStorage":
+                    rdi = RawDiskImage("examples/fat32.3M.stick.img", 512)
+                    d = func(self.phy, rdi)
+                elif device[0] == "Vendor":
+                    vvid = int("0x1234", 16)
+                    vpid = int("0x5678", 16)
+                    d = func(self.phy, vid=vvid, pid=vpid)
                 else:
-                    d = func(phy)
+                    d = func(self.phy)
                 d.connect()
-
                 d.run()
                 d.disconnect()
             except:
                 self.logger.error(traceback.format_exc())
                 d.disconnect()
-            if self.current_usb_function_supported:
-                self.logger.always('Device is SUPPORTED')
-                supported.append(device[0])
+            if "current_usb_function_supported" in dir(d.phy):
+                if d.phy.current_usb_function_supported:
+                    self.logger.always('Device is SUPPORTED')
+                    supported.append(device[0])
             self.current_usb_function_supported = False
             time.sleep(2)
         if len(supported):
@@ -110,10 +119,9 @@ class ScanApp():
             stop_phy = True
         return stop_phy
 
-        
 def main(argv):
-    phy = ScanApp()
-    phy.run()
+    t = ScanApp(FacedancerUSBApp())
+    t.run()
     
 if __name__ == '__main__':
   main(sys.argv)

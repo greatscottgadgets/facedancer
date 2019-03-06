@@ -173,6 +173,7 @@ class USBDevice(USBDescribable):
 
     def connect(self):
         self.phy.connect(self)
+
         # skipping State.attached may not be strictly correct (9.1.1.{1,2})
         self.state = State.powered
 
@@ -306,15 +307,15 @@ class USBDevice(USBDescribable):
                 self.error('0x%02x: %s' % (k, handler_entity.request_handlers[k]))
             self.error('invalid handler, stalling')
             self.phy.stall_ep0()
-        else:
-            try:
-                handler(req)
-            except:
-                traceback.print_exc()
-                raise
+        try:
+            handler(req)
+        except:
+            traceback.print_exc()
+            raise
 
     def handle_data_available(self, ep_num, data):
         if self.state == State.configured and ep_num in self.endpoints:
+            self.usb_function_supported('data received on endpoint %#x' % (ep_num))
             endpoint = self.endpoints[ep_num]
             if callable(endpoint.handler):
                 endpoint.handler(data)
@@ -397,7 +398,6 @@ class USBDevice(USBDescribable):
             self.send_control_message(response[:n])
 
             #self.phy.verbose -= 1
-
             self.verbose("sent %d bytes in response" % n)
         else:
             self.phy.stall_ep0()

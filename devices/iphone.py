@@ -87,7 +87,9 @@ class USBiPhoneInterface(USBInterface):
                 handler=self.handle_buffer_available        # handler function
             )
         ]
-        
+
+        endpoints1 = []
+        '''
         endpoints1 = [
             USBEndpoint(
                 phy=phy,
@@ -112,7 +114,8 @@ class USBiPhoneInterface(USBInterface):
                 handler=self.handle_buffer_available        # handler function
             )
         ]
-        
+        '''
+
         endpoints2 = []
         
         if interface_number== 0:

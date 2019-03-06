@@ -14,6 +14,7 @@ from facedancer.usb.USBEndpoint import USBEndpoint
 from facedancer.utils.ulogger import get_logger
 from kitty.remote.rpc import RpcClient
 from facedancer.fuzz.helpers import StageLogger, set_stage_logger
+from threading import Thread
 
 def FacedancerUSBApp(loglevel=0, quirks=None):
     """
@@ -35,7 +36,9 @@ class FacedancerApp(object):
     fuzzer=None
     count = 0
     stage=False
-    
+    current_usb_function_supported=False
+    setup_packet_received=False
+
     @classmethod
     def set_log_level(self,loglevel):
         self.log_level=loglevel
@@ -61,6 +64,13 @@ class FacedancerApp(object):
         :param reason: reason why we decided it is supported (default: None)
         '''
         self.current_usb_function_supported = True
+
+    @classmethod
+    def signal_setup_packet_received(self):
+        '''
+        Signal that we received a setup packet from the host (host is alive)
+        '''
+        self.setup_packet_received = True
 
     @classmethod
     def is_connected(self):
@@ -942,6 +952,7 @@ class FacedancerUSBHost:
                 self.set_up_endpoint(endpoint)
 
 
+
 class FacedancerBasicScheduler(object):
     """
     Most basic scheduler for Facedancer devices-- and the schedule which is
@@ -954,6 +965,7 @@ class FacedancerBasicScheduler(object):
         self.tasks = []
         self.phy=phy
         self.do_exit = False
+        self.fuzzer = None
 
     def add_task(self, callback):
         """
@@ -964,20 +976,23 @@ class FacedancerBasicScheduler(object):
         """
         self.tasks.append(callback)
 
+    def verify_stop(self):
+        if self.phy.should_stop_phy():
+            self.do_exit=True
+            return True
+        return False
+
 
     def run(self):
         """
         Run the main scheduler stack.
         """
-
         self.do_exit = False
         while not self.do_exit:
             for task in self.tasks:
-                if self.phy.should_stop_phy():
-                    self.do_exit=True
+                if self.verify_stop():
                     break
                 task()
-
 
     def stop(self):
         """

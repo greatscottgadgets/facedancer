@@ -11,6 +11,7 @@ from facedancer.app.core import *
 from facedancer.usb.USBDevice import USBDeviceRequest
 from facedancer.usb.USBEndpoint import USBEndpoint
 
+
 PYTHON_VERSION = None
 if (sys.version_info >= (3,0)):
     PYTHON_VERSION = 3
@@ -187,6 +188,7 @@ class GreatDancerApp(FacedancerApp):
         usb_device: The USBDevice object that represents the device to be
             emulated.
         """
+
         quirks = 0
 
         # Compute our quirk flags.
@@ -198,7 +200,7 @@ class GreatDancerApp(FacedancerApp):
         self.api.connect(max_ep0_packet_size, quirks)
         self.connected_device = usb_device
 
-        self.verbose("connected device "+str(self.connected_device.name))
+        self.verbose("connected device: "+self.connected_device.name)
 
 
     def disconnect(self):
@@ -222,7 +224,7 @@ class GreatDancerApp(FacedancerApp):
         self._clean_up_transfers_for_endpoint(ep_num, self.DEVICE_TO_HOST)
 
 
-    def send_on_endpoint(self, ep_num, data, blocking=True):
+    def send_on_endpoint(self, ep_num, data, blocking=False):
         global PYTHON_VERSION
         """
         Sends a collection of USB data on a given endpoint.
@@ -247,7 +249,7 @@ class GreatDancerApp(FacedancerApp):
         self._clean_up_transfers_for_endpoint(ep_num, self.DEVICE_TO_HOST)
 
 
-    def read_from_endpoint(self, ep_num):
+    def read_from_endpoint(self, ep_num, timeout=5):
         """
         Reads a block of data from the given endpoint.
 
@@ -258,7 +260,12 @@ class GreatDancerApp(FacedancerApp):
         self._prime_out_endpoint(ep_num)
 
         # ... and wait for the transfer to complete.
+        i=0
         while not self._transfer_is_complete(ep_num, self.HOST_TO_DEVICE):
+            time.sleep(1)
+            i+=1
+            if i==timeout:
+                break
             pass
 
         # Finally, return the result.
@@ -744,7 +751,7 @@ class GreatDancerApp(FacedancerApp):
 
         status = self._fetch_irq_status()
         #if status!=0:
-           #print("Status: %d" % status)
+        #   print("Status: %d" % status)
         # Other bits that may be of interest:
         # D_SRI = start of frame received
         # D_PCI = port change detect (switched between low, full, high speed state)
@@ -753,6 +760,7 @@ class GreatDancerApp(FacedancerApp):
         # D_NAKI = both the tx/rx NAK bit and corresponding endpoint NAK enable are set
 
         if status & self.USBSTS_D_UI:
+            self.signal_setup_packet_received()
             self._handle_setup_events()
             self._handle_transfer_events()
 

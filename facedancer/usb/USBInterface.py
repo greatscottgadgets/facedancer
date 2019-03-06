@@ -50,9 +50,6 @@ class USBInterface(USBDescribable):
             if descriptor:
                 self.descriptors[self.iclass.class_descriptor_number] = descriptor
 
-        self.usb_class = usb_class
-        self.usb_vendor = usb_vendor
-
         for e in self.endpoints:
             e.interface = self
             if self.usb_class is None:

@@ -30,12 +30,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from facedancer.usb import HIDClass
+from facedancer.usb.HIDClass import HIDClass
 from facedancer.usb.USBDevice import *
 from facedancer.usb.USBConfiguration import *
 from facedancer.usb.USBInterface import *
 from facedancer.usb.USBEndpoint import *
-
 
 class Requests(object):
     GET_REPORT = 0x01  # Mandatory
@@ -46,8 +45,8 @@ class Requests(object):
     SET_PROTOCOL = 0x0B  # Ignored - only for boot device
 
 
-class USBHIDClass(USBClass):
-    name = 'HIDClass'
+class USBProControllerClass(USBClass):
+    name = 'USBProControllerClass'
 
     def setup_local_handlers(self):
         self.local_handlers = {
@@ -59,20 +58,20 @@ class USBHIDClass(USBClass):
 
     @mutable('hid_get_report_response')
     def handle_get_report(self, req):
-            response = b'\xff' * req.length
-            return response
+        response = b'\xff' * req.length
+        return response
 
     @mutable('hid_get_idle_response')
     def handle_get_idle(self, req):
-            return b''
+        return b''
 
     @mutable('hid_set_report_response')
     def handle_set_report(self, req):
-            return b''
+        return b''
 
     @mutable('hid_set_idle_response')
     def handle_set_idle(self, req):
-            return b''
+        return b''
 
 
 class USBProControllerInterface(USBInterface):
@@ -99,9 +98,6 @@ class USBProControllerInterface(USBInterface):
                         b'\x75\x08\x95\x3f\x91\x83\x85\x80\x09\x05\x75' \
                         b'\x08\x95\x3f\x91\x83\x85\x82\x09\x06\x75\x08' \
                         b'\x95\x3f\x91\x83\xc0'
-
-
-
 
     def __init__(self, phy, spi_flash):
         descriptors = {
@@ -153,7 +149,7 @@ class USBProControllerInterface(USBInterface):
             interface_string_index=0,                                  # string index
             endpoints=[self.in_endpoint, self.out_endpoint],
             descriptors=descriptors,
-            usb_class=USBHIDClass(phy)
+            usb_class=HIDClass(phy)
         )
 
     def handle_dev_to_host(self):

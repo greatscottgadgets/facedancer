@@ -107,7 +107,7 @@ class USBMtpInterface(USBInterface):
         ]
         self.dev = MtpDevice(self.dev_info, properties, self.logger)
         self.dev.add_storage(self.storage)
-        self.dev.set_fuzzer(fuzzer)
+        self.dev.set_fuzzer(self.phy.fuzzer)
         self.api = MtpApi(self.dev)
 
         # OS String descriptor

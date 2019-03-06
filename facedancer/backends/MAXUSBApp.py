@@ -180,6 +180,7 @@ class MAXUSBApp(FacedancerApp):
                 data_bytes_len = b[6] + (b[7] << 8)
                 b += self.read_bytes(self.reg_ep0_fifo, data_bytes_len)
             req = USBDeviceRequest(b)
+            self.signal_setup_packet_received()
             self.connected_device.handle_request(req)
 
         if irq & self.is_out1_data_avail:
@@ -229,4 +230,4 @@ class MAXUSBApp(FacedancerApp):
         # be nice to print a message or store the active coniguration for
         # use by the USBDevice, etc. etc.
         pass
-        
+
