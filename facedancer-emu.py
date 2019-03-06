@@ -99,7 +99,7 @@ def main(argv):
 
     found=False
     for entry in targets:
-        if args.device==entry[0].lower():
+        if args.device==entry[0].lower() or args.device==entry[0]:
             args.device=entry[0]
             func=entry[1]
             found=True

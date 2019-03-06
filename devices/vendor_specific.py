@@ -21,6 +21,7 @@ class USBVendorSpecificVendor(USBVendor):
         }
 
     def handle_generic(self, req):
+        self.usb_function_supported()
         self.always('Generic Vendor handler - req: %s' % req)
 
 
@@ -33,6 +34,7 @@ class USBVendorSpecificClass(USBClass):
         }
 
     def handle_generic(self, req):
+        self.usb_function_supported()
         self.always('Generic Class handler - req: %s' % req)
 
 
@@ -145,77 +147,7 @@ class USBVendorSpecificDevice(USBDevice):
 
 
     def handle_request(self, req):
-        self.debug("received request %s" % repr(req))
-
-        # figure out the intended recipient
-        req_type = req.get_type()
-        recipient_type = req.get_recipient()
-        recipient = None
-        index = req.get_index()
-        if recipient_type == Request.recipient_device:
-            recipient = self
-        elif recipient_type == Request.recipient_interface:
-            index = index & 0xff
-            if index < len(self.configuration.interfaces):
-                recipient = self.configuration.interfaces[index]
-            else:
-                self.warning('Failed to get interface recipient at index: %d' % index)
-        elif recipient_type == Request.recipient_endpoint:
-            self.usb_function_supported()
-            if index == 0:
-                recipient = self
-            else:
-                recipient = self.endpoints.get(index, None)
-            if recipient is None:
-                self.warning('Failed to get endpoint recipient at index: %d' % index)
-        elif recipient_type == Request.recipient_other:
-            recipient = self.configuration.interfaces[0]  # HACK for Hub class
-
-        if not recipient:
-            self.warning('invalid recipient, stalling')
-            self.phy.stall_ep0()
-            return
-        req_type = req.get_type()
-        handler_entity = None
-        if req_type == Request.type_standard:    # for standard requests we lookup the recipient by index
-            handler_entity = recipient
-        elif req_type == Request.type_class:    # for class requests we take the usb_class handler from the configuration
-            handler_entity = self.usb_class
-        elif req_type == Request.type_vendor:   # for vendor requests we take the usb_vendor handler from the configuration
-            handler_entity = self.usb_vendor
-
-        if not handler_entity:
-            self.warning("received request %s" % req)
-            self.warning('invalid handler entity, stalling')
-            self.phy.stall_ep0()
-            return
-
-        # if handler_entity == 9:  # HACK: for hub class
-        #     handler_entity = recipient
-
-        self.debug('req: %s' % req)
-        handler = handler_entity.request_handlers.get(req.request, None)
-
-        if not handler:
-            self.error('request not handled: %s' % req)
-            self.error('handler entity type: %s' % (type(handler_entity)))
-            self.error('handler entity: %s' % (handler_entity))
-            self.error('handler_entity.request_handlers: %s' % (handler_entity.request_handlers))
-            for k in sorted(handler_entity.request_handlers.keys()):
-                self.error('0x%02x: %s' % (k, handler_entity.request_handlers[k]))
-            self.error('invalid handler, stalling')
-            self.phy.stall_ep0()
-        try:
-            handler(req)
-        except:
-            #traceback.print_exc()
-            raise
-
-    '''        
-    def handle_request(self, req):
-    '''
-        #override the handle_request - in case a request is directed to an endpoint - we mark as supported
-    '''
+        # override the handle_request - in case a request is directed to an endpoint - we mark as supported
 
         # figure out the intended recipient
         req_type = req.get_type()
@@ -227,8 +159,7 @@ class USBVendorSpecificDevice(USBDevice):
                 #self.phy.stall_ep0()
                 return
 
-        return req
-    '''
+        return super(USBVendorSpecificDevice, self).handle_request(req)
 
     def handle_data_available(self, ep_num, data):
         '''

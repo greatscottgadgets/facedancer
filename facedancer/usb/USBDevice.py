@@ -248,7 +248,7 @@ class USBDevice(USBDescribable):
     #####################################################
 
     def handle_request(self, req):
-        self.debug("received request %s" % repr(req))
+        self.debug("received a request %s" % repr(req))
 
         # figure out the intended recipient
         req_type = req.get_type()
@@ -533,7 +533,8 @@ class USBDevice(USBDescribable):
 
         # notify the device of the recofiguration, in case
         # it needs to e.g. set up endpoints accordingly
-        self.phy.configured(self.configuration) #<---- this should work but will lead to timeouts
+        if self.endpoints!={}:
+            self.phy.configured(self.configuration) #<---- this should work but will lead to timeouts
 
     # USB 2.0 specification, section 9.4.4 (p 282 of pdf)
     def handle_get_interface_request(self, req):

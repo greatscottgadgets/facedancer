@@ -87,8 +87,8 @@ class ScanApp():
                     rdi = RawDiskImage("examples/fat32.3M.stick.img", 512)
                     d = func(self.phy, rdi)
                 elif device[0] == "Vendor":
-                    vvid = int("0x1234", 16)
-                    vpid = int("0x5678", 16)
+                    vvid = int("0x0403", 16) #FTDI here
+                    vpid = int("0x6001", 16)
                     d = func(self.phy, vid=vvid, pid=vpid)
                 else:
                     d = func(self.phy)
