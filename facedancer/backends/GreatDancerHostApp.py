@@ -132,7 +132,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         """
         Sets up our host to talk to the device, including turning on VBUS.
         """
-        self.device.comms.vendor_request_out(self.vendor_requests.USBHOST_CONNECT)
+        self.device.comms._vendor_request_out(self.vendor_requests.USBHOST_CONNECT)
 
 
     def bus_reset(self, delay=0.500):

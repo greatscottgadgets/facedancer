@@ -156,7 +156,7 @@ class USBFtdiInterface(USBInterface):
 
 
 class USBFtdiDevice(USBDevice):
-    name = 'FtdiDevice'
+    name = 'Ftdi device'
 
     def __init__(self, phy, vid=0x0403, pid=0x6001, rev=0x0100, **kwargs):
         super(USBFtdiDevice, self).__init__(

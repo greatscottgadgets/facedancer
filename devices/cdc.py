@@ -362,7 +362,7 @@ class USBCDCDevice(USBDevice):
     USB_CDC_ACM_DEVICE (below) is an example of concrete implementation.
     '''
 
-    name = 'CDCDevice'
+    name = 'CDC device'
     bControlInterface = 0
     bDataInterface = 1
     bControlSubclass = CommunicationClassSubclassCodes.Reserved

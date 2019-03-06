@@ -1,6 +1,6 @@
 # USBMtp.py
 #
-# Contains class definitions to implement a USB keyboard.
+# Contains class definitions to implement USB Mtp.
 import struct
 from facedancer.usb.USBDevice import USBDevice
 from facedancer.usb.USBConfiguration import USBConfiguration
@@ -155,7 +155,7 @@ class USBMsosVendor(USBVendor):
 
 
 class USBMtpDevice(USBDevice):
-    name = 'MtpDevice'
+    name = 'MTP device'
 
     def __init__(self, phy, vid=0x4e8, pid=0x685c, rev=0x0002, **kwargs):
         super(USBMtpDevice, self).__init__(

@@ -133,7 +133,7 @@ class USBPrinterInterface(USBInterface):
 
 
 class USBPrinterDevice(USBDevice):
-    name = 'PrinterDevice'
+    name = 'Printer device'
 
     def __init__(
         self, phy, vid=0x03f0, pid=0x4417, rev=0x0001,

@@ -1,4 +1,4 @@
-# USBFtdi.py
+# serial.py
 
 # Contains class definitions to implement a simple USB Serial chip,
 # such as the one in the HP48G+ and HP50G graphing calculators.  See
@@ -75,7 +75,8 @@ class USBSerialInterface(USBInterface):
                 0xff,       # protocol: vendor-specific
                 0,          # string index
                 endpoints,
-                descriptors
+                descriptors,
+                usb_vendor=USBSerialVendor(phy)
         )
 
     def handle_data_available(self, data):

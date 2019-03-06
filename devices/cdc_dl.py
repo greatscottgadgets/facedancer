@@ -17,7 +17,7 @@ from devices.cdc import FunctionalDescriptor as FD
 
 class USBCdcDlDevice(USBCDCDevice):
 
-    name = 'CDC DL Device'
+    name = 'CDC DL device'
 
     bControlSubclass = CommunicationClassSubclassCodes.DirectLineControlModel
     bControlProtocol = CommunicationClassProtocolCodes.AtCommands_v250

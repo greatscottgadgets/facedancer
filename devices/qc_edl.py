@@ -359,8 +359,8 @@ class USBSaharaInterface(USBInterface):
 
                
 
-class USBSaharaDevice(USBDevice):
-    name = "USB QC Sahara EDL Device"
+class USBEDLDevice(USBDevice):
+    name = "Qualcomm Sahara EDL device"
 
     def __init__(self, phy):
     
@@ -393,7 +393,7 @@ class USBSaharaDevice(USBDevice):
                 )
         ]
 
-        super(USBSaharaDevice, self).__init__(
+        super(USBEDLDevice, self).__init__(
                 phy=phy,
                 device_class=USBClass.Unspecified,                      # device class
                 device_subclass=0,                      # device subclass

@@ -140,7 +140,7 @@ class USBKeyboardInterface(USBInterface):
 
 
 class USBKeyboardDevice(USBDevice):
-    name = 'KeyboardDevice'
+    name = 'Keyboard device'
 
     def __init__(self, phy, vid=0x610b, pid=0x4653, rev=0x1234, **kwargs):
         super(USBKeyboardDevice, self).__init__(

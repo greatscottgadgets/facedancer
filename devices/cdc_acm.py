@@ -26,7 +26,7 @@ from devices.cdc import FunctionalDescriptor as FD
 
 class USBCdcAcmDevice(USBCDCDevice):
 
-    name = 'CDC ACM Device'
+    name = 'CDC ACM device'
 
     bControlSubclass = CommunicationClassSubclassCodes.AbstractControlModel
     bControlProtocol = CommunicationClassProtocolCodes.AtCommands_v250

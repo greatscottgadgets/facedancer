@@ -118,7 +118,7 @@ class USBVendorSpecificInterface(USBInterface):
 
 
 class USBVendorSpecificDevice(USBDevice):
-    name = 'VendorSpecificDevice'
+    name = 'Vendor specific device'
 
     def __init__(self, phy, vid, pid, rev=1, **kwargs):
         self.phy = phy

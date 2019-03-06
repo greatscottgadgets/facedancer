@@ -886,7 +886,7 @@ class FacedancerUSBHost:
         """ Returns the device's device descriptor. """
 
         raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
-        return USBDevice.from_binary_descriptor(raw_descriptor)
+        return USBDevice.from_binary_descriptor(self,raw_descriptor)
 
 
     def get_configuration_descriptor(self, index=0, include_subordinates=True):
@@ -899,10 +899,10 @@ class FacedancerUSBHost:
 
         # If we want to include the subordinate descriptors, read-read the configuration descriptor with an updated length.
         if include_subordinates:
-            descriptor = USBConfiguration.from_binary_descriptor(raw_descriptor)
+            descriptor = USBConfiguration.from_binary_descriptor(self,raw_descriptor)
             raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, descriptor.total_descriptor_lengths)
 
-        return USBConfiguration.from_binary_descriptor(raw_descriptor)
+        return USBConfiguration.from_binary_descriptor(self,raw_descriptor)
 
 
     def set_address(self, device_address):

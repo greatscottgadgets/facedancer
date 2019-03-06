@@ -179,7 +179,7 @@ class USBAudioControlInterface(USBInterface):
 
 class USBAudioDevice(USBDevice):
 
-    name = 'AudioDevice'
+    name = 'Audio device'
 
     def __init__(self, phy, vid=0x0d8c, pid=0x000c, rev=0x0001, *args, **kwargs):
         audio_streaming = AudioStreaming(phy, 2, 1)

@@ -147,9 +147,25 @@ To list devices for emulation :
 ```
 	./facedancer-emu.py
 ```
+See the "devices" directory for supported devices.
 
-Example for emulating FTDI:
+Example for emulating FTDI (connect USB1 to target):
 ```
 	./facedancer-emu.py -device "FTDI"
 	sudo gtkterm --speed 115200 --port /dev/ttyUSB0
+```
+
+Example for scanning implemented devices on target (connect USB1 to target):
+```
+	./facedancer-scan.py
+```
+
+Example for scanning for supported devices on target based on vid/pid (connect USB1 to target):
+```
+	./facedancer-vsscan.py -d tools/vid_pid_db.py
+```
+
+Example for displaying connected device info via host mode (connect target to USB1, for example usb stick):
+```
+	./facedancer-host.py
 ```

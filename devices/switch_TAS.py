@@ -95,7 +95,7 @@ class USBSwitchTASInterface(USBInterface):
 
 
 class USBSwitchTASDevice(USBDevice):
-    name = "USB keyboard device"
+    name = "Switch TAS device"
 
 
     def __init__(self, phy):

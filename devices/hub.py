@@ -119,7 +119,7 @@ class USBHubInterface(USBInterface):
 
 
 class USBHubDevice(USBDevice):
-    name = 'HubDevice'
+    name = 'Hub device'
 
     def __init__(self, phy, vid=0x05e3, pid=0x0610, rev=0x7732, **kwargs):
         super(USBHubDevice, self).__init__(

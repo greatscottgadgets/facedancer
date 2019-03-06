@@ -472,7 +472,7 @@ class USBSmartcardInterface(USBInterface):
 
 
 class USBSmartcardDevice(USBDevice):
-    name = 'SmartcardDevice'
+    name = 'Smartcard device'
 
     def __init__(self, phy, vid=0x0bda, pid=0x0165, rev=0x2361, **kwargs):
         super(USBSmartcardDevice, self).__init__(

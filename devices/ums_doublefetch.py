@@ -4,7 +4,8 @@ import re
 import sys
 import math
 
-class DoubleFetchImage():
+class USBUMSDoubleFetchImageDevice():
+    name="UMS Double Fetch"
 
     FIRMWARE_IMAGE_START = 10147  # specified by our root directory entry
 

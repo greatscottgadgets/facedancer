@@ -2,56 +2,45 @@
 # -*- coding: utf-8 -*-
 import argparse
 import sys
+import os
+import importlib
 
 from facedancer import FacedancerUSBApp
-from devices.audio import USBAudioDevice
-from devices.cdc import USBCDCDevice
-from devices.cdc_acm import USBCdcAcmDevice
-from devices.cdc_dl import USBCdcDlDevice
-from devices.qc_edl import USBSaharaDevice
-from devices.ftdi import USBFtdiDevice
-from devices.keyboard import USBKeyboardDevice
-from devices.iphone import USBiPhoneDevice
-from devices.serial import USBSerialDevice
-from devices.switch_TAS import USBSwitchTASDevice
-from devices.mass_storage import USBMassStorageDevice, RawDiskImage
-from devices.ums_doublefetch import DoubleFetchImage
-from devices.billboard import USBBillboardDevice
+from devices.ums_doublefetch import USBUMSDoubleFetchImageDevice
 from facedancer.utils.spiflash import SPIFlash
-from devices.hub import USBHubDevice
-from devices.printer import USBPrinterDevice
-from devices.mtp import USBMtpDevice
-from devices.vendor_specific import USBVendorSpecificDevice
-from devices.smartcard import USBSmartcardDevice
-from devices.usbprocontroller import USBProControllerDevice
-from facedancer.fuzz.helpers import StageLogger, set_stage_logger
+from devices.mass_storage import RawDiskImage
 
-targets=[
-    ["Audio", USBAudioDevice],
-    ["Billboard", USBBillboardDevice],
-    ["CDC",USBCDCDevice],
-    ["CDC-ACM",USBCdcAcmDevice],
-    ["CDC-DL",USBCdcDlDevice],
-    ["EDL",USBSaharaDevice],
-    ["FTDI",USBFtdiDevice],
-    ["Hub",USBHubDevice],
-    ["iPhone",USBiPhoneDevice],
-    ["Keyboard",USBKeyboardDevice],
-    ["MassStorage",USBMassStorageDevice],
-    ["MassStorage-DoubleFetch",USBMassStorageDevice],
-    ["Serial",USBSerialDevice],
-    ["Smartcard",USBSmartcardDevice],
-    ["SwitchTAS",USBSwitchTASDevice],
-    ["MTP",USBMtpDevice],
-    ["Printer",USBPrinterDevice],
-    ["Vendor",USBVendorSpecificDevice],
-    ["ProController",USBProControllerDevice]
-]
+def loadmodules():
+    classinfo={}
 
-def showtypes():
+    for root, dirs, files in os.walk('devices'):
+        for file in files:
+            if ".py" in file[-3:]:
+                with open(os.path.join('devices',file),'r') as rf:
+                    line='-1'
+                    while (line!=''):
+                        line=rf.readline()
+                        if "class USB" in line and "Device" in line:
+                            classfunc=line.split("class ")[1].split("(")[0]
+                            name=classfunc.replace("USB","").replace("Device","")
+                            while (line!=''):
+                                line=rf.readline()
+                                if "name" in line:
+                                    if "\"" in line:
+                                        desc=line.split("\"")[1]
+                                    elif "\'" in line:
+                                        desc=line.split("\'")[1]
+                                    break
+                            impname="devices."+file[:-3]
+                            MyClass = getattr(importlib.import_module(impname), classfunc)
+                            classinfo[name]=[desc,MyClass]
+                            break
+    return classinfo
+
+def showtypes(classinfo):
     print("\nSupported types are:")
-    for entry in targets:
-        print("\t\"%s\"" % (entry[0]))
+    for entry in classinfo:
+        print("\t\"%s\" %s = %s" % (entry,' '*(20-len(entry)),classinfo[entry][0]))
 
 def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -89,25 +78,25 @@ def main(argv):
         default='0')
         
     args = parser.parse_args()
-
+    classinfo=loadmodules()
     if args.device == '':
         print("\nFaceDancer USB-Emulator")
         print("-----------------------")
         print("Please run as: facedancer-emu.py -device [devicetype]")
-        showtypes()
+        showtypes(classinfo)
         exit(0)
 
     found=False
-    for entry in targets:
-        if args.device==entry[0].lower() or args.device==entry[0]:
-            args.device=entry[0]
-            func=entry[1]
+    for entry in classinfo:
+        if args.device.lower()==entry.lower() or args.device==entry:
+            args.device=entry
+            func=classinfo[entry][1]
             found=True
             break
 
     if not found:
         print("Wrong devicetype given.")
-        showtypes()
+        showtypes(classinfo)
         exit(0)
      
     
@@ -136,15 +125,15 @@ def main(argv):
             sys.exit(1);
         i = RawDiskImage(args.filename, 512, verbose=int(args.verbose))
         d = func(phy, i)
-    elif args.device=="MassStorage-DoubleFetch":
+    elif args.device=="UMSDoubleFetchImage":
         if args.filename=='' or args.filename2=='':
-            print("\nUsage: facedancer-emu.py -device MassStorage-DoubleFetch -file valid_firmware -file2 hacked_firmware");
+            print("\nUsage: facedancer-emu.py -device UMSDoubleFetchImage -file valid_firmware -file2 hacked_firmware");
             sys.exit(1);
-        i = DoubleFetchImage(args.filename, args.filename2)
+        i = USBUMSDoubleFetchImageDevice(args.filename, args.filename2)
         d = func(phy, i)
-    elif args.device=="Vendor":
+    elif args.device=="VendorSpecific":
         if args.vid=='' or args.pid=='':
-            print("\nUsage: facedancer-emu.py -device Vendor -vid 0x1234 -pid 0x5678");
+            print("\nUsage: facedancer-emu.py -device VendorSpecific -vid 0x1234 -pid 0x5678");
             sys.exit(1);
         vvid = int(args.vid, 16)
         vpid = int(args.pid, 16)
