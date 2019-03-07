@@ -23,6 +23,7 @@ Each "field" type is a discrete component in the full Template.
 from random import Random
 import copy
 import os
+from base64 import b64encode
 import logging
 from bitstring import Bits
 from kitty.core import KittyObject, KittyException, kassert, khash
@@ -30,6 +31,7 @@ from kitty.model.low_level.encoder import ENC_STR_DEFAULT, StrEncoder
 from kitty.model.low_level.encoder import ENC_INT_DEFAULT, BitFieldEncoder
 from kitty.model.low_level.encoder import ENC_BITS_DEFAULT, BitsEncoder
 from kitty.model.low_level.encoder import ENC_FLT_DEFAULT, FloatEncoder
+from kitty.model.low_level.encoder import strToBytes
 
 
 empty_bits = Bits()
@@ -198,7 +200,7 @@ class BaseField(KittyObject):
             'value': {
                 'raw': repr(self._current_value),
                 'rendered': {
-                    'base64': self._current_rendered.tobytes().encode('base64'),
+                    'base64': b64encode(self._current_rendered.tobytes()).decode(),
                     'length_in_bits': len(self._current_rendered),
                     'length_in_bytes': len(self._current_rendered.tobytes()),
                 }
@@ -251,9 +253,7 @@ class BaseField(KittyObject):
         current = self
         while current.enclosing:
             current = current.enclosing
-        if name == '/':
-            return current
-        else:
+        if name != '/':
             components = name.split('/')[1:]
             for component in components:
                 current = current.get_field_by_name(component)
@@ -281,8 +281,7 @@ class BaseField(KittyObject):
         '''
         if self.get_name() == field_name:
             return self
-        else:
-            return None
+        return None
 
     def get_rendered_fields(self, ctx=None):
         '''
@@ -430,11 +429,9 @@ class _LibraryField(BaseField):
         self.not_implemented('_get_local_lib')
 
     def _wrap_get_class_lib(self):
-        if self.__class__.lib:
-            return self.__class__.lib
-        else:
+        if not self.__class__.lib:
             self.__class__.lib = self._get_class_lib()
-            return self.__class__.lib
+        return self.__class__.lib
 
     def _get_class_lib(self):
         '''
@@ -472,6 +469,7 @@ class Static(BaseField):
 
                 Static('this will never change')
         '''
+        value = strToBytes(value)
         super(Static, self).__init__(value=value, encoder=encoder, fuzzable=False, name=name)
 
 
@@ -489,7 +487,7 @@ class String(_LibraryField):
 
     def __init__(self, value, max_size=None, encoder=ENC_STR_DEFAULT, fuzzable=True, name=None):
         '''
-        :type value: str
+        :type value: str or bytes
         :param value: default value
         :param max_size: maximal size of the string before encoding (default: None)
         :type encoder: :class:`~kitty.model.low_level.encoder.StrEncoder`
@@ -504,6 +502,7 @@ class String(_LibraryField):
                 String('this is the default value', max_size=5)
         '''
         self._max_size = None if max_size is None else max_size
+        value = strToBytes(value)
         super(String, self).__init__(value=value, encoder=encoder, fuzzable=fuzzable, name=name)
 
     def _get_local_lib(self):
@@ -511,10 +510,10 @@ class String(_LibraryField):
         default_len = len(self._default_value)
         for i in [2, 10, 100]:
             lib.append((self._default_value * i, 'duplicate value %s times' % i))
-        lib.append((self._default_value + '\xfe', 'value with utf8 escape char'))
-        lib.append(('\x00' + self._default_value, 'null before value'))
-        lib.append((self._default_value[:default_len / 2] + '\x00' + self._default_value[default_len / 2:], 'null in middle of value'))
-        lib.append((self._default_value + '\x00', 'null after value'))
+        lib.append((self._default_value + b'\xfe', 'value with utf8 escape char'))
+        lib.append((b'\x00' + self._default_value, 'null before value'))
+        lib.append((self._default_value[:default_len // 2] + b'\x00' + self._default_value[default_len // 2:], 'null in middle of value'))
+        lib.append((self._default_value + b'\x00', 'null after value'))
         return lib
 
     def _add_command_injection_strings_unix(self, lib):
@@ -725,27 +724,27 @@ class Float(_LibraryField):
 
 
 def _calc_bitfield_bounds(self, value, minv, maxv):
-        if self._length <= 0:
-            raise KittyException('length (%d) <= 0' % (self._length))
-        max_possible = 2 ** self._length - 1
-        if self._signed:
-            self._min_value = ~(max_possible >> 1)
-        else:
-            self._min_value = 0
-        self._max_value = max_possible + self._min_value
-        self._max_min_diff = max_possible
-        if maxv is not None:
-            if maxv > self._max_value:
-                raise KittyException('max_value is too big %d > %d' % (maxv, self._max_value))
-            self._max_value = maxv
-        if minv is not None:
-            if minv < self._min_value:
-                raise KittyException('min_value is too small %d < %d' % (minv, self._min_value))
-            self._min_value = minv
-        if self._min_value > self._max_value:
-            raise KittyException('min_value (%d) > max_value (%d)' % (self._min_value, self._max_value))
-        if (value < self._min_value) or (value > self._max_value):
-            raise KittyException('default value (%d) not in range (min=%d, max=%d)' % (value, self._min_value, self._max_value))
+    if self._length <= 0:
+        raise KittyException('length (%d) <= 0' % (self._length))
+    max_possible = 2 ** self._length - 1
+    if self._signed:
+        self._min_value = ~(max_possible >> 1)
+    else:
+        self._min_value = 0
+    self._max_value = max_possible + self._min_value
+    self._max_min_diff = max_possible
+    if maxv is not None:
+        if maxv > self._max_value:
+            raise KittyException('max_value is too big %d > %d' % (maxv, self._max_value))
+        self._max_value = maxv
+    if minv is not None:
+        if minv < self._min_value:
+            raise KittyException('min_value is too small %d < %d' % (minv, self._min_value))
+        self._min_value = minv
+    if self._min_value > self._max_value:
+        raise KittyException('min_value (%d) > max_value (%d)' % (self._min_value, self._max_value))
+    if (value < self._min_value) or (value > self._max_value):
+        raise KittyException('default value (%d) not in range (min=%d, max=%d)' % (value, self._min_value, self._max_value))
 
 
 class _FullRangeBitField(BaseField):
@@ -880,13 +879,13 @@ class _LibraryBitField(_LibraryField):
             for s in range(1, num_sections):
                 lib.append(
                     (
-                        (lambda x, i=i, s=s: x._max_value - (x._max_min_diff / num_sections) * s + i),
+                        (lambda x, i=i, s=s: x._max_value - (x._max_min_diff // num_sections) * s + i),
                         'off by %d from section %d' % (i, s)
                     )
                 )
                 lib.append(
                     (
-                        (lambda x, i=i, s=s: x._max_value - (x._max_min_diff / num_sections) * s - i),
+                        (lambda x, i=i, s=s: x._max_value - (x._max_min_diff // num_sections) * s - i),
                         'off by %d from section %d' % (i, s)
                     )
                 )
@@ -954,8 +953,7 @@ def BitField(value, length, signed=False, min_value=None, max_value=None, encode
     '''
     if not full_range:
         return _LibraryBitField(value, length, signed, min_value, max_value, encoder, fuzzable, name)
-    else:
-        return _FullRangeBitField(value, length, signed, min_value, max_value, encoder, fuzzable, name)
+    return _FullRangeBitField(value, length, signed, min_value, max_value, encoder, fuzzable, name)
 
 
 class Group(_LibraryField):
@@ -1109,7 +1107,7 @@ class RandomBits(BaseField):
         '''
         if unused_bits not in range(8):
             raise KittyException('unused bits (%d) is not between 0-7' % unused_bits)
-        value = Bits(bytes=value)
+        value = Bits(bytes=strToBytes(value))
         if unused_bits:
             value = value[:-unused_bits]
         super(RandomBits, self).__init__(value=value, encoder=encoder, fuzzable=fuzzable, name=name)
@@ -1124,7 +1122,7 @@ class RandomBits(BaseField):
         if self._step:
             if self._step < 0:
                 raise KittyException('step (%d) < 0' % (step))
-            self._num_mutations = (self._max_length - self._min_length) / self._step
+            self._num_mutations = (self._max_length - self._min_length) // self._step
 
     def _validate_lengths(self, min_length, max_length):
         kassert.is_int(min_length)
@@ -1146,9 +1144,9 @@ class RandomBits(BaseField):
         else:
             length = self._random.randint(self._min_length, self._max_length)
         current_bytes = ''
-        for i in range(length / 8 + 1):
+        for _ in range(length // 8 + 1):
             current_bytes += chr(self._random.randint(0, 255))
-        self._current_value = Bits(bytes=current_bytes)[:length]
+        self._current_value = Bits(bytes=strToBytes(current_bytes))[:length]
 
     def hash(self):
         '''
@@ -1201,7 +1199,7 @@ class RandomBytes(BaseField):
         if self._step:
             if self._step < 0:
                 raise KittyException('step (%d) < 0' % (step))
-            self._num_mutations = (self._max_length - self._min_length) / self._step
+            self._num_mutations = (self._max_length - self._min_length) // self._step
 
     def _validate_lengths(self, min_length, max_length):
         kassert.is_int(min_length)
@@ -1223,7 +1221,7 @@ class RandomBytes(BaseField):
         else:
             length = self._random.randint(self._min_length, self._max_length)
         current = ''
-        for i in range(length):
+        for _ in range(length):
             current += chr(self._random.randint(0, 255))
         self._current_value = current
 

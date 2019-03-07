@@ -19,10 +19,12 @@ Containers are fields that group multiple fields into a single logical unit,
 they all inherit from ``Container``, which inherits from
 :class:`~kitty.model.low_level.field.BaseField`.
 '''
-from bitstring import Bits, BitArray
 import random
+from base64 import b64encode
+from bitstring import Bits, BitArray
 from kitty.model.low_level.field import BaseField, empty_bits, Dynamic, BitField
 from kitty.model.low_level.encoder import BitsEncoder, ENC_BITS_DEFAULT, ENC_BITS_BYTE_ALIGNED
+from kitty.model.low_level.encoder import strToBytes
 from kitty.core import kassert, KittyException, khash
 from kitty.model.low_level.ll_utils import RenderContext
 
@@ -423,6 +425,7 @@ class Conditional(Container):
     '''
     Container that its rendering is dependant on a condition
     '''
+
     def __init__(self, condition, fields=[], encoder=ENC_BITS_DEFAULT, fuzzable=True, name=None):
         '''
         :type condition: an object that has a function applies(self, Container) -> Boolean
@@ -579,10 +582,11 @@ class Pad(Container):
     '''
     Pad the rendered value of the enclosed fields
     '''
-    def __init__(self, pad_length, pad_data='\x00', fields=[], fuzzable=True, name=None):
+
+    def __init__(self, pad_length, pad_data=b'\x00', fields=[], fuzzable=True, name=None):
         '''
         :param pad_length: length to pad up to (in bits)
-        :param pad_data: data to pad with (default: '\x00')
+        :param pad_data: data to pad with (default: b'\x00')
         :param fields: enclosed field(s) (default: [])
         :param fuzzable: is fuzzable (default: True)
         :param name: (unique) name of the template (default: None)
@@ -598,7 +602,7 @@ class Pad(Container):
         '''
         super(Pad, self).__init__(fields=fields, encoder=ENC_BITS_DEFAULT, fuzzable=fuzzable, name=name)
         self._pad_length = pad_length
-        self._pad_data = Bits(bytes=pad_data)
+        self._pad_data = Bits(bytes=strToBytes(pad_data))
 
     def render(self, ctx=None):
         '''
@@ -613,7 +617,7 @@ class Pad(Container):
     def _pad_buffer(self, prepad):
         to_pad = self._pad_length - len(prepad)
         if to_pad > 0:
-            padding_data = self._pad_data * (to_pad / len(self._pad_data) + 1)
+            padding_data = self._pad_data * (to_pad // len(self._pad_data) + 1)
             return prepad + padding_data[:to_pad]
         return prepad
 
@@ -663,7 +667,7 @@ class Repeat(Container):
         self._min_times = min_times
         self._max_times = max_times
         self._step = step
-        self._repeats = (self._max_times - self._min_times) / self._step
+        self._repeats = (self._max_times - self._min_times) // self._step
 
     def _check_times(self, min_times, max_times, step):
         '''
@@ -887,6 +891,7 @@ class TakeFrom(OneOf):
     '''
     Render to only part of the enclosed fields, performing all mutations on them
     '''
+
     def __init__(self, fields=[], min_elements=1, max_elements=None, encoder=ENC_BITS_DEFAULT, fuzzable=True, name=None):
         '''
         :type fields: field or iterable of fields
@@ -1025,7 +1030,7 @@ class Template(Container):
         }
         res['value'] = {
             'rendered': {
-                'base64': self._current_rendered.tobytes().encode('base64'),
+                'base64': b64encode(self._current_rendered.tobytes()).decode(),
                 'length_in_bytes': len(self._current_rendered.tobytes()),
             }
         }
@@ -1108,6 +1113,7 @@ class Trunc(Container):
     '''
     Truncate the size of the enclosed fields
     '''
+
     def __init__(self, max_size, fields=[], fuzzable=True, name=None):
         '''
         :param max_size: maximum size of the container (in bits)

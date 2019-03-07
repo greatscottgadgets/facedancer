@@ -15,9 +15,8 @@ Code
 
 - **Python 3 compatibility**
 
-  Kitty is written in Python 2.7, we do plan to add python3 compatibility
-  at some point, so please make any new addition python 2 and python 3
-  compatible.
+  Kitty now supports both Python 2.7 and Python 3. please make any change or
+  addition Python2 and Python3 compatible.
 
 - **Coding conventions**
 
@@ -51,9 +50,10 @@ Tests
 We try to keep Kitty tested, tests run on each push and pull request.
 The tests are located at the **tests** directory,
 and ``python runner.py`` should run all of them.
-We have two requests:
+We have a few requests:
 
 - Run the tests before you open a pull requests.
+- Run the test in Python 2.7 AND Python 3.6 environments.
 - Add tests for every new module, feature, class or code that you create.
   if your pull request is meant to fix a bug in Kitty,
   it means that we are missing a test there.
@@ -102,3 +102,4 @@ So we require a few things in pull requests.
 
 
 That's it, and thanks for your help!
+

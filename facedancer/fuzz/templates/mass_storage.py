@@ -4,7 +4,7 @@ Mass storage device specific templates
 from kitty.model import Template, Pad
 from kitty.model import String, UInt8, BE32, BE16, RandomBytes
 from kitty.model import SizeInBytes
-from generic import SizedPt
+from .generic import SizedPt
 
 # TODO: scsi_test_unit_ready_response (nothing to fuzz! no data returned, besides the csw)
 # TODO: scsi_send_diagnostic_response

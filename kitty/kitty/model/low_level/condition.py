@@ -22,9 +22,10 @@ Conditions are used by the *If* and *IfNot* fields to decide wether to render th
 In many cases the decision is made based on a value of a specific field, but you can create whatever condition you want.
 In future versions, they will probably be used to make other decisions, not only basic rendering decisions.
 '''
-import types
 import copy
+import six
 from kitty.core import KittyException, khash
+from kitty.model.low_level.encoder import strToBytes
 
 
 class Condition(object):
@@ -71,7 +72,7 @@ class FieldCondition(Condition):
         :param field: (name of, or) field that should meet the condition
         '''
         super(FieldCondition, self).__init__()
-        if isinstance(field, types.StringTypes):
+        if isinstance(field, str):
             self._field_name = field
             self._field = None
         else:
@@ -232,6 +233,8 @@ class Compare(FieldCondition):
             self._comp_fn = Compare._comparison_types[comp_type]
         else:
             raise KittyException('unknown comparison type (%s)' % (comp_type))
+        if isinstance(comp_value, six.string_types):
+            comp_value = strToBytes(comp_value)
         self._comp_value = comp_value
 
     def _applies(self, container, ctx):

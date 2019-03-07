@@ -18,8 +18,8 @@
 '''
 Tests for Mutators and Mutator-based containers
 '''
-from common import metaTest, BaseTestCase
 from bitstring import Bits
+from common import metaTest, BaseTestCase
 from kitty.model.low_level import String, Static
 from kitty.model.low_level import Container
 from kitty.model.low_level import List, OmitMutator, DuplicateMutator, RotateMutator
@@ -84,14 +84,14 @@ class MutatorTests(BaseTestCase):
         fields = [Static(c) for c in values]
         uut = self.get_uut(field_count, fields, **kwargs)
         self.assertEqual(uut.num_mutations(), len(expected))
-        mutations = [x.tobytes() for x in self.get_all_mutations(uut)]
+        mutations = [x.tobytes().decode() for x in self.get_all_mutations(uut)]
         self.assertEqual(mutations, expected)
 
     def _stringTest(self, values, field_count, expected, **kwargs):
         fields = [String(c) for c in values]
         uut = self.get_uut(field_count, fields, **kwargs)
         self.assertEqual(uut.num_mutations(), len(expected))
-        mutations = [x.tobytes() for x in self.get_all_mutations(uut)]
+        mutations = [x.tobytes().decode() for x in self.get_all_mutations(uut)]
         self.assertEqual(mutations, expected)
 
 
@@ -287,7 +287,15 @@ class ListTests(BaseTestCase):
         num_elems = 3
         fields = [Static('A') for i in range(num_elems)]
         uut = self.get_uut(fields=fields, delim=String('/'))
-        mutations = [m.tobytes() for m in self.get_all_mutations(uut)]
+        mutations = [m.tobytes().decode() for m in self.get_all_mutations(uut)]
         for m in mutations:
             if m != '':
-                self.assertEqual(m.count('/'), (len(m) - 1) / 2)
+                self.assertEqual(m.count('/'), (len(m) - 1) // 2)
+
+    def testExceptionOnEmptyListFields(self):
+        with self.assertRaises(KittyException):
+            self.cls(name=self.uut_name, fields=[])
+
+    def testExceptionOnNoneFields(self):
+        with self.assertRaises(KittyException):
+            self.cls(name=self.uut_name, fields=None)

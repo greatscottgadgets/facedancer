@@ -12,7 +12,7 @@ stage but also to fuzz the order of messages as well.
 Low Level Model
 ---------------
 
-At the low level, there is a signle payload, constructed from multiple
+At the low level, there is a single payload, constructed from multiple
 fields. Those fields can be encoded, dependant on other fields, be
 renderened conditionaly and combined with other fields into larger
 logical units. The top unit of the logical units is Template, and

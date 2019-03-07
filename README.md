@@ -99,6 +99,7 @@ including:
  * ktemkin (@ktemkin)
  * Dominic Spill (@dominicgs)
  * Michael Ossmann (@michaelossmann)
+ * Bjoern Kerler (@bkerler)
  * anyone whose name appears in the git history :)
 
 ## Contributions?
@@ -160,12 +161,25 @@ Example for scanning implemented devices on target (connect USB1 to target):
 	./facedancer-scan.py
 ```
 
-Example for scanning for supported devices on target based on vid/pid (connect USB1 to target):
+Example for scanning for supported devices on target based on vid/pid db (connect USB1 to target):
 ```
 	./facedancer-vsscan.py -d tools/vid_pid_db.py
+```
+
+Example for scanning for supported devices on target based on vid/pid range from VID(0x1001-0x1004)
+and PID (0x0000-0xFFFF) (connect USB1 to target):
+```
+	./facedancer-vsscan.py -s 1001-1004:0000-ffff
 ```
 
 Example for displaying connected device info via host mode (connect target to USB1, for example usb stick):
 ```
 	./facedancer-host.py
+```
+
+Example for fuzzing
+```
+Generate stages:    python3 facedancer-emu.py -ms keyboard.stages -device "Keyboard"
+Start fuzz server:  python3 facedancer/fuzz/fuzz_engine.py -s keyboard.stages
+Fuzz:               python3 facedancer-emu.py -f -device "Keyboard"
 ```

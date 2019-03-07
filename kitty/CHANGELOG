@@ -1,3 +1,24 @@
+Version 0.7.4 (2019-02-22)
+==========================
+
+* bugfix: [Encoder] reverted broken optimization
+
+Version 0.7.3 (2019-02-22)
+==========================
+
+* bugfix: [Encoder] fix FloatAsciiEncoder for Python3 compatibility.
+* enhancement: [Encoder] improve performance for Python2
+
+Version 0.7.2 (2019-02-17)
+==========================
+
+* The main feature of this release is **Python3 Support**. It was initiated and implemented mainly by GH0st3rs - Thanks!!
+* bugfix: [DataModel] raise exception if no fields are passed to a List object
+* bugfix: [kitty-tool] fix handling of templates in collections
+* bugfix: [kitty-tool] fix undefined variable in progress printing
+* bugfix: [WebInterface] add missing div tag
+* enhancement: [kitty-tool] print exception trace in verbose mode
+
 Version 0.7.1 (2017-03-31)
 ==========================
 

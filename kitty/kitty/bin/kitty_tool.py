@@ -53,6 +53,7 @@ import logging
 from pkg_resources import get_distribution
 from json import dumps
 import docopt
+import traceback
 from kitty.model import Template
 
 
@@ -92,11 +93,11 @@ class FileIterator(object):
                 self.handler.handle(attr)
             elif isinstance(attr, list):
                 for mem in attr:
-                    if isinstance(attr, Template):
-                        self.handler.handle(attr)
+                    if isinstance(mem, Template):
+                        self.handler.handle(mem)
             elif isinstance(attr, dict):
                 for k in attr:
-                    if isinstance(attr, Template):
+                    if isinstance(attr[k], Template):
                         self.handler.handle(attr[k])
 
 
@@ -189,16 +190,17 @@ class FileGeneratorHandler(Handler):
 
     def _progress_print(self, current_index, info):
         tests_left = (self.end_index - current_index)
-        precent = int((self.total - tests_left) * self.step)
+        percent = int((self.total - tests_left) * self.step)
         out_line = ''
-        out_line += '\r%3d%%' % (precent)
+        out_line += '\r%3d%%' % (percent)
         out_line += ' %d/%d' % (current_index - self.skip + 1, self.end_index - self.skip + 1)
         if 'field/path' in info:
             out_line += ' %s' % (info['field/path'])
         if len(out_line) > self.max_line_length:
             max_line_length = len(out_line)
         else:
-            out_line += ' ' * (max_line_length - len(out_line))
+            max_line_length = self.max_line_length
+        out_line += ' ' * (max_line_length - len(out_line))
         sys.stdout.write(out_line)
         sys.stdout.flush()
 
@@ -225,6 +227,8 @@ def _main():
             file_iter = FileIterator(opts['<FILE>'], handler, logger)
             file_iter.iterate()
     except Exception as ex:
+        if opts['--verbose']:
+            logger.error(traceback.format_exc())
         logger.error('Error: %s' % ex)
         sys.exit(1)
 

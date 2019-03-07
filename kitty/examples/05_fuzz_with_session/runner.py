@@ -16,7 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
-
+from binascii import hexlify
 from katnip.targets.tcp import TcpTarget
 from kitty.model import GraphModel, Template
 from kitty.interfaces import WebInterface
@@ -50,7 +50,7 @@ def new_session_callback(fuzzer, edge, resp):
                  edge.dst is the send_data template
     :param resp: the response from the target
     '''
-    fuzzer.logger.info('session is: %s' % resp[1:3].encode('hex'))
+    fuzzer.logger.info('session is: %s' % hexlify(resp[1:3]).decode())
     fuzzer.target.session_data['session_id'] = resp[1:3]
 
 

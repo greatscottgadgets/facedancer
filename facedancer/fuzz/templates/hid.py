@@ -24,8 +24,8 @@ from kitty.model import UInt8, LE16, BitField, Static
 from kitty.model import ENC_INT_LE
 from kitty.core import KittyException
 from random import Random
-from generic import DynamicInt, Descriptor
-
+from .generic import DynamicInt, Descriptor
+from binascii import unhexlify
 
 opcodes = {
     0x04: 'Usage Page',
@@ -88,9 +88,9 @@ class RandomHidReport(TakeFrom):
         for tag in opcodes:
             for i in range(4):
                 opcode = tag | i
-                current = chr(opcode)
+                current = bytes(opcode)
                 for j in range(i):
-                    current += chr(r.randint(0, 255))
+                    current += bytes(r.randint(0, 255))
                 fields.append(Static(name=namer.gen(opcode), value=current))
         super(RandomHidReport, self).__init__(
             fields=fields,
@@ -124,7 +124,7 @@ def GenerateHidReport(report_str, name=None):
     index = 0
     namer = NameGen()
     while index < len(report_str):
-        opcode = ord(report_str[index])
+        opcode = report_str[index]
         num_args = opcode & 3
         if index + num_args >= len(report_str):
             raise KittyException('Not enough bytes in hid report for last opcode')
@@ -134,7 +134,7 @@ def GenerateHidReport(report_str, name=None):
             fields.append(UInt8(opcode, name=cur_name))
         else:
             args = report_str[index:index + num_args]
-            value = sum(ord(args[i]) << (i * 8) for i in range(len(args)))  # little endian...
+            value = sum(args[i] << (i * 8) for i in range(len(args)))  # little endian...
             fields.append(Container(
                 name=cur_name,
                 fields=[
@@ -179,6 +179,6 @@ hid_descriptor = Descriptor(
 hid_report_descriptor = Template(
     name='hid_report_descriptor',
     fields=GenerateHidReport(
-        '05010906A101050719E029E7150025017501950881029501750881011900296515002565750895018100C0'.decode('hex')
+        unhexlify('05010906A101050719E029E7150025017501950881029501750881011900296515002565750895018100C0')
     )
 )

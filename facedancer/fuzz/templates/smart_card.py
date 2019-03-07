@@ -6,7 +6,7 @@ from kitty.model import UInt8, LE32, RandomBytes
 from kitty.model import SizeInBytes
 from kitty.model import ENC_INT_LE
 from kitty.model import Template, Container
-from generic import DynamicInt
+from .generic import DynamicInt
 
 
 class R2PParameters(Template):
@@ -30,7 +30,7 @@ smartcard_GetParameters_response = R2PParameters(
     status=0x00,
     error=0x80,
     proto=0,
-    ab_data=RandomBytes(name='data', value='\x11\x00\x00\x0a\x00', min_length=0, max_length=150),
+    ab_data=RandomBytes(name='data', value=b'\x11\x00\x00\x0a\x00', min_length=0, max_length=150),
 )
 
 
@@ -39,7 +39,7 @@ smartcard_ResetParameters_response = R2PParameters(
     status=0x00,
     error=0x80,
     proto=0,
-    ab_data=RandomBytes(name='data', value='\x11\x00\x00\x0a\x00', min_length=0, max_length=150),
+    ab_data=RandomBytes(name='data', value=b'\x11\x00\x00\x0a\x00', min_length=0, max_length=150),
 )
 
 smartcard_SetParameters_response = R2PParameters(
@@ -47,7 +47,7 @@ smartcard_SetParameters_response = R2PParameters(
     status=0x00,
     error=0x80,
     proto=0,
-    ab_data=RandomBytes(name='data', value='\x11\x00\x00\x0a\x00', min_length=0, max_length=150),
+    ab_data=RandomBytes(name='data', value=b'\x11\x00\x00\x0a\x00', min_length=0, max_length=150),
 )
 
 
@@ -71,7 +71,7 @@ smartcard_IccPowerOn_response = R2PDataBlock(
     status=0x00,
     error=0x80,
     chain_param=0x00,
-    ab_data=RandomBytes(name='data', value='\x3b\x6e\x00\x00\x80\x31\x80\x66\xb0\x84\x12\x01\x6e\x01\x83\x00\x90\x00', min_length=0, max_length=150),
+    ab_data=RandomBytes(name='data', value=b'\x3b\x6e\x00\x00\x80\x31\x80\x66\xb0\x84\x12\x01\x6e\x01\x83\x00\x90\x00', min_length=0, max_length=150),
 )
 
 smartcard_XfrBlock_response = R2PDataBlock(
@@ -79,7 +79,7 @@ smartcard_XfrBlock_response = R2PDataBlock(
     status=0x00,
     error=0x80,
     chain_param=0x00,
-    ab_data=RandomBytes(name='data', value='\x6a\x82', min_length=0, max_length=150),
+    ab_data=RandomBytes(name='data', value=b'\x6a\x82', min_length=0, max_length=150),
 )
 
 

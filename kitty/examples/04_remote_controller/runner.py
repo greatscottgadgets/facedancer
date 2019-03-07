@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
 
+import six
 from kitty.fuzzers import ServerFuzzer
 from kitty.interfaces import WebInterface
 from katnip.targets.file import FileTarget
@@ -50,5 +51,5 @@ fuzzer.set_target(target)
 # fuzzer.set_range(50)
 fuzzer.start()
 print('-------------- done with fuzzing -----------------')
-input('press enter to exit')
+six.moves.input('press enter to exit')
 fuzzer.stop()

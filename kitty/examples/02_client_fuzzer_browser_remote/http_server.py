@@ -15,23 +15,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
 
-import http.server
+import BaseHTTPServer
 from kitty.remote import RpcClient
 
 
-class MyHttpServer(http.server.HTTPServer):
+class MyHttpServer(BaseHTTPServer.HTTPServer):
     '''
     http://docs.python.org/lib/module-BaseHTTPServer.html
     '''
 
     def __init__(self, server_address, handler, fuzzer):
-        http.server.HTTPServer.__init__(self, server_address, handler)
+        BaseHTTPServer.HTTPServer.__init__(self, server_address, handler)
         self.fuzzer = fuzzer
 
 
-class MyHttpHandler(http.server.BaseHTTPRequestHandler):
+class MyHttpHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
-        http.server.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_GET(self):
         resp = None
@@ -42,10 +42,10 @@ class MyHttpHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        print ('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-        print ('response:')
-        print (resp)
-        print ('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+        print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+        print('response:')
+        print(resp)
+        print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
         self.wfile.write(resp)
 
     def default_response(self):
@@ -73,6 +73,7 @@ def main():
     server = MyHttpServer(('localhost', 8082), MyHttpHandler, agent)
     while True:
         server.handle_request()
+
 
 if __name__ == '__main__':
     main()

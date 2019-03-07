@@ -1,0 +1,166 @@
+html, body {
+  padding-left: 1%;
+  padding-right: 1%;
+  margin: 0;
+}
+
+h1, h2 { text-align: center; }
+
+.progress {
+    max-width: inherit;
+    height: 34px;
+    margin-bottom: 0px;
+}
+
+.progress-bar {
+  height: 100%;
+  font-size: 14px;
+  line-height: 34px;
+}
+
+td {
+  max-width: 100%;
+  overflow: scroll;
+  overflow-y:hidden;
+  overflow-x:hidden;
+}
+
+.info-table td:first-child{
+  width: 1px;
+  white-space: nowrap;
+}
+
+.textarea-data{
+  word-wrap: word-break;
+  width: 100%;
+}
+
+.table-main-layout th, .table-main-layout td { 
+     border-top: none !important; 
+ }
+
+#stats_table {
+  max-height: inherit;
+  max-width: inherit;
+}
+
+.well {
+  text-align: center;
+}
+
+.value_cell {
+  max-width: 100px;
+}
+
+.unknown-data-size {
+  /*height: 100%;*/
+  position: absolute;
+  left:0px; 
+  top: 41px;
+  bottom: 0px;
+  overflow: scroll;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.monospaced-text {
+  font-family: "Courier New", Courier, monospace;
+}
+
+.mutation-highlight {
+  background-color: pink;
+}
+
+.alert {
+  display:inline-block;
+  width: 50%;
+  margin: 0 auto;
+  margin-right: 0 auto;
+  margin-left: 0 auto;
+  text-align: center;
+  display: none;
+}
+
+.panel {
+  align-content: center;
+  text-align: left;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  margin-bottom: 0px;
+}
+
+.panel-heading {
+  text-align: center;
+}
+
+#stages-graph {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  display: block;
+  overflow: scroll;
+}
+
+.kitty-cell {
+position: relative;
+  height: 400px;
+}
+
+#fuzzer_name, #kitty_version { display: inline; }
+
+#progress_bar { width: 0%; }
+
+#progress_table { bottom: 0px; width:100%; position: absolute; left:0px; }
+
+#pause_button { position: relative; left: 25%; width: 50%; }
+
+#export_all { width:100%; position: absolute; left:0px; bottom: 0px; overflow: hidden;}
+
+#report-table {
+  width:100%; position: absolute; left:0px; bottom: 34px; top: 41px; overflow: auto;  
+}
+
+#stages-graph {
+  overflow: hidden;
+  max-height: 90%;
+  max-width: 100%;
+}
+
+div[class^="report-"] {
+}
+
+div[class^="report-cell"] {
+/*  display: table-cell;
+  vertical-align: top;*/
+}
+
+.report-cell-key {
+  overflow: hidden;
+  /*max-width: 25%;*/
+  border-right: 1px dashed;
+  border-right-color: #e1bebe;
+}
+
+.report-cell-value {
+  overflow: auto;
+  /*max-width: 75%;*/
+}
+
+.report-row {
+  width: 100%;
+  border: 1px solid;
+  border-color: #f2dede;
+  margin: 0px;
+  padding: 2px;
+}
+
+.report-row:hover{
+  background: #f2dede;
+}
+
+.report-single-table {
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-bottom: 20px;
+}

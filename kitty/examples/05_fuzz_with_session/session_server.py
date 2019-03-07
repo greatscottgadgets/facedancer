@@ -16,7 +16,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
-from kitty.core.kitty_object import KittyObject
 import socket
 import threading
 import select
@@ -25,6 +24,8 @@ import time
 import struct
 import random
 import traceback
+from binascii import hexlify
+from kitty.core.kitty_object import KittyObject
 
 host = '0.0.0.0'
 port = 9999
@@ -89,17 +90,17 @@ class BaseRequestHandler(KittyObject):
 class BaseServer(KittyObject):
     '''
     Base class for server classes.
-    
+
     Methods for the caller:
-    
+
     - __init__(server_address, RequestHandlerClass)
     - serve_forever(poll_interval=0.5)
     - shutdown()
     - handle_request()  # if you do not use serve_forever()
     - fileno() -> int   # for select()
-    
+
     Methods that may be overridden:
-    
+
     - server_bind()
     - server_activate()
     - get_request() -> request, client_address
@@ -110,24 +111,24 @@ class BaseServer(KittyObject):
     - shutdown_request(request)
     - close_request(request)
     - handle_error()
-    
+
     Methods for derived classes:
-    
+
     - finish_request(request, client_address)
-    
+
     Class variables that may be overridden by derived classes or
     instances:
-    
+
     - timeout
     - address_family
     - socket_type
     - allow_reuse_address
-    
+
     Instance variables:
-    
+
     - RequestHandlerClass
     - socket
-    
+
     '''
     timeout = None
 
@@ -267,9 +268,9 @@ class BaseServer(KittyObject):
     def handle_error(self, request, client_address):
         """
         Handle an error gracefully.  May be overridden.
-        
+
         The default is to print a traceback and continue.
-        
+
         """
         self.logger.error('-' * 40)
         self.logger.error('Exception happened during processing of request from %s:%s' % (client_address[0], client_address[1]))
@@ -436,8 +437,8 @@ class SessionHandler(BaseRequestHandler):
         super(SessionHandler, self).__init__(name, request, client_address, server, logger)
 
     def _send_session(self):
-        self._resp_data = '\x01' + self._session
-        self.logger.info('Session id is: %s' % self._session.encode('hex'))
+        self._resp_data = b'\x01' + self._session
+        self.logger.info('Session id is: %s' % hexlify(self._session).decode())
         self.request.send(self._resp_data)
         self._cleanup()
 
@@ -474,12 +475,12 @@ class SessionHandler(BaseRequestHandler):
             if self.request:
                 self._recv_data = self.request.recv(1024).strip()
                 if self._recv_data:
-                    self.logger.debug('Received data is: %s' % self._recv_data.encode('hex'))
+                    self.logger.debug('Received data is: %s' % hexlify(self._recv_data).decode())
                     # Check is get_session packet
-                    if self._recv_data == '\x01\x00\x00':
+                    if self._recv_data == b'\x01\x00\x00':
                         self._send_session()
                     # Check is send_data packet
-                    elif self._recv_data[0] == '\x02':
+                    elif self._recv_data[0] == b'\x02':
                         if self._check_session(self._recv_data):
                             self.logger.info('session is correct')
                             if self._check_crash(self._recv_data):

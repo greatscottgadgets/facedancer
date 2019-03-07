@@ -44,6 +44,7 @@ class FieldRangeMutator(Container):
     not in the template declaration directly,
     and as such, they provide empty response when not mutated.
     '''
+
     def __init__(self, field_count, fields=[], delim=None, encoder=ENC_BITS_DEFAULT, fuzzable=True, name=None):
         '''
         :param field_count: how many fields to omit in each mutation
@@ -213,27 +214,32 @@ class RotateMutator(FieldRangeMutator):
         return fields[rot_count:] + fields[:rot_count]
 
     def _first_mutated_field_index(self):
-        return self._current_index / (self._field_count - 1)
+        return self._current_index // (self._field_count - 1)
 
 
 class List(OneOf):
-
     '''
     Describe a list of elements in the template.
     In addition to the standard mutations of its element,
     a List also performs mutation of full elements,
     by reordering, duplicating and omitting them.
     '''
-    def __init__(self, fields=[], delim=None, encoder=ENC_BITS_DEFAULT, fuzzable=True, name=None):
+
+    def __init__(self, fields, delim=None, encoder=ENC_BITS_DEFAULT, fuzzable=True, name=None):
         '''
         :type fields: field or iterable of fields
-        :param fields: enclosed field(s) (default: [])
+        :param fields: enclosed field(s)
         :type delim: field
         :param delim: delimiter between elements in the list (default: None)
         :type encoder: BitsEncoder
         :param encoder: encoder for the container (default: ENC_BITS_DEFAULT)
         :param fuzzable: is container fuzzable (default: True)
         :param name: (unique) name of the container (default: None)
+
+        .. note::
+
+            Due to the nature of class, fields should not be added using .push(),
+            only by passing them as the fields parameter.
 
         :example:
 
@@ -246,6 +252,8 @@ class List(OneOf):
                     BE32(name='id4', value=50),
                 ])
         '''
+        if not fields:
+            raise KittyException('List constructor does not expect an empty list or None as fields')
         if isinstance(fields, BaseField):
             fields = [fields]
         self._final_fields = []
@@ -263,7 +271,7 @@ class List(OneOf):
     def _get_dups(self, fields, delim):
         num_fields = len(fields)
         res = []
-        for field_count in set(x for x in [1, 2, num_fields / 2, num_fields] if x > 0):
+        for field_count in set(x for x in [1, 2, num_fields // 2, num_fields] if x > 0):
             for i in [2, 5, 10, 100, 1000]:
                 res.append(
                     DuplicateMutator(
@@ -279,7 +287,7 @@ class List(OneOf):
     def _get_omits(self, fields, delim):
         num_fields = len(fields)
         res = []
-        for field_count in set([1, 2, num_fields / 2, num_fields]):
+        for field_count in set([1, 2, num_fields // 2, num_fields]):
             if field_count > 0:
                 res.append(
                     OmitMutator(
@@ -294,7 +302,7 @@ class List(OneOf):
     def _get_rotations(self, fields, delim):
         num_fields = len(fields)
         res = []
-        counts = set([2, 5, 10, num_fields / 3, num_fields / 2, num_fields])
+        counts = set([2, 5, 10, num_fields // 3, num_fields // 2, num_fields])
         counts = [c for c in counts if c >= 2]
         counts = [c for c in counts if c <= num_fields]
         for field_count in counts:

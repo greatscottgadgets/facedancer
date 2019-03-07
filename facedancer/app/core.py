@@ -102,6 +102,8 @@ class FacedancerApp(object):
 
             return subclass(loglevel=loglevel, quirks=quirks)
         else:
+            print ("Please connect the greatfet board.")
+            exit(0)
             raise DeviceNotFoundError()
 
 

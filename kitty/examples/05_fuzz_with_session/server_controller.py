@@ -17,13 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
 
-from kitty.controllers.base import BaseController
 import socket
 import subprocess
 import time
+from kitty.controllers.base import BaseController
 
 
-class SessionServerController (BaseController):
+class SessionServerController(BaseController):
     '''
     This controller controls our SessionServer.
     '''

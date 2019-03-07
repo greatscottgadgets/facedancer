@@ -17,6 +17,7 @@
 
 import time
 import traceback
+from binascii import hexlify
 from kitty.targets.base import BaseTarget
 from kitty.data.report import Report
 
@@ -81,12 +82,12 @@ class ServerTarget(BaseTarget):
         self.transmission_report = trans_report
         self.report.add(trans_report_name, trans_report)
         try:
-            trans_report.add('request (hex)', payload.encode('hex'))
+            trans_report.add('request (hex)', hexlify(payload).decode())
             trans_report.add('request (raw)', '%s' % payload)
             trans_report.add('request length', len(payload))
             trans_report.add('request time', time.time())
 
-            request = payload.encode('hex')
+            request = hexlify(payload).decode()
             request = request if len(request) < 100 else (request[:100] + ' ...')
             self.logger.info('request(%d): %s' % (len(payload), request))
             self._send_to_target(payload)
@@ -96,10 +97,10 @@ class ServerTarget(BaseTarget):
                 try:
                     response = self._receive_from_target()
                     trans_report.add('response time', time.time())
-                    trans_report.add('response (hex)', response.encode('hex'))
+                    trans_report.add('response (hex)', hexlify(response).decode())
                     trans_report.add('response (raw)', '%s' % response)
                     trans_report.add('response length', len(response))
-                    printed_response = response.encode('hex')
+                    printed_response = hexlify(response).decode()
                     printed_response = printed_response if len(printed_response) < 100 else (printed_response[:100] + ' ...')
                     self.logger.info('response(%d): %s' % (len(response), printed_response))
                 except Exception as ex2:

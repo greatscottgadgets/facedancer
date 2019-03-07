@@ -8,7 +8,7 @@ from kitty.model import UInt8, LE16, RandomBytes, BitField, Static
 from kitty.model import Template, Repeat, List, Container, ForEach, OneOf
 from kitty.model import ElementCount
 from kitty.model import MutableField
-from generic import SubDescriptor
+from .generic import SubDescriptor
 
 
 cdc_control_interface_descriptor = Template(

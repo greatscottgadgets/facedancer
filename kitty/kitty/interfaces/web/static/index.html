@@ -31,13 +31,13 @@
             <div class="col-lg-20">
                 <table class="table table-bordered table-striped">
                     <colgroup>
-                    <col class="col-lg-3"/>
-                    <col class="col-lg-5"/>
-                    <col class="col-lg-3"/>
-                    <row class="row-lg-2"/>
-                    <row class="row-lg-2"/>
-                </colgroup>
-                <tbody>
+                        <col class="col-lg-3"/>
+                        <col class="col-lg-5"/>
+                        <col class="col-lg-3"/>
+                        <row class="row-lg-2"/>
+                        <row class="row-lg-2"/>
+                    </colgroup>
+                    <tbody>
                     <!-- top row -->
                     <tr class="row-lg-2">
                         <!-- session info -->
@@ -46,87 +46,106 @@
                                 <div class="panel-heading">Session Info</div>
                                 <table class="table table-hover table-striped table-responsive info-table">
                                     <colgroup>
-                                    <col class="col-lg-2"/>
-                                    <col class="col-lg-3"/>    
-                                </colgroup>
-                                <tbody>
-                                    <tr><td>Test numbers</td><td id="test_list_str">N/A</td></tr>
-                                    <tr><td>Current Index</td><td id="current_index">N/A</td></tr>
-                                    <tr><td>Start Time</td><td id="start_time">N/A</td></tr>
-                                    <tr><td>ETA</td><td id="eta">N/A</td></tr>
-                                </tbody>
-                            </table>
-                            <table class="table table-hover table-striped table-responsive info-table", id="progress_table">
-                                <tbody>
+                                        <col class="col-lg-2"/>
+                                        <col class="col-lg-3"/>
+                                    </colgroup>
+                                    <tbody>
+                                    <tr>
+                                        <td>Test numbers</td>
+                                        <td id="test_list_str">N/A</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Current Index</td>
+                                        <td id="current_index">N/A</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Start Time</td>
+                                        <td id="start_time">N/A</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ETA</td>
+                                        <td id="eta">N/A</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                                <table class="table table-hover table-striped table-responsive info-table" ,
+                                       id="progress_table">
+                                    <tbody>
                                     <tr>
                                         <td>
                                             <div class="progress">
-                                                <div class="progress-bar progress-bar-large progress-bar-danger" role="progress-bar" id="progress_bar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                                <div class="progress-bar progress-bar-large progress-bar-danger"
+                                                     role="progress-bar" id="progress_bar" aria-valuenow="0"
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td>
-                                            <button id="pause_button" type="button" class="btn btn-default btn-danger"></button>
+                                            <button id="pause_button" type="button"
+                                                    class="btn btn-default btn-danger"></button>
                                         </td>
                                     </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </td>
-                    <!-- stage graph -->
-                    <td>
-                        <div class="panel panel-danger kitty-cell">
-                            <div class="panel-heading">Fuzzing Stages</div>
-                            <div class="unknown-data-size" id="stages-graph"></div>
-                        </div>
-                    </td>
-                    <!-- reports -->
-                    <td>
-                        <div class="panel panel-danger kitty-cell">
-                            <div class="panel-heading">
-                                Reports (<span id="failure_count" style="align:right;"></span>)
-                            </div>
-                            <div class="unknown-data-size" id="report-table">
-                                <table id="reports" class="table table-bordered table-striped table-responsive">
-                                    <colgroup>
-                                        <col class="col-lg-2"/>
-                                    </colgroup>
-                                    <tbody>
                                     </tbody>
                                 </table>
                             </div>
-                            <button id="export_all" type="button" class="btn btn-danger" onclick="exportAllReports()">Export All reports</button>
-                        </div>
-                    </td>
-                </tr>  <!-- top row end -->
-                <!-- bottom row -->
-                <tr class="row-lg-2">
-                    <!-- template structure -->
-                    <td>
-                        <div class="panel panel-danger kitty-cell">
-                            <div class="panel-heading">Template Structure</div>
-                            <div class="monospaced-text unknown-data-size" id="template_structure"></div>
-                        </div>
-                    </td>
-                    <!-- current payload -->
-                    <td>
-                        <div class="panel panel-danger kitty-cell">
-                            <div class="panel-heading">Current Payload</div>
-                            <div class="unknown-data-size monospaced-text" id="current_payload_hexdump"></div>
-                        </div>
-                    </td>
-                    <!-- target info -->
-                    <td>
-                        <div class="panel panel-danger kitty-cell">
-                            <div class="panel-heading">Target Information</div>
-                        </div>
-                    </td>
-                </tr> <!-- bottom row end -->
-            </tbody>
-        </table>
-    </div> <!-- col-lg-20 -->
-</div> <!-- container -->
+                        </td>
+                        <!-- stage graph -->
+                        <td>
+                            <div class="panel panel-danger kitty-cell">
+                                <div class="panel-heading">Fuzzing Stages</div>
+                                <div class="unknown-data-size" id="stages-graph"></div>
+                            </div>
+                        </td>
+                        <!-- reports -->
+                        <td>
+                            <div class="panel panel-danger kitty-cell">
+                                <div class="panel-heading">
+                                    Reports (<span id="failure_count" style="align:right;"></span>)
+                                </div>
+                                <div class="unknown-data-size" id="report-table">
+                                    <table id="reports" class="table table-bordered table-striped table-responsive">
+                                        <colgroup>
+                                            <col class="col-lg-2"/>
+                                        </colgroup>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button id="export_all" type="button" class="btn btn-danger"
+                                        onclick="exportAllReports()">Export All reports
+                                </button>
+                            </div>
+                        </td>
+                    </tr>  <!-- top row end -->
+                    <!-- bottom row -->
+                    <tr class="row-lg-2">
+                        <!-- template structure -->
+                        <td>
+                            <div class="panel panel-danger kitty-cell">
+                                <div class="panel-heading">Template Structure</div>
+                                <div class="monospaced-text unknown-data-size" id="template_structure"></div>
+                            </div>
+                        </td>
+                        <!-- current payload -->
+                        <td>
+                            <div class="panel panel-danger kitty-cell">
+                                <div class="panel-heading">Current Payload</div>
+                                <div class="unknown-data-size monospaced-text" id="current_payload_hexdump"></div>
+                            </div>
+                        </td>
+                        <!-- target info -->
+                        <td>
+                            <div class="panel panel-danger kitty-cell">
+                                <div class="panel-heading">Target Information</div>
+                            </div>
+                        </td>
+                    </tr> <!-- bottom row end -->
+                    </tbody>
+                </table>
+            </div> <!-- col-lg-20 -->
+        </div> <!-- container -->
+    </div> <!-- body -->
 
 <!-- update the stages graph -->
 <script type="text/javascript">

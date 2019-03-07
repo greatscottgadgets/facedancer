@@ -32,9 +32,8 @@ Options:
 '''
 import os
 import sys
-import types
-import docopt
 import traceback
+import docopt
 from pkg_resources import get_distribution
 from kitty.model import Template
 

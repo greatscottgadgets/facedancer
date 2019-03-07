@@ -65,11 +65,12 @@ def main():
 
     #
     # only fuzz the half of the mutations, just as an example
-    fuzzer.set_range(end_index=model.num_mutations() / 2)
+    fuzzer.set_range(end_index=model.num_mutations() // 2)
     fuzzer.set_delay_between_tests(0.1)
 
     remote = RpcServer(host='localhost', port=26007, impl=fuzzer)
     remote.start()
+
 
 if __name__ == '__main__':
     main()

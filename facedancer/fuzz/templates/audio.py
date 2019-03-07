@@ -6,9 +6,9 @@ from kitty.model import UInt8, LE16, RandomBytes, BitField, Static
 from kitty.model import Template, Repeat, List, Container, ForEach, OneOf
 from kitty.model import ElementCount, SizeInBytes
 from kitty.model import ENC_INT_LE
-from hid import GenerateHidReport
-from generic import Descriptor, SizedPt, DynamicInt, SubDescriptor
-
+from .hid import GenerateHidReport
+from .generic import Descriptor, SizedPt, DynamicInt, SubDescriptor
+from binascii import unhexlify
 
 class _AC_DescriptorSubTypes:  # AC Interface Descriptor Subtype
 
@@ -138,7 +138,7 @@ audio_hid_descriptor = Descriptor(
 audio_report_descriptor = Template(
     name='audio_report_descriptor',
     fields=GenerateHidReport(
-        '050C0901A1011500250109E909EA75019502810209E209008106050B092095018142050C09009503810226FF000900750895038102090095049102C0'.decode('hex')
+        unhexlify('050C0901A1011500250109E909EA75019502810209E209008106050B092095018142050C09009503810226FF000900750895038102090095049102C0')
     )
 )
 

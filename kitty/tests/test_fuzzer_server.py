@@ -204,7 +204,7 @@ class TestServerFuzzer(unittest.TestCase):
         self.fuzzer.set_target(self.target)
         self.fuzzer.start()
         pre_test_list = self.target.instrument.list_get('pre_test')
-        self.assertListEqual(pre_test_list, range(2, 11))
+        self.assertListEqual(pre_test_list, list(range(2, 11)))
 
         os.remove(session_file_name)
 
@@ -229,7 +229,7 @@ class TestServerFuzzer(unittest.TestCase):
         self.fuzzer.set_target(self.target)
         self.fuzzer.start()
         pre_test_list = self.target.instrument.list_get('pre_test')
-        self.assertListEqual(pre_test_list, range(-1, 11))
+        self.assertListEqual(pre_test_list, list(range(-1, 11)))
         self.fuzzer.stop()
 
         self.logger.info('Now use the same session file to rerun failed tests')
@@ -348,7 +348,7 @@ class TestServerFuzzer(unittest.TestCase):
         start_index = self.model.num_mutations() - 5
         self.model.connect(self.t_str, self.t_int)
         expected_end_index = self.model.last_index()
-        expected_num_mutations = expected_end_index - start_index
+        # expected_num_mutations = expected_end_index - start_index
         self.fuzzer.set_range(start_index)
         self.fuzzer.start()
         info = self.fuzzer._get_session_info()

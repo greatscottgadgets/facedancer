@@ -28,12 +28,13 @@ The last one, `MutableField`, combines all strategies, with reasonable parameter
 Currently all strategies are inspired by this article:
 http://lcamtuf.blogspot.com/2014/08/binary-fuzzing-strategies-what-works.html
 '''
-import types
+import sys
 from bitstring import Bits, BitArray
 from kitty.model.low_level.field import BaseField
 from kitty.model.low_level.container import OneOf
 from kitty.model.low_level.encoder import ENC_BITS_DEFAULT, ENC_BITS_BYTE_ALIGNED, BitsEncoder
 from kitty.model.low_level.encoder import ENC_STR_DEFAULT, StrEncoder
+from kitty.model.low_level.encoder import strToBytes
 from kitty.core import kassert, KittyException, khash
 
 
@@ -52,7 +53,7 @@ class BitFlip(BaseField):
 
     def __init__(self, value, num_bits=1, fuzzable=True, name=None):
         '''
-        :param value: value to mutate (str)
+        :param value: value to mutate (str or bytes)
         :param num_bits: number of consequtive bits to flip (invert)
         :param fuzzable: is field fuzzable (default: True)
         :param name: name of the object (default: None)
@@ -60,7 +61,8 @@ class BitFlip(BaseField):
         :raises: ``KittyException`` if num_bits is bigger than the value length in bits
         :raises: ``KittyException`` if num_bits is not positive
         '''
-        kassert.is_of_types(value, str)
+        kassert.is_of_types(value, (bytes, bytearray, str))
+        value = strToBytes(value)
         if len(value) * 8 < num_bits:
             raise KittyException('len of value in bits(%d) < num_bits(%d)' % (len(value) * 8, num_bits))
         if num_bits <= 0:
@@ -113,7 +115,7 @@ class ByteFlip(BaseField):
 
     def __init__(self, value, num_bytes=1, fuzzable=True, name=None):
         '''
-        :type value: str
+        :type value: str or bytes
         :param value: value to mutate
         :param num_bytes: number of consequtive bytes to flip (invert)
         :param fuzzable: is field fuzzable (default: True)
@@ -122,7 +124,8 @@ class ByteFlip(BaseField):
         :raises: ``KittyException`` if num_bytes is bigger than the value length
         :raises: ``KittyException`` if num_bytes is not positive
         '''
-        kassert.is_of_types(value, str)
+        kassert.is_of_types(value, (bytes, bytearray, str))
+        value = strToBytes(value)
         if len(value) < num_bytes:
             raise KittyException('len(value) <= num_bytes', (len(value), num_bytes))
         if num_bytes <= 0:
@@ -141,9 +144,12 @@ class ByteFlip(BaseField):
         start, end = self._start_end()
         pre = self._default_value[:start]
         current = self._default_value[start:end]
-        mutated = ''.join(chr(ord(c) ^ 0xff) for c in current)
+        if sys.version_info >= (3,):
+            mutated = ''.join(chr(c ^ 0xff) for c in current)
+        else:
+            mutated = ''.join(chr(ord(c) ^ 0xff) for c in current)
         post = self._default_value[end:]
-        self.set_current_value(pre + mutated + post)
+        self.set_current_value(pre + strToBytes(mutated) + post)
 
     def get_info(self):
         info = super(ByteFlip, self).get_info()
@@ -282,7 +288,7 @@ class BitFlips(OneOf):
 
     def __init__(self, value, bits_range=range(1, 5), fuzzable=True, name=None):
         '''
-        :type value: str
+        :type value: str or bytes
         :param value: value to mutate
         :param bits_range: range of number of consequtive bits to flip (default: range(1, 5))
         :param fuzzable: is field fuzzable (default: True)
@@ -334,6 +340,7 @@ class BlockDuplicates(OneOf):
     '''
     Perform block duplication with multiple number of duplications
     '''
+
     def __init__(self, value, block_size, num_dups_range=(2, 5, 10, 50, 200), fuzzable=True, name=None):
         field_name = (name + '_%d') if name else 'block_duplicates_%d'
         fields = [BlockDuplicate(value, block_size, i, fuzzable, field_name % i) for i in num_dups_range]
@@ -345,6 +352,7 @@ class MutableField(OneOf):
     Container to perform mutation fuzzing on a value
     ByteFlips, BitFlips and block operations
     '''
+
     def __init__(self, value, encoder=ENC_BITS_BYTE_ALIGNED, fuzzable=True, name=None):
         '''
         :type value: str

@@ -20,6 +20,7 @@ Tests for low level fields
 '''
 import unittest
 import logging
+from binascii import hexlify
 
 
 test_logger = None
@@ -63,7 +64,7 @@ class BaseTestCase(unittest.TestCase):
         while field.mutate():
             rendered = field.render()
             res.append(rendered)
-            self.logger.debug(rendered.tobytes().encode('hex'))
+            self.logger.debug(hexlify(rendered.tobytes()).decode())
         if reset:
             field.reset()
         return res

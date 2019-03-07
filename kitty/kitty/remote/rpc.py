@@ -28,7 +28,7 @@ if six.PY3:
     import codecs
 
 
-JSONRPC_NO_RESULT_STR = 'No result from JSON-RPC method.'
+JSONRPC_NO_RESULT_STR = u'No result from JSON-RPC method.'
 
 JSONRPC_PARSE_ERROR = -32700
 JSONRPC_METHOD_NOT_FOUND = -32601
@@ -71,7 +71,6 @@ def encode_data(data):
     Encode data - list, dict, string, bool or int (and nested)
 
     :param data: data to encode
-    :param encoding: encoding to use (default: 'hex')
     :return: encoded object of the same type
     '''
     if isinstance(data, (six.string_types, bytes)):
@@ -93,7 +92,6 @@ def decode_data(data):
     Decode data - list, dict, string, bool or int (and nested)
 
     :param data: data to decode
-    :param encoding: encoding to use (default: 'hex')
     :return: decoded object of the same type
     '''
     if isinstance(data, (six.string_types, bytes)):
@@ -214,7 +212,7 @@ class RpcHandler(BaseHTTPRequestHandler):
         self.req_params = {}
         self.req_rpc_version = '2.0'
         self.req_id = 0
-        self.data = self.rfile.read(int(self.headers.getheader('content-length')))
+        self.data = self.rfile.read(int(self.headers.get('content-length')))
         data_dict = json.loads(self.data)
         self.req_method = data_dict['method']
         self.req_params = decode_data(data_dict['params'])
@@ -291,7 +289,7 @@ class RpcHandler(BaseHTTPRequestHandler):
         jresponse = json.dumps(response)
         self.send_header("Content-length", len(jresponse))
         self.end_headers()
-        self.wfile.write(jresponse)
+        self.wfile.write(jresponse.encode())
 
 
 class RpcServer(object):

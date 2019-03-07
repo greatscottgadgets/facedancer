@@ -20,7 +20,6 @@ not that important, but makes the life easier.
 Useful for making assertions that throw :class:`~kitty.core.KittyException`
 '''
 from kitty.core import KittyException
-import types
 
 
 def is_of_types(obj, the_types):

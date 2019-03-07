@@ -20,9 +20,9 @@ Tests for conditions (used by If/IfNot containers)
 '''
 from common import metaTest, BaseTestCase
 from kitty.core import KittyException
-from kitty.model import Container, If, IfNot, Meta
+from kitty.model import Container, If, Meta
 from kitty.model import String, U8, Static
-from kitty.model import Condition, Compare
+from kitty.model import Condition
 from kitty.model import Equal, NotEqual, Greater, GreaterEqual, AtLeast
 from kitty.model import Lesser, LesserEqual, AtMost, BitMaskSet, BitMaskNotSet
 
@@ -49,7 +49,7 @@ class ConditionTests(BaseTestCase):
                 ])
             ])
         rendered = c.render().tobytes()
-        self.assertEqual(rendered, expected_value)
+        self.assertEqual(rendered, expected_value.encode())
 
     @metaTest
     def testNotApplies(self):
@@ -65,7 +65,7 @@ class ConditionTests(BaseTestCase):
                 ])
             ])
         rendered = c.render().tobytes()
-        self.assertEqual(rendered, expected_value)
+        self.assertEqual(rendered, expected_value.encode())
 
 
 class CompareTests(ConditionTests):
@@ -109,7 +109,7 @@ class EqualTests(CompareTests):
                 ])
             ])
         rendered = c.render().tobytes()
-        self.assertEqual(rendered, expected_value)
+        self.assertEqual(rendered, expected_value.encode())
 
     def testStringNotApplies(self):
         expected_value = ''
@@ -124,7 +124,7 @@ class EqualTests(CompareTests):
                 ])
             ])
         rendered = c.render().tobytes()
-        self.assertEqual(rendered, expected_value)
+        self.assertEqual(rendered, expected_value.encode())
 
 
 class NotEqualTests(CompareTests):
@@ -149,7 +149,7 @@ class NotEqualTests(CompareTests):
                 ])
             ])
         rendered = c.render().tobytes()
-        self.assertEqual(rendered, expected_value)
+        self.assertEqual(rendered, expected_value.encode())
 
     def testStringNotApplies(self):
         expected_value = ''
@@ -164,7 +164,7 @@ class NotEqualTests(CompareTests):
                 ])
             ])
         rendered = c.render().tobytes()
-        self.assertEqual(rendered, expected_value)
+        self.assertEqual(rendered, expected_value.encode())
 
 
 class CompareOnlyIntTests(CompareTests):

@@ -180,6 +180,7 @@ def LE64(value, min_value=None, max_value=None, fuzzable=True, name=None, full_r
     '''64-bit field, Little endian encoded'''
     return UInt64(value, min_value=min_value, max_value=max_value, encoder=ENC_INT_LE, fuzzable=fuzzable, name=name, full_range=full_range)
 
+
 U8 = UInt8
 S8 = SInt8
 Byte = UInt8
@@ -207,7 +208,7 @@ def SizeInBytes(sized_field, length, encoder=ENC_INT_DEFAULT, fuzzable=False, na
     :rtype: :class:`~kitty.model.low_level.calculated.Size`
     :return: Size field, which holds the size in bytes of the sized field
     '''
-    return Size(sized_field=sized_field, length=length, calc_func=lambda x: len(x) / 8, encoder=encoder, fuzzable=fuzzable, name=name)
+    return Size(sized_field=sized_field, length=length, calc_func=lambda x: len(x) // 8, encoder=encoder, fuzzable=fuzzable, name=name)
 
 
 def Md5(depends_on, encoder=ENC_STR_DEFAULT, fuzzable=False, name=None):

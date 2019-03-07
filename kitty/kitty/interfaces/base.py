@@ -30,7 +30,7 @@ class BaseInterface(KittyObject):
         '''
         super(BaseInterface, self).__init__(name, logger)
         self._continue_event = None
-        ## the data provider
+        # the data provider
         self.dataman = None
 
     def set_data_provider(self, data):
@@ -108,6 +108,7 @@ class EmptyInterface(BaseInterface):
     '''
     This interface may be used when there is no need for user interface
     '''
+
     def __init__(self, name='EmptyInterface', logger=None):
         '''
         :param name: name of the object

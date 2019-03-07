@@ -17,6 +17,11 @@
 '''
 This module defines the :class:`~kitty.data.report.Report` class
 '''
+from base64 import b64decode
+from binascii import unhexlify
+import codecs
+import six
+from kitty.model.low_level.encoder import StrEncodeEncoder
 
 
 class Report(object):
@@ -167,8 +172,8 @@ class Report(object):
         '''
         res = {}
         for k, v in self._data_fields.items():
-            if isinstance(v, str):
-                v = v.encode(encoding)[:-1]
+            if isinstance(v, (bytes, bytearray, six.string_types)):
+                v = StrEncodeEncoder(encoding).encode(v).tobytes().decode()
             res[k] = v
         for k, v in self._sub_reports.items():
             res[k] = v.to_dict(encoding)
@@ -176,8 +181,14 @@ class Report(object):
 
     @classmethod
     def _decode(cls, val, encoding):
-        if isinstance(val, str):
-            val = val.decode(encoding)
+        if isinstance(val, six.string_types):
+            if encoding == 'hex':
+                val = unhexlify(val).decode()
+            elif encoding == 'base64':
+                val = b64decode(val)
+                val = val.decode() if val.isalnum() else val
+            else:
+                val = codecs.decode(val, encoding).decode()
         return val
 
     @classmethod

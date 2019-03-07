@@ -28,11 +28,12 @@ Options:
     -h --host <hostname>    kitty web server host [default: localhost]
     -p --port <port>        kitty web server port [default: 26000]
 '''
-import requests
 import os
-import docopt
 import json
-import types
+from base64 import b64decode
+from binascii import hexlify
+import requests
+import docopt
 
 
 class KittyWebClientApi(object):
@@ -106,8 +107,7 @@ def _pad(depth, with_key):
     if depth > 0:
         if with_key:
             return '    ' * (depth - 1) + '+---'
-        else:
-            return '    ' * (depth)
+        return '    ' * (depth)
     return ''
 
 
@@ -144,19 +144,19 @@ def print_entry(k, v, depth, decode_str):
 def print_key_val(k, val, depth, decode_str):
     if isinstance(val, str) and decode_str:
         try:
-            val = val.decode('base64')
+            val = b64decode(val).decode()
         except:
             pass
     key = format_key(k)
     try:
         indent_print(depth, '%-20s' % (key + ':'), '%s' % val)
     except UnicodeDecodeError:
-        indent_print(depth, '%-20s' % (key + ':'), '%s' % val.encode('hex'))
+        indent_print(depth, '%-20s' % (key + ':'), '%s' % hexlify(val).decode())
 
 
 def print_report(report, depth):
     # next two fields should not be printed as normal fields
-    name = report['name'].decode('base64')
+    name = b64decode(report['name']).decode()
     del report['name']
     sub_reports = report['sub_reports']
     del report['sub_reports']

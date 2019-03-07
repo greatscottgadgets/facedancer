@@ -1,0 +1,14 @@
+language: python
+python:
+    - 2.7
+    - 3.6
+install:
+    - pip install coveralls
+    - pip install PyYAML
+    - pip install -e .
+before_script:
+    - mkdir logs
+script:
+    - coverage run tests/runner.py
+after_success:
+    - coveralls

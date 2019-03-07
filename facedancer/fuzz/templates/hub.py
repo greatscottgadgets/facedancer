@@ -4,7 +4,7 @@ Hub templates
 from facedancer.usb.USB import DescriptorType
 from kitty.model import UInt8, LE16, RandomBytes
 from kitty.model import Size
-from generic import Descriptor
+from .generic import Descriptor
 
 
 # hub_descriptor
@@ -35,5 +35,5 @@ hub_descriptor = Descriptor(
         LE16(name='wHubCharacteristics', value=0x0000),
         UInt8(name='bPwrOn2PwrGood', value=0x00),
         UInt8(name='bHubContrCurrent', value=0x02),
-        RandomBytes(name='DeviceRemovable', value='\x00', min_length=0, max_length=250),
+        RandomBytes(name='DeviceRemovable', value=b'\x00', min_length=0, max_length=250),
     ])

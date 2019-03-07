@@ -27,6 +27,7 @@ It also demonstrate how to user kitty fuzzer command line options.
 '''
 
 import docopt
+import six
 from kitty.fuzzers import ServerFuzzer
 from kitty.interfaces import WebInterface
 from kitty.controllers import EmptyController
@@ -55,5 +56,5 @@ fuzzer.set_model(model)
 fuzzer.set_target(target)
 fuzzer.start()
 print('-------------- done with fuzzing -----------------')
-input('press enter to exit')
+six.moves.input('press enter to exit')
 fuzzer.stop()

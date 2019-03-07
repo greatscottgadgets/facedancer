@@ -1,0 +1,9 @@
+*.pyc
+.idea/
+.ropeproject/
+tests/logs/
+*.egg-info/
+docs/build/
+*kittylogs*
+*/.coverage
+.coverage

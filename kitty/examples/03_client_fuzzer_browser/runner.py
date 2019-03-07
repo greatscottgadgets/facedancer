@@ -17,29 +17,34 @@
 
 import os
 import logging
-from kitty.model import Template, Static, String
+import sys
+
+from kitty.model import Template
 from kitty.model import GraphModel
 from kitty.fuzzers import ClientFuzzer
 from kitty.interfaces import WebInterface
 from kitty.targets import ClientTarget
 from katnip.controllers.client.process import ClientProcessController
 from katnip.legos.xml import XmlElement
-import http.server
+if sys.version_info >= (3,):
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+else:
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 
 
-class MyHttpServer(http.server.HTTPServer):
+class MyHttpServer(HTTPServer):
     '''
     http://docs.python.org/lib/module-BaseHTTPServer.html
     '''
 
     def __init__(self, server_address, handler, fuzzer):
-        http.server.HTTPServer.__init__(self, server_address, handler)
+        HTTPServer.__init__(self, server_address, handler)
         self.fuzzer = fuzzer
 
 
-class MyHttpHandler(http.server.BaseHTTPRequestHandler):
+class MyHttpHandler(BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
-        http.server.BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_GET(self):
         resp = None
@@ -112,6 +117,7 @@ def main():
 
     while True:
         server.handle_request()
+
 
 if __name__ == '__main__':
     main()

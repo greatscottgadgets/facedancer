@@ -17,13 +17,13 @@
 '''
 Tests for the web interface (server side)
 '''
+import os
+import requests
 from kitty.model import GraphModel, Template, String, UInt32
 from kitty.fuzzers import ServerFuzzer
 from kitty.interfaces import WebInterface
 from mocks.mock_target import ServerTargetMock
 from common import BaseTestCase
-import requests
-import os
 
 
 class WebInterfaceTest(BaseTestCase):
@@ -185,7 +185,7 @@ class WebInterfaceTest(BaseTestCase):
         data = None
         with open(index_path, 'rb') as f:
             data = f.read()
-        return data
+        return data.decode()
 
     def testGetIndexHtml(self):
         url = self.url + '/index.html'

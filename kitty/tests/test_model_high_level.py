@@ -161,7 +161,7 @@ class GraphModelTests(unittest.TestCase):
     def testSkipHalfSingleTemplate(self):
         self.model.connect(self.templates[0])
         m_num_mutations = self.model.num_mutations()
-        to_skip = m_num_mutations / 2
+        to_skip = m_num_mutations // 2
         expected_skipped = to_skip
         expected_mutated = m_num_mutations - expected_skipped
         self._check_skip(to_skip, expected_skipped, expected_mutated)
@@ -195,7 +195,7 @@ class GraphModelTests(unittest.TestCase):
         self.model.connect(self.templates[0])
         self.model.connect(self.templates[0], self.templates[1])
         m_num_mutations = self.model.num_mutations()
-        to_skip = m_num_mutations / 2
+        to_skip = m_num_mutations // 2
         expected_skipped = to_skip
         expected_mutated = m_num_mutations - expected_skipped
         self._check_skip(to_skip, expected_skipped, expected_mutated)
@@ -235,7 +235,7 @@ class StagedSequenceModelTests(unittest.TestCase):
         self.logger = get_test_logger()
         self.logger.debug('TESTING METHOD: %s', self._testMethodName)
         self.stage_lengths = self.get_stage_map()
-        self.stages = self.stage_lengths.keys()
+        self.stages = list(self.stage_lengths.keys())
         self.todo = []
 
     def get_stage_map(self):
@@ -297,7 +297,7 @@ class StagedSequenceModelTests(unittest.TestCase):
         model.add_stage(self.stages[0])
         model.add_stage(self.stages[1])
         m_num_mutations = model.num_mutations()
-        to_skip = m_num_mutations / 2
+        to_skip = m_num_mutations // 2
         expected_skipped = to_skip
         expected_mutated = m_num_mutations - expected_skipped
         self._check_skip(model, to_skip, expected_skipped, expected_mutated)
@@ -404,7 +404,7 @@ class StageTests(unittest.TestCase):
         templates = self.templates
         for template in templates:
             stage.add_template(template)
-        for i in range(100):
+        for _ in range(100):
             sequence = stage.mutate()
             sequence2 = stage.get_sequence_templates()
             self.assertEqual(sequence, sequence2)
@@ -459,7 +459,7 @@ class StageTests(unittest.TestCase):
         self._check_strategy_length(selection_strategy, minl, maxl)
 
     def testStrategyLengthConstantHalf(self):
-        val = len(self.templates) / 2
+        val = len(self.templates) // 2
         minl = val
         maxl = val
         selection_strategy = '%d' % (val)
@@ -531,10 +531,10 @@ class StageTests(unittest.TestCase):
             stage.add_template(template)
         sequences = set()
         iterations = 100
-        for i in range(iterations):
+        for _ in range(iterations):
             sequence = tuple(stage.mutate())
             sequences.add(sequence)
-        self.assertGreater(len(sequences), iterations / 2)
+        self.assertGreater(len(sequences), iterations // 2)
 
     @not_absolute
     def testRandomSelectionRandom(self):
@@ -555,10 +555,10 @@ class StageTests(unittest.TestCase):
             stage.add_template(template)
         sequences = set()
         iterations = 100
-        for i in range(iterations):
+        for _ in range(iterations):
             sequence = stage.mutate()
             sequences.add(len(sequence))
-        self.assertGreater(len(sequences), iterations / 8)
+        self.assertGreater(len(sequences), iterations // 8)
 
     def _check_same_seed(self, strategy):
         seed = 1111
@@ -567,7 +567,7 @@ class StageTests(unittest.TestCase):
         for template in self.templates:
             stage1.add_template(template)
             stage2.add_template(template)
-        for i in range(1000):
+        for _ in range(1000):
             self.assertEqual(stage1.mutate(), stage2.mutate())
 
     def _check_different_seed(self, strategy):
@@ -675,7 +675,7 @@ class RandomSequenceModelTests(unittest.TestCase):
         for template in self.templates:
             model.add_template(template)
         m_num_mutations = model.num_mutations()
-        to_skip = m_num_mutations / 2
+        to_skip = m_num_mutations // 2
         expected_skipped = to_skip
         expected_mutated = m_num_mutations - expected_skipped
         self._check_skip(model, to_skip, expected_skipped, expected_mutated)
@@ -707,7 +707,7 @@ class RandomSequenceModelTests(unittest.TestCase):
         for template in self.templates:
             model1.add_template(template)
             model2.add_template(template)
-        for i in range(1000):
+        for _ in range(1000):
             self.assertEqual(model1.mutate(), model2.mutate())
 
     def testDifferentSeed(self):
@@ -732,11 +732,11 @@ class RandomSequenceModelTests(unittest.TestCase):
             model.add_template(template)
         sequences = set()
         iterations = 100
-        for i in range(iterations):
+        for _ in range(iterations):
             model.mutate()
             sequence = model.get_sequence()
             sequences.add(len(sequence))
-        self.assertGreater(len(sequences), iterations / 8)
+        self.assertGreater(len(sequences), iterations // 8)
 
     def testLengthNotOverflow(self):
         max_sequence = 5
@@ -785,6 +785,7 @@ class RandomSequenceModelTests(unittest.TestCase):
 
     def testFailureToTo(self):
         self.assertEqual(len(self.todo), 0)
+
 
 if __name__ == '__main__':
     if not os.path.exists('logs'):

@@ -21,15 +21,11 @@ Tests for complex, full templates.
 '''
 from struct import unpack
 import hashlib
-from kitty.model.low_level.field import Static, String, Delimiter, BitField, Group, Dynamic
-from kitty.model.low_level.field import RandomBits, RandomBytes
-from kitty.model.low_level.calculated import Calculated, CalculatedBits
-from kitty.model.low_level.calculated import Clone, CalculatedStr, Hash, CalculatedInt
-from kitty.model.low_level.calculated import ElementCount, IndexOf, Checksum, Size
-from kitty.model.low_level.container import Container, ForEach, Conditional, If, IfNot
-from kitty.model.low_level.container import Meta, Pad, Repeat, OneOf, TakeFrom, Template
-from kitty.model.low_level.container import Trunc
-from kitty.model.low_level.encoder import ENC_INT_DEC, ENC_STR_BASE64_NO_NL, ENC_INT_BE
+from kitty.model.low_level.field import Static, String, BitField, Dynamic
+from kitty.model.low_level.field import RandomBytes
+from kitty.model.low_level.container import Container
+from kitty.model.low_level.container import Pad, Template
+from kitty.model.low_level.encoder import ENC_INT_DEC, ENC_STR_BASE64, ENC_INT_BE
 from kitty.model.low_level.aliases import SizeInBytes, Sha256
 from common import BaseTestCase
 
@@ -54,21 +50,21 @@ class ComplexTest(BaseTestCase):
                     name='leeter ',
                     fields=[
                         Dynamic(key='hmm', default_value='L3'),
-                        String('\xde\xd7\xab', encoder=ENC_STR_BASE64_NO_NL),  # 3ter
+                        String(b'\xde\xd7\xab', encoder=ENC_STR_BASE64),  # 3ter
                         RandomBytes(' ', min_length=1, max_length=100)
                     ])
             ])
-        self.assertEqual(uut.render().tobytes(), expected_data)
+        self.assertEqual(uut.render().tobytes().decode(), expected_data)
         uut.mutate()
         uut.reset()
-        self.assertEqual(uut.render().tobytes(), expected_data)
+        self.assertEqual(uut.render().tobytes().decode(), expected_data)
 
     def testMultipleDependenciesDefaultValue(self):
         expected_data = (
-            '\x00\x00\x00\x74' +
-            'HAMBURGER' +
-            '\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa' +
-            '\xf3\xfe\xa2g8\xd6\xc1\xc2K\xef\x89\xe3\xd7\xcfh\xbaH\xf8\x83\x08JS\x82\xa5\x86f\x82\x9b\x18\xc5r\xa9'
+            b'\x00\x00\x00\x74' +
+            b'HAMBURGER' +
+            b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa' +
+            b'\xf3\xfe\xa2g8\xd6\xc1\xc2K\xef\x89\xe3\xd7\xcfh\xbaH\xf8\x83\x08JS\x82\xa5\x86f\x82\x9b\x18\xc5r\xa9'
         )
         uut = Template(
             name='uut',
@@ -80,7 +76,7 @@ class ComplexTest(BaseTestCase):
                         String(value='HAMBURGER'),
                     ],
                     pad_length=640,
-                    pad_data='\xaa'),
+                    pad_data=b'\xaa'),
                 Sha256(depends_on='content', name='hash'),
             ])
         self.assertEqual(uut.render().tobytes(), expected_data)

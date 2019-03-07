@@ -31,7 +31,6 @@ class EmptyController(ClientController):
     def __init__(self, name='EmptyController', logger=None):
         super(EmptyController, self).__init__(name=name, logger=logger, victim_alive_check_delay=0.3)
 
-
     def trigger(self):
         '''
         Trigger a data exchange from the tested client

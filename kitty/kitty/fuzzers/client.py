@@ -18,10 +18,10 @@
 This module contains the :class:`~kitty.fuzzer.client.ClientFuzzer` class.
 '''
 from threading import Event
+from binascii import hexlify
 from kitty.fuzzers.base import BaseFuzzer
 from kitty.core.threading_utils import LoopFuncThread
 from kitty.data.report import Report
-from binascii import hexlify
 
 
 class ClientFuzzer(BaseFuzzer):
@@ -158,7 +158,7 @@ class ClientFuzzer(BaseFuzzer):
 
     def _get_report(self):
         base_report = super(ClientFuzzer, self)._get_report()
-        if len(self._requested_stages):
+        if self._requested_stages:
             stages, payloads = zip(*self._requested_stages)
         else:
             stages = []

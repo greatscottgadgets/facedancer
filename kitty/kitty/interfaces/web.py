@@ -15,18 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
 
-import http.server
 import json
 import datetime
 import time
-from urllib.parse import urlparse, parse_qs
 import os
+import sys
 
 from kitty.interfaces.base import EmptyInterface
 from kitty.core.threading_utils import FuncThread
 
+if sys.version_info >= (3,):
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    from urllib.parse import urlparse, parse_qs
+else:
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+    from urlparse import urlparse, parse_qs
 
-class _WebInterfaceServer(http.server.HTTPServer):
+
+class _WebInterfaceServer(HTTPServer):
     '''
     http://docs.python.org/lib/module-BaseHTTPServer.html
     '''
@@ -37,7 +43,7 @@ class _WebInterfaceServer(http.server.HTTPServer):
         :param handler: handler for requests
         :param interface: reference to the interface object
         '''
-        http.server.HTTPServer.__init__(self, server_address, handler)
+        HTTPServer.__init__(self, server_address, handler)
         # kitty.interfaces... interface object
         self.interface = interface
         self.RequestHandlerClass.logger = interface.logger
@@ -52,17 +58,18 @@ class _WebInterfaceServer(http.server.HTTPServer):
         return
 
 
-class _WebInterfaceHandler(http.server.BaseHTTPRequestHandler):
+class _WebInterfaceHandler(BaseHTTPRequestHandler):
     '''
     Our HTTP request handler
     '''
+
     def __init__(self, request, client_address, server):
         '''
         :param request: the request from the client
         :param client_address: client address
         :param server: HTTP server
         '''
-        http.server.BaseHTTPRequestHandler.__init__(
+        BaseHTTPRequestHandler.__init__(
             self, request, client_address, server)
         self.dataman = None
 
@@ -97,7 +104,7 @@ class _WebInterfaceHandler(http.server.BaseHTTPRequestHandler):
         except Exception:
             self.send_response(401)
             self.end_headers()
-            return ''
+            return b''
 
     def _handle_favicon_request(self):
         return self._handle_image_request(content_type='image/x-icon')
@@ -154,10 +161,9 @@ class _WebInterfaceHandler(http.server.BaseHTTPRequestHandler):
         time_passed = current_time - info.start_time
         if tests_passed == 0:
             return 'unknown'
-        else:
-            average_test_time = time_passed / tests_passed
-            eta = average_test_time * tests_left
-            return str(datetime.timedelta(seconds=int(eta)))
+        average_test_time = time_passed / tests_passed
+        eta = average_test_time * tests_left
+        return str(datetime.timedelta(seconds=int(eta)))
 
     def _get_stats(self):
         is_paused = self.server.interface.is_paused()
@@ -201,7 +207,7 @@ class _WebInterfaceHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', data_type)
             self.end_headers()
-        return response
+        return response.encode()
 
     def _get_report(self):
         report = None

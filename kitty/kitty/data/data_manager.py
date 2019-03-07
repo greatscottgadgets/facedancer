@@ -20,13 +20,19 @@ It provides both means of communications between the fuzzer and the user
 interface, and persistent storage of the fuzzing session results.
 '''
 import sqlite3
-import pickle
+import sys
 import zlib
 import traceback
+from base64 import b64decode, b64encode
+from threading import Event, Thread
 from kitty.core import KittyObject
 from kitty.data.report import Report
-from threading import Event, Thread
-from Queue import Queue
+if sys.version_info >= (3,):
+    from queue import Queue
+    import _pickle as cPickle
+else:
+    import cPickle
+    from Queue import Queue
 
 
 class DataManagerTask(object):
@@ -86,6 +92,7 @@ def synced(func):
 
     :param func: function to call
     '''
+
     def wrapper(self, *args, **kwargs):
         '''
         Actual wrapper for the synchronous function
@@ -438,7 +445,7 @@ class ReportsTable(Table):
 
         :param data: data to serialize
         '''
-        return zlib.compress(pickle.dumps(data, protocol=2)).encode('base64')
+        return b64encode(zlib.compress(cPickle.dumps(data, protocol=2))).decode()
 
     @classmethod
     def _deserialize_dict(cls, data):
@@ -447,7 +454,7 @@ class ReportsTable(Table):
 
         :param data: data to deserialize
         '''
-        return pickle.loads(zlib.decompress(data.decode('base64')))
+        return cPickle.loads(zlib.decompress(b64decode(data.encode())))
 
 
 class SessionInfoTable(Table):
@@ -512,8 +519,7 @@ class SessionInfoTable(Table):
         '''
         if self.info:
             return SessionInfo(self.info)
-        else:
-            return None
+        return None
 
 
 class SessionInfo(object):

@@ -2,13 +2,14 @@
 Tests for mutation based fields
 '''
 
+from struct import pack
 from common import BaseTestCase, metaTest
 from kitty.core import KittyException
 from kitty.model.low_level.mutated_field import BitFlip, ByteFlip
 from kitty.model.low_level.mutated_field import BitFlips, ByteFlips
 from kitty.model.low_level.mutated_field import BlockRemove, BlockDuplicate, BlockSet
 from kitty.model.low_level.mutated_field import BlockDuplicates, MutableField
-from struct import pack
+from kitty.model.low_level.encoder import strToBytes
 
 
 class BitFlipTests(BaseTestCase):
@@ -27,11 +28,11 @@ class BitFlipTests(BaseTestCase):
         self.assertEqual(set(mutations), set(expected_mutations))
 
     def testFlipSingleBitOnSingleByte(self):
-        expected_mutations = map(lambda i: chr(1 << i), range(8))
+        expected_mutations = map(lambda i: strToBytes(chr(1 << i)), range(8))
         self._testBase(b'\x00', 1, expected_mutations)
 
     def testFlipTwoBitsOnSingleByte(self):
-        expected_mutations = map(lambda i: chr(3 << i), range(7))
+        expected_mutations = map(lambda i: strToBytes(chr(3 << i)), range(7))
         self._testBase(b'\x00', 2, expected_mutations)
 
     def testFlipAllBitsOnSingleByte(self):
@@ -55,7 +56,7 @@ class BitFlipTests(BaseTestCase):
         self._testBase(b'\x00\x00', 16, expected_mutations)
 
     def testFuzzableIsFalse(self):
-        uut = BitFlip(b'\x00\x00',  num_bits=3, fuzzable=False)
+        uut = BitFlip(b'\x00\x00', num_bits=3, fuzzable=False)
         self.assertEqual(uut.num_mutations(), 0)
         self.assertEqual(self.get_all_mutations(uut), [])
 
@@ -114,7 +115,7 @@ class BitFlipsTests(BaseTestCase):
         if uut is None:
             uut = BitFlips(b'\x00' * num_bytes, itr)
         expected_mutations = self._generate_mutations(num_bytes, itr)
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -122,7 +123,7 @@ class BitFlipsTests(BaseTestCase):
     def testSingleByteDefaultRangeIs1to5(self):
         uut = BitFlips(b'\x00')
         expected_mutations = self._generate_mutations(1, range(1, 5))
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -130,7 +131,7 @@ class BitFlipsTests(BaseTestCase):
     def testTwoBytesDefaultRangeIs1to5(self):
         uut = BitFlips(b'\x00\x00')
         expected_mutations = self._generate_mutations(2, range(1, 5))
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -169,7 +170,7 @@ class BitFlipsTests(BaseTestCase):
         with self.assertRaises(KittyException):
             BitFlips(b'\x00', bits_range=[12, 33, 7])
 
-    def get_field(self, value='\x00\x00'):
+    def get_field(self, value=b'\x00\x00'):
         return BitFlips(value=value)
 
     def testHashStaysTheSameForTheField(self):
@@ -201,9 +202,9 @@ class ByteFlipTests(BaseTestCase):
         super(ByteFlipTests, self).setUp(ByteFlip)
 
     def _testFlipBytes(self, bytes_to_flip, value_len):
-        value = '\x00' * value_len
+        value = b'\x00' * value_len
         nf_count = value_len - bytes_to_flip
-        expected_mutations = map(lambda i: '\x00' * (nf_count - i) + '\xff' * bytes_to_flip + '\x00' * (i), range(nf_count + 1))
+        expected_mutations = map(lambda i: b'\x00' * (nf_count - i) + b'\xff' * bytes_to_flip + b'\x00' * (i), range(nf_count + 1))
         uut = ByteFlip(value=value, num_bytes=bytes_to_flip)
         self.assertEqual(uut.num_mutations(), value_len - bytes_to_flip + 1)
         mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
@@ -226,21 +227,21 @@ class ByteFlipTests(BaseTestCase):
 
     def testExceptionIfNumOfBytesIsBiggerThanValue(self):
         with self.assertRaises(KittyException):
-            value = '\x00'
+            value = b'\x00'
             max_len = len(value)
             ByteFlip(value=value, num_bytes=max_len + 1)
 
     def testExceptionIfNumOfBitsIsNegative(self):
         with self.assertRaises(KittyException):
-            value = '\x00'
+            value = b'\x00'
             ByteFlip(value=value, num_bytes=-1)
 
     def testFuzzableIsFalse(self):
-        uut = ByteFlip(b'\x00\x00\x00\x00',  num_bytes=2, fuzzable=False)
+        uut = ByteFlip(b'\x00\x00\x00\x00', num_bytes=2, fuzzable=False)
         self.assertEqual(uut.num_mutations(), 0)
         self.assertEqual(self.get_all_mutations(uut), [])
 
-    def get_field(self, value='\x00\x00\x00\x00'):
+    def get_field(self, value=b'\x00\x00\x00\x00'):
         return ByteFlip(value=value, num_bytes=1)
 
     def testHashStaysTheSameForTheField(self):
@@ -273,7 +274,7 @@ class ByteFlipsTests(BaseTestCase):
 
     def _generate_single(self, value_len, bytes_to_flip):
         nf_count = value_len - bytes_to_flip
-        expected_mutations = map(lambda i: '\x00' * (nf_count - i) + '\xff' * bytes_to_flip + '\x00' * (i), range(nf_count + 1))
+        expected_mutations = map(lambda i: b'\x00' * (nf_count - i) + b'\xff' * bytes_to_flip + b'\x00' * (i), range(nf_count + 1))
         return expected_mutations
 
     def _generate_mutations(self, value_len, num_bytes_itr):
@@ -286,7 +287,7 @@ class ByteFlipsTests(BaseTestCase):
         if uut is None:
             uut = ByteFlips(b'\x00' * num_bytes, itr)
         expected_mutations = self._generate_mutations(num_bytes, itr)
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -294,7 +295,7 @@ class ByteFlipsTests(BaseTestCase):
     def testFourByteDefaultRangeIs124(self):
         uut = ByteFlips(b'\x00\x00\x00\x00')
         expected_mutations = self._generate_mutations(4, [1, 2, 4])
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -302,7 +303,7 @@ class ByteFlipsTests(BaseTestCase):
     def testTenBytesDefaultRangeIs124(self):
         uut = ByteFlips(b'\x00' * 10)
         expected_mutations = self._generate_mutations(10, [1, 2, 4])
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -335,7 +336,7 @@ class ByteFlipsTests(BaseTestCase):
         with self.assertRaises(KittyException):
             ByteFlips(b'\x00' * 10, bytes_range=[3, 11, 7])
 
-    def get_field(self, value='\x00\x00\x00\x00'):
+    def get_field(self, value=b'\x00\x00\x00\x00'):
         return ByteFlips(value=value, bytes_range=[1, 3])
 
     def testHashStaysTheSameForTheField(self):
@@ -369,7 +370,7 @@ class BlockOperationTests(BaseTestCase):
         super(BlockOperationTests, self).setUp(cls)
 
     def _default_value(self, data_size):
-        return ''.join(map(lambda x: chr(x % 0x100), range(data_size)))
+        return strToBytes(''.join(map(lambda x: chr(x % 0x100), range(data_size))))
 
     def _generate_mutations(self, data_size, block_size):
         raise NotImplementedError('should be implemented by subclasses')
@@ -380,7 +381,7 @@ class BlockOperationTests(BaseTestCase):
     def _testBase(self, data_size, block_size):
         uut = self._get_field(data_size, block_size)
         expected_mutations = self._generate_mutations(data_size, block_size)
-        mutations = map(lambda x: x.tobytes(), self.get_all_mutations(uut))
+        mutations = list(map(lambda x: x.tobytes(), self.get_all_mutations(uut)))
         self.assertGreaterEqual(len(mutations), len(expected_mutations))
         for em in expected_mutations:
             self.assertIn(em, mutations)
@@ -470,7 +471,7 @@ class BlockRemoveTests(BlockOperationTests):
 
     def _generate_mutations(self, data_size, block_size):
         full_data = self._default_value(data_size)
-        return map(lambda x: full_data[:x] + full_data[x + block_size:], range(data_size - block_size + 1))
+        return list(map(lambda x: full_data[:x] + full_data[x + block_size:], range(data_size - block_size + 1)))
 
     def _get_field(self, data_size, block_size):
         return BlockRemove(self._default_value(data_size), block_size)
@@ -482,12 +483,12 @@ class BlockSetTests(BlockOperationTests):
 
     def setUp(self):
         super(BlockSetTests, self).setUp(BlockSet)
-        self._set_chr = '\xff'
+        self._set_chr = b'\xff'
 
     def _generate_mutations(self, data_size, block_size):
         to_set = self._set_chr * block_size
         full_data = self._default_value(data_size)
-        return map(lambda x: full_data[:x] + to_set + full_data[x + block_size:], range(data_size - block_size + 1))
+        return list(map(lambda x: full_data[:x] + to_set + full_data[x + block_size:], range(data_size - block_size + 1)))
 
     def _get_field(self, data_size, block_size):
         return BlockSet(self._default_value(data_size), block_size, set_chr=self._set_chr)
@@ -503,7 +504,7 @@ class BlockDuplicateTests(BlockOperationTests):
 
     def _generate_mutations(self, data_size, block_size):
         full_data = self._default_value(data_size)
-        return map(lambda x: full_data[:x] + full_data[x:x + block_size] * self._num_dups + full_data[x + block_size:], range(data_size - block_size + 1))
+        return list(map(lambda x: full_data[:x] + full_data[x:x + block_size] * self._num_dups + full_data[x + block_size:], range(data_size - block_size + 1)))
 
     def _get_field(self, data_size, block_size):
         return BlockDuplicate(self._default_value(data_size), block_size, self._num_dups)
@@ -528,7 +529,7 @@ class BlockDuplicatesTests(BaseTestCase):
     def setUp(self):
         super(BlockDuplicatesTests, self).setUp(BlockDuplicates)
         self._uut_name = 'uut'
-        self._default_uut_value = '\x11\x22\x33\x44'
+        self._default_uut_value = b'\x11\x22\x33\x44'
         self._default_block_size = 2
         self._default_num_dups_range = (2, 5, 10, 50, 100)
 
@@ -568,15 +569,15 @@ class BlockDuplicatesTests(BaseTestCase):
 
     def testExceptionIfBlockSizeIsNegative(self):
         with self.assertRaises(KittyException):
-            self._get_field(value='\x11\x22\x33\x44', block_size=-1)
+            self._get_field(value=b'\x11\x22\x33\x44', block_size=-1)
 
     def testExceptionIfBlockSizeIsZero(self):
         with self.assertRaises(KittyException):
-            self._get_field(value='\x11\x22\x33\x44', block_size=0)
+            self._get_field(value=b'\x11\x22\x33\x44', block_size=0)
 
     def testExceptionIfBlockSizeBiggerThanValue(self):
         with self.assertRaises(KittyException):
-            self._get_field(value='\x11\x22\x33\x44', block_size=5)
+            self._get_field(value=b'\x11\x22\x33\x44', block_size=5)
 
     def testExceptionNumDupsRangeNegativeValues(self):
         with self.assertRaises(KittyException):
@@ -675,4 +676,3 @@ class MutableFieldTests(BaseTestCase):
         ]
         self.assertEqual(field_types, expected_field_types)
         self.assertEqual(len(fields[0]._fields), 3)
-

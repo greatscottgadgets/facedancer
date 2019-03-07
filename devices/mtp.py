@@ -9,6 +9,7 @@ from facedancer.usb.USBEndpoint import USBEndpoint
 from facedancer.usb.USBVendor import USBVendor
 from facedancer.usb.USBClass import USBClass
 from facedancer.fuzz.helpers import mutable
+import os
 
 try:
     from mtpdevice.mtp_device import MtpDevice, MtpDeviceInfo
@@ -74,6 +75,8 @@ class USBMtpInterface(USBInterface):
                 ),
             ],
         )
+        if not os.path.exists('mtp_fs'):
+            os.mkdir('mtp_fs')
         self.object = MtpObject.from_fs_recursive('mtp_fs/')
         # self.object = MtpObject.from_fs_recursive('mtp_fs/eits.mp3')
         self.storage_info = MtpStorageInfo(

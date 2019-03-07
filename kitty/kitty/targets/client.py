@@ -16,8 +16,8 @@
 # along with Kitty.  If not, see <http://www.gnu.org/licenses/>.
 
 from threading import Event
-from kitty.targets.base import BaseTarget
 import time
+from kitty.targets.base import BaseTarget
 
 
 class ClientTarget(BaseTarget):
