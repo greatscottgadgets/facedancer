@@ -29,7 +29,7 @@ class HIDClass(USBClass):
     Simple class representing a HID device function.
     """
 
-    name = 'USBProControllerClass'
+    name = 'HIDClass'
 
     def setup_local_handlers(self):
         self.local_handlers = {

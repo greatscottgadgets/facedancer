@@ -42,8 +42,7 @@ class FaceDancerEmu():
                                             desc=line.split("\'")[1]
                                         break
                                 impname="devices."+file[:-3]
-                                MyClass = getattr(importlib.import_module(impname), classfunc)
-                                self.classinfo[name]=[desc,MyClass]
+                                self.classinfo[name]=[desc,impname,classfunc]
                                 break
 
     def showdevices(self):
@@ -237,14 +236,14 @@ def main(argv):
         print("\nFaceDancer USB-Emulator")
         print("-----------------------")
         print("Please run as: facedancer-emu.py -device [devicetype]")
-        emu.showtypes()
+        emu.showdevices()
         exit(0)
 
     found = False
     for entry in emu.classinfo:
         if args.device.lower() == entry.lower() or args.device == entry:
             args.device = entry
-            emu.func = emu.classinfo[entry][1]
+            emu.func = MyClass = getattr(importlib.import_module(emu.classinfo[entry][1]), emu.classinfo[entry][2])
             found = True
             break
 

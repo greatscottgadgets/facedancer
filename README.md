@@ -183,3 +183,5 @@ Generate stages:    python3 facedancer-emu.py -ms keyboard.stages -device "Keybo
 Start fuzz server:  python3 facedancer/fuzz/fuzz_engine.py -s keyboard.stages
 Fuzz:               python3 facedancer-emu.py -f -device "Keyboard"
 ```
+The fuzz server may require to be set where Facedancer directory is located
+at, for example: "export PYTHONPATH=$HOME/Facedancer"

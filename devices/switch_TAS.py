@@ -28,6 +28,7 @@ class USBSwitchTASInterface(USBInterface):
     report_descriptor = b'\x05\x01\t\x05\xa1\x01\x15\x00%\x015\x00E\x01u\x01\x95\x0e\x05\t\x19\x01)\x0e\x81\x02\x95\x02\x81\x01\x05\x01%\x07F;\x01u\x04\x95\x01e\x14\t9\x81Be\x00\x95\x01\x81\x01&\xff\x00F\xff\x00\t0\t1\t2\t5u\x08\x95\x04\x81\x02u\x08\x95\x01\x81\x01\xc0'
 
     def __init__(self, phy):
+
         _descriptors = {
                 DescriptorType.hid    : self.hid_descriptor,
                 DescriptorType.report : self.report_descriptor
@@ -68,7 +69,7 @@ class USBSwitchTASInterface(USBInterface):
                 interface_string_index=0,          # string index
                 endpoints=[ self.out_endpoint, self.endpoint ],
                 descriptors=_descriptors,
-                usb_class=None
+                usb_class=HIDClass(phy)
         )
 
         self.packets_to_send = self.input

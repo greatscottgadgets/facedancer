@@ -499,7 +499,7 @@ class USBDevice(USBDescribable):
             self.send_control_message(b'\x00')
         # Otherwise, return the index for our configuration.
         else:
-            config_index = self.configuration.configuration_index
+            config_index = self.configuration._configuration_index
             self.send_control_message(config_index.to_bytes(1, byteorder='little'))
 
     # USB 2.0 specification, section 9.4.7 (p 285 of pdf)
