@@ -90,3 +90,8 @@ ENV/
 # Rope project settings
 .ropeproject
 tags
+
+# Release files
+VERSION
+release-files
+host-packages
