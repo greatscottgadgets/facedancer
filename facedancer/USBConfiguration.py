@@ -99,7 +99,7 @@ class USBConfiguration(USBDescribable):
 
         max_power_mA = self.max_power * 2
         return "<USBConfiguration index={} num_interfaces={} attributes=0x{:02X} max_power={}mA>".format(
-            self.configuration_index, len(self.interfaces), self.attributes, max_power_mA)
+            self.configuration_index, len(set(interface.number for interface in self.interfaces)), self.attributes, max_power_mA)
 
 
     def set_device(self, device):
@@ -120,7 +120,7 @@ class USBConfiguration(USBDescribable):
                 2,          # descriptor type 2 == configuration
                 total_len & 0xff,
                 (total_len >> 8) & 0xff,
-                len(self.interfaces),
+                len(set(interface.number for interface in self.interfaces)),
                 self.configuration_index,
                 self.configuration_string_index,
                 self.attributes,
