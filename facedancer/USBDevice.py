@@ -92,10 +92,12 @@ class USBDevice(USBDescribable):
         Creates a USBDevice object from its descriptor.
         """
 
+        data = bytes(data)
+
         # Pad the descriptor out with zeroes to the full length of a configuration descriptor.
         if len(data) < cls.DESCRIPTOR_LENGTH:
             padding_necessary = cls.DESCRIPTOR_LENGTH - len(data)
-            data.extend([0] * padding_necessary)
+            data += b"\0" * padding_necessary
 
         # Parse the core descriptor into its components...
         spec_version_msb, spec_version_lsb, device_class, device_subclass, device_protocol, \

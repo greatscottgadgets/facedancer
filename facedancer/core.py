@@ -361,17 +361,22 @@ class FacedancerUSBHost:
             print("Initializing control endpoint...")
         self.initialize_control_endpoint()
 
+        # Try to ask the device for its maximum packet size on EP0.
+        self.last_ep0_max_packet_size = self.read_ep0_max_packet_size()
+
         # If we've been asked to assign an address,
         # set the device's address, and reinitialize the control endpoint
         # with the updated address.
         if assign_address:
             self.set_address(assign_address)
-            self.initialize_control_endpoint()
+            self.initialize_control_endpoint(max_packet_size=self.last_ep0_max_packet_size)
 
         # If we're auto-configuring the device, read the full configuration descriptor,
         # assign the first configuration, and then set up endpoints accordingly
         if apply_configuration:
             self.apply_configuration(apply_configuration)
+
+
 
 
     def get_descriptor(self, descriptor_type, descriptor_index,
@@ -389,6 +394,12 @@ class FacedancerUSBHost:
 
         raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
         return USBDevice.from_binary_descriptor(raw_descriptor)
+
+
+    def read_ep0_max_packet_size(self):
+        """ Returns the device's reported maximum packet size on EP0, in a way appropriate for an barely-configured endpoint. """
+        device_descriptor = self.get_device_descriptor(max_length=8)
+        return device_descriptor.max_packet_size_ep0
 
 
     def get_configuration_descriptor(self, index=0, include_subordinates=True):
