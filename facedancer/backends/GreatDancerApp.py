@@ -164,7 +164,8 @@ class GreatDancerApp(FacedancerApp):
             for endpoint in interface.endpoints:
 
                 if self.verbose > 0:
-                    print ("Setting up endpoint {} (direction={}, transfer_type={})".format(endpoint.number, endpoint.direction, endpoint.transfer_type))
+                    print ("Setting up endpoint {} (direction={}, transfer_type={}, max_packet_size={})".format(
+                        endpoint.number, endpoint.direction, endpoint.transfer_type, endpoint.max_packet_size))
 
                 triple = (endpoint.get_address(), endpoint.max_packet_size, endpoint.transfer_type,)
                 arguments.append(triple)
@@ -538,7 +539,7 @@ class GreatDancerApp(FacedancerApp):
                     # Read the rest of the data from the endpoint, completing
                     # the control request.
                     new_data = self._finish_primed_read_on_endpoint(endpoint_number)
-                    data     = self.pending_control_packet_data[:]
+                    data     = bytearray(self.pending_control_packet_data[:])
 
                     # Build a new control request packet from the setup data
                     # and the request body.

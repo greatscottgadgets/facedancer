@@ -85,7 +85,7 @@ class USBEndpoint(USBDescribable):
         # TODO: handle high/superspeed; don't assume 1ms frames
         interval = self.interval
 
-        return "<USBEndpoint number={} direction={} transfer_type={} sync_type={} usage_type={} max_packet_size={} inderval={}ms>".format(
+        return "<USBEndpoint number={} direction={} transfer_type={} sync_type={} usage_type={} max_packet_size={} interval={}ms>".format(
             self.number, direction, transfer_type, sync_type, usage_type, self.max_packet_size, interval
         )
 

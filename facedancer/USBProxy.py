@@ -4,6 +4,7 @@
 # such as the one in the HP48G+ and HP50G graphing calculators.  See
 # usb-serial.txt in the Linux documentation for more info.
 
+import errno
 import facedancer
 
 from facedancer.USB import *
@@ -157,13 +158,22 @@ class USBProxyDevice(USBDevice):
             raise DeviceNotFoundError("Could not find device to proxy!")
         self.libusb_device = usb_devices[index]
 
+
+        try:
+            interfaces = self.libusb_device.get_active_configuration().interfaces()
+        except:
+            print("-- could not read device interfaces --")
+            interfaces = []
+
+
         # If possible, detach the device from any kernel-side driver that may prevent us
         # from communicating with it.
-        try:
-            index = self.libusb_device.get_active_configuration().index
-            self.libusb_device.detach_kernel_driver(index)
-        except:
-            pass
+        for interface in interfaces:
+            try:
+                self.libusb_device.detach_kernel_driver(interface.bInterfaceNumber)
+            except usb.core.USBError as e:
+                if e.errno != errno.ENOENT:
+                    print("-- could not detach interface {}--".format(interface))
 
         # ... and initialize our base class with a minimal set of parameters.
         # We'll do almost nothing, as we'll be proxying packets by default to the device.
@@ -172,11 +182,19 @@ class USBProxyDevice(USBDevice):
 
     def connect(self):
         """
-        Initialize this device. We perform a reduced initilaization, as we really
+        Initialize this device. We perform a reduced initialization, as we really
         only want to proxy data.
         """
 
-        max_ep0_packet_size = self.libusb_device.bMaxPacketSize0
+        # Always use a max_packet_size of 64 on EP0.
+
+        # This works around a Linux spec violation in which Linux assumes it can read 64 bytes of control
+        # descriptor no matter the device speed and actual maximum packet size. If this doesn't work, Linux
+        # tries to reset / power-cycle the device, and then recovers with an in-spec read; but this causes a
+        # huge delay and/or breakage, depending on the proxied device.
+        #
+        # Since we're working at the transfer levels, the packet sizes will automatically be translated, anyway.
+        max_ep0_packet_size = 64
         self.maxusb_app.connect(self, max_ep0_packet_size)
 
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
@@ -361,7 +379,22 @@ class USBProxyDevice(USBDevice):
 
         # Read the target data from the target device.
         endpoint_address = ep_num | 0x80
-        data = self.libusb_device.read(endpoint_address, endpoint.max_packet_size)
+
+
+        # Quick hack to improve responsiveness on interrupt endpoints.
+        try:
+            if endpoint.interval:
+                timeout = endpoint.interval
+            else:
+                timeout = None
+
+            data = self.libusb_device.read(endpoint_address, endpoint.max_packet_size, timeout=timeout)
+        except usb.core.USBError as e:
+            if e.errno != errno.ETIMEDOUT:
+                raise e
+            else:
+                return
+
 
         # Run the data through all of our filters.
         for f in self.filter_list:

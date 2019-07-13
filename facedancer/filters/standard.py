@@ -20,7 +20,10 @@ class USBProxySetupFilters(USBProxyFilter):
     GET_DESCRIPTOR_REQUEST = 6
     RECIPIENT_DEVICE = 0
 
+    DESCRIPTOR_DEVICE        = 0x01
     DESCRIPTOR_CONFIRGUATION = 0x02
+
+    MAX_PACKET_SIZE_EP0 = 64
 
     def __init__(self, device, verbose=0):
         self.device = device
@@ -50,6 +53,18 @@ class USBProxySetupFilters(USBProxyFilter):
 
                 if self.verbose > 1:
                     print("-- Storing configuration {} --".format(configuration))
+
+
+            if descriptor_type == self.DESCRIPTOR_DEVICE and req.length >= 7:
+
+                # Patch our data to overwrite the maximum packet size on EP0.
+                # See USBProxy.connect for a rationale on this.
+                device = USBDescribable.from_binary_descriptor(data)
+                device.max_packet_size_ep0 = 64
+                data = bytearray(device.get_descriptor(len(data)))
+
+                if self.verbose > 1:
+                    print("-- Patched device descriptor. --")
 
 
         return req, data, stalled
