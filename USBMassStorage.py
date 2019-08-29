@@ -60,7 +60,7 @@ class USBMassStorageInterface(USBInterface):
                 USBEndpoint.transfer_type_bulk,
                 USBEndpoint.sync_type_none,
                 USBEndpoint.usage_type_data,
-                64,         # max packet size
+                512,         # max packet size
                 0,          # polling interval, see USB 2.0 spec Table 9-13
                 self.handle_data_available    # handler function
         )
@@ -70,7 +70,7 @@ class USBMassStorageInterface(USBInterface):
                 USBEndpoint.transfer_type_bulk,
                 USBEndpoint.sync_type_none,
                 USBEndpoint.usage_type_data,
-                64,         # max packet size
+                512,         # max packet size
                 0,          # polling interval, see USB 2.0 spec Table 9-13
                 None        # handler function
         )
