@@ -128,7 +128,7 @@ class USBMassStorageInterface(USBInterface):
         self._register_scsi_command(0x1e, "Prevent/Allow Removal", self.handle_ignored_event)
         self._register_scsi_command(0x23, "Get Format Capacity", self.handle_get_format_capacity)
         self._register_scsi_command(0x25, "Get Read Capacity", self.handle_get_read_capacity)
-        self._register_scsi_command(0x28, "Read", self.handle_read)
+        self._register_scsi_command(0x28, "Read (10)", self.handle_read)
         self._register_scsi_command(0x2a, "Write (10)", self.handle_write)
         self._register_scsi_command(0x36, "Synchronize Cache", self.handle_ignored_event)
 
