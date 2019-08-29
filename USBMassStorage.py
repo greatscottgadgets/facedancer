@@ -368,8 +368,7 @@ class CommandBlockWrapper:
         self.flags                  = int(bytestring[12])
         self.lun                    = int(bytestring[13] & 0x0f)
         self.cb_length              = int(bytestring[14] & 0x1f)
-        #self.cb                     = bytestring[15:15+self.cb_length]
-        self.cb                     = bytestring[15:]
+        self.cb                     = bytestring[15:15+self.cb_length]
 
     def __str__(self):
         s  = "sig: " + bytes_as_hex(self.signature) + "\n"
