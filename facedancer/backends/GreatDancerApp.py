@@ -92,9 +92,12 @@ class GreatDancerApp(FacedancerApp):
         for i in range(self.SUPPORTED_ENDPOINTS):
             self.endpoint_stalled[i] = False
 
+        # Assume a max packet size of 64 until configured otherwise.
+        self.max_ep0_packet_size = 64
+
         # Start off by assuming we're not waiting for an OUT control transfer's
         # data stage.  # See _handle_setup_complete_on_endpoint for details.
-        self.pending_control_packet_data = None
+        self.pending_control_request = None
 
         # Store a reference to the device's active configuration,
         # which we'll use to know which endpoints we'll need to check
@@ -182,6 +185,8 @@ class GreatDancerApp(FacedancerApp):
             emulated.
         """
 
+        self.max_ep0_packet_size = max_ep0_packet_size
+
         quirks = 0
 
         # Compute our quirk flags.
@@ -191,7 +196,7 @@ class GreatDancerApp(FacedancerApp):
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
-        self.api.connect(max_ep0_packet_size, quirks)
+        self.api.connect(self.max_ep0_packet_size, quirks)
         self.connected_device = usb_device
 
         if self.verbose > 0:
@@ -369,7 +374,7 @@ class GreatDancerApp(FacedancerApp):
         self.endpoint_stalled[endpoint_number] = False
 
         # Read the data from the SETUP stage...
-        data = self.api.read_setup(endpoint_number)
+        data    = bytearray(self.api.read_setup(endpoint_number))
         request = USBDeviceRequest(data)
 
         # If this is an OUT request, handle the data stage,
@@ -378,17 +383,16 @@ class GreatDancerApp(FacedancerApp):
         has_data = (request.length > 0)
 
         # Special case: if this is an OUT request with a data stage, we won't
-        # handle the request until the data stage has been complete. Instead,
+        # handle the request until the data stage has been completed. Instead,
         # we'll stash away the data recieved in the setup stage, prime the
         # endpoint for the data stage, and then wait for the data stage to
         # complete, triggering a corresponding code path in
         # in _handle_transfer_complete_on_endpoint.
         if is_out and has_data:
             self._prime_out_endpoint(endpoint_number)
-            self.pending_control_packet_data = data
+            self.pending_control_request = request
             return
 
-        request = USBDeviceRequest(data)
         self.connected_device.handle_request(request)
 
         if not is_out and not self.endpoint_stalled[endpoint_number]:
@@ -534,23 +538,29 @@ class GreatDancerApp(FacedancerApp):
             if self._is_control_endpoint(endpoint_number):
 
                 # If we recieved a setup packet to handle, handle it.
-                if self.pending_control_packet_data:
+                if self.pending_control_request:
 
                     # Read the rest of the data from the endpoint, completing
                     # the control request.
                     new_data = self._finish_primed_read_on_endpoint(endpoint_number)
-                    data     = bytearray(self.pending_control_packet_data[:])
 
-                    # Build a new control request packet from the setup data
-                    # and the request body.
-                    data.extend(new_data)
-                    request = USBDeviceRequest(data)
+                    # Append our new data to the pending control request.
+                    self.pending_control_request.data.extend(new_data)
 
-                    # Handle the setup request...
-                    self.connected_device.handle_request(request  )
+                    all_data_received = len(self.pending_control_request.data) == self.pending_control_request.length
+                    is_short_packet   = len(new_data) < self.max_ep0_packet_size
 
-                    # And clear our pending setup data.
-                    self.pending_control_packet_data = None
+                    if all_data_received or is_short_packet:
+
+                        # Handle the completed setup request...
+                        self.connected_device.handle_request(self.pending_control_request)
+
+                        # And clear our pending setup data.
+                        self.pending_control_request = None
+
+                    else:
+                        # Otherwise, re-prime the endpoint to grab the next packet.
+                        self._prime_out_endpoint(endpoint_number)
 
             # Typical case: this isn't a control endpoint, so we don't have a
             # defined packet format. Read the data and issue the corresponding
