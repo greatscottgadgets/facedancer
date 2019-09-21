@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# facedancer-usbproxy.py
+# facedancer-switch-flip-endpoint.py
 
 from facedancer import FacedancerUSBApp
 from facedancer.USBConfiguration import USBConfiguration
