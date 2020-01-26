@@ -72,12 +72,13 @@ class USBKeyboardInterface(USBInterface):
 class USBKeyboardDevice(USBDevice):
     name = "USB keyboard device"
 
-    def __init__(self, maxusb_app, verbose=0):
-        config = USBConfiguration(
-                1,                                          # index
-                "Emulated Keyboard",    # string desc
-                [ USBKeyboardInterface() ]                  # interfaces
-        )
+    def __init__(self, maxusb_app, verbose=0, config=None):
+        if config == None:
+            config = USBConfiguration(
+                    1,                                          # index
+                    "Emulated Keyboard",                        # string desc
+                    [ USBKeyboardInterface(verbose=verbose) ]   # interfaces
+            )
 
         USBDevice.__init__(
                 self,
