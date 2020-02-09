@@ -103,7 +103,7 @@ class USBDevice(USBDescribable):
         spec_version_msb, spec_version_lsb, device_class, device_subclass, device_protocol, \
                 max_packet_size_ep0, vendor_id, product_id, device_rev_msb, device_rev_lsb, \
                 manufacturer_string_index, product_string_index, \
-                serial_number_string_index, num_configurations = struct.unpack("<xxBBBBBBHHBBBBBB", data)
+                serial_number_string_index, num_configurations = struct.unpack_from("<xxBBBBBBHHBBBBBB", data)
 
         # FIXME: generate better placeholder configurations
         configurations  = [USBConfiguration()] * num_configurations

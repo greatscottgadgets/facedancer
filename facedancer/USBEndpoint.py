@@ -52,7 +52,7 @@ class USBEndpoint(USBDescribable):
         """
 
         # Parse the core descriptor into its components...
-        address, attributes, max_packet_size, interval = struct.unpack("xxBBHB", data)
+        address, attributes, max_packet_size, interval = struct.unpack_from("xxBBHB", data)
 
         # ... and break down the packed fields.
         number        = address & 0x7F

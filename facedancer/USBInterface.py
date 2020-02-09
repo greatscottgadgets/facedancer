@@ -79,7 +79,7 @@ class USBInterface(USBDescribable):
         """
         interface_number, alternate_setting, num_endpoints, interface_class, \
                 interface_subclass, interface_protocol, interface_string_index \
-                = struct.unpack("xxBBBBBBB", data)
+                = struct.unpack_from("xxBBBBBBB", data)
         return cls(interface_number, alternate_setting, interface_class,
                    interface_subclass, interface_protocol, interface_string_index)
 

@@ -52,7 +52,7 @@ class USBConfiguration(USBDescribable):
 
         # Unpack the main colleciton of data into the descriptor itself.
         descriptor_type, total_length, num_interfaces, index, string_index, \
-            attributes, max_power = struct.unpack('<xBHBBBBB', data[0:length])
+            attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
 
         # Extract the subordinate descriptors, and parse them.
         interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
