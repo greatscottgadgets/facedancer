@@ -79,12 +79,16 @@ class GreatDancerApp(FacedancerApp):
         if device is None:
             device = greatfet.GreatFET()
 
+        self.device = device
+
+        self.device.comms.get_exclusive_access()
+
         FacedancerApp.__init__(self, device, verbose)
         self.connected_device = None
 
         # Grab the raw API object from the GreatFET object.
         # This has the low-level RPCs used for raw USB control.
-        self.api = device.apis.greatdancer
+        self.api = self.device.apis.greatdancer
 
         # Initialize a dictionary that will store the last setup
         # whether each endpoint is currently stalled.
@@ -205,6 +209,7 @@ class GreatDancerApp(FacedancerApp):
 
     def disconnect(self):
         """ Disconnects the GreatDancer from its target host. """
+        self.device.comms.release_exclusive_access()
         self.api.disconnect()
 
 
