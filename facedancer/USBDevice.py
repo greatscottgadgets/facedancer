@@ -508,7 +508,7 @@ class USBDeviceRequest:
         return self._type_descriptions[self.get_type()]
 
     def get_recipient_string(self):
-        return self._recipent_descriptions[self.get_type()]
+        return self._recipent_descriptions[self.get_recipient()]
 
     def get_request_number_string(self):
         if self.get_type() == 0:
