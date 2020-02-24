@@ -233,7 +233,7 @@ class USBDevice(USBDescribable):
         if req_type == USB.request_type_standard:
             handler_entity = recipient
         elif req_type == USB.request_type_class:
-            handler_entity = recipient.device_class
+            handler_entity = recipient.interface
         elif req_type == USB.request_type_vendor:
             handler_entity = recipient.device_vendor
 
