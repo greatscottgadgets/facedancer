@@ -340,7 +340,7 @@ class FacedancerUSBHost:
         """
         Sets up a conenction to a directly-attached USB device.
 
-        apply_configuration -- If non-zero, the configuration with the given 
+        apply_configuration -- If non-zero, the configuration with the given
             index will be applied to the relevant device.
         assign_address -- If non-zero, the device will be assigned the given
             address as part of the enumeration/initialization process.
@@ -470,6 +470,9 @@ class FacedancerUSBHost:
             for endpoint in interface.endpoints:
                 self.set_up_endpoint(endpoint)
 
+
+    def handle_events(self):
+        self.service_irqs()
 
 
 class FacedancerBasicScheduler(object):

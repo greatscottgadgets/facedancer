@@ -7,7 +7,6 @@ from .USBClass import *
 from .USBConfiguration import USBConfiguration
 
 
-
 import time
 import struct
 
@@ -164,7 +163,7 @@ class USBDevice(USBDescribable):
 
     def run(self):
         self.scheduler.run()
-    
+
     def stop(self):
         self.scheduler.stop()
 
@@ -423,6 +422,13 @@ class USBDevice(USBDescribable):
     # USB 2.0 specification, section 9.4.11 (p 288 of pdf)
     def handle_synch_frame_request(self, req):
         print(self.name, "received SYNCH_FRAME request")
+
+    #
+    # Backend interface helpers.
+    #
+    @staticmethod
+    def create_request(raw_data):
+        return USBDeviceRequest(raw_data)
 
     def __repr__(self):
         return "<USBDevice object; vid=0x{:04x}, pid=0x{:04x}>".format(self.vendor_id, self.product_id)

@@ -179,7 +179,7 @@ class MAXUSBApp(FacedancerApp):
             if (irq & self.is_out0_data_avail) and (b[0] & 0x80 == 0x00):
                 data_bytes_len = b[6] + (b[7] << 8)
                 b += self.read_bytes(self.reg_ep0_fifo, data_bytes_len)
-            req = USBDeviceRequest(b)
+            req = self.connected_device.create_request(b)
             self.connected_device.handle_request(req)
 
         if irq & self.is_out1_data_avail:

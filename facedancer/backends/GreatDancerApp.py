@@ -7,7 +7,6 @@ import traceback
 
 from ..core import *
 from ..USB import *
-from ..USBDevice import USBDeviceRequest
 from ..USBEndpoint import USBEndpoint
 
 class GreatDancerApp(FacedancerApp):
@@ -380,7 +379,7 @@ class GreatDancerApp(FacedancerApp):
 
         # Read the data from the SETUP stage...
         data    = bytearray(self.api.read_setup(endpoint_number))
-        request = USBDeviceRequest(data)
+        request = self.connected_device.create_request(data)
 
         # If this is an OUT request, handle the data stage,
         # and add it to the request.
@@ -389,7 +388,7 @@ class GreatDancerApp(FacedancerApp):
 
         # Special case: if this is an OUT request with a data stage, we won't
         # handle the request until the data stage has been completed. Instead,
-        # we'll stash away the data recieved in the setup stage, prime the
+        # we'll stash away the data received in the setup stage, prime the
         # endpoint for the data stage, and then wait for the data stage to
         # complete, triggering a corresponding code path in
         # in _handle_transfer_complete_on_endpoint.
