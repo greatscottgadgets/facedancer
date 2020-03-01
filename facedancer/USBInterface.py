@@ -44,6 +44,7 @@ class USBInterface(USBDescribable):
 
         self.request_handlers = {
              6 : self.handle_get_descriptor_request,
+            10 : self.handle_get_interface_request,
             11 : self.handle_set_interface_request
         }
 
@@ -141,8 +142,12 @@ class USBInterface(USBDescribable):
             if self.verbose > 5:
                 print(self.name, "sent", n, "bytes in response")
 
+    def handle_get_interface_request(self, req):
+        self.configuration.device.maxusb_app.send_on_endpoint(0, self.alternate)
+
     def handle_set_interface_request(self, req):
-        self.configuration.device.maxusb_app.stall_ep0()
+        self.alternate = req.value
+        self.configuration.device.maxusb_app.send_on_endpoint(0, b'')
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
     def get_descriptor(self):
