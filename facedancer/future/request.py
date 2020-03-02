@@ -203,7 +203,7 @@ class USBControlRequest:
         34: 'REPORT',
     }
 
-    def __init__(self, raw_bytes):
+    def __init__(self, raw_bytes, *, device=None):
         """Expects raw 8-byte setup data request packet"""
 
         self.request_type   = raw_bytes[0]
@@ -213,6 +213,50 @@ class USBControlRequest:
         self.length         = (raw_bytes[7] << 8) | raw_bytes[6]
         self.data           = raw_bytes[8:]
 
+        self.device = device
+
+
+    @classmethod
+    def from_raw_bytes(cls, raw_bytes, *, device=None):
+
+        # TODO: move the __init__ content here and make this a proper dataclass
+        return cls(raw_bytes, device=device)
+
+
+    #
+    # I/O API.
+    #
+
+    def reply(self, data: bytes):
+        """ Replies to the given request with a given set of bytes. """
+        self.device.send(endpoint_number=0, data=data)
+
+
+    def acknowledge(self):
+        """ Acknowledge the given request without replying. """
+        self.device.send(endpoint_number=0, data=b"")
+
+
+    def ack(self):
+        """ Acknowledge the given request without replying.
+
+        Convenience alias for .acknowledge().
+        """
+        self.acknowledge()
+
+
+    def stall(self):
+        """ Stalls the associated device's control request.
+
+        Used to indicate that a given request isn't supported;
+        or isn't supported with the provided arguments.
+        """
+        self.device.stall()
+
+
+    #
+    # Properties.
+    #
 
 
     @property
@@ -337,7 +381,7 @@ class USBRequestHandler(metaclass=ABCMeta):
         """ Calls the ``handle_request`` method of any subordinate handlers.
 
         This default implementation uses get_subordinates to get an iterable
-        of subordiantes we should call handle_request on.
+        of subordinates we should call handle_request on.
         """
 
         handled = False

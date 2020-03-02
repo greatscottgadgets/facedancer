@@ -3,11 +3,21 @@
 import sys
 import time
 import codecs
+import logging
 import traceback
 
 from ..core import *
 from ..USB import *
 from ..USBEndpoint import USBEndpoint
+
+# Create a default logger for the module.
+logger = logging.getLogger("backend")
+
+# FIXME: abstract this to the logging library
+LOGLEVEL_TRACE = 5
+
+
+
 
 class GreatDancerApp(FacedancerApp):
     """
@@ -166,12 +176,10 @@ class GreatDancerApp(FacedancerApp):
         """
         arguments = []
 
-        for interface in config.interfaces:
-            for endpoint in interface.endpoints:
-
-                if self.verbose > 0:
-                    print ("Setting up endpoint {} (direction={}, transfer_type={}, max_packet_size={})".format(
-                        endpoint.number, endpoint.direction, endpoint.transfer_type, endpoint.max_packet_size))
+        for interface in config.get_interfaces():
+            for endpoint in interface.get_endpoints():
+                logger.info("Configuring endpoint {}:(direction={}, transfer_type={}, max_packet_size={})".format(
+                    endpoint.number, endpoint.direction, endpoint.transfer_type, endpoint.max_packet_size))
 
                 triple = (endpoint.get_address(), endpoint.max_packet_size, endpoint.transfer_type,)
                 arguments.append(triple)
@@ -194,16 +202,14 @@ class GreatDancerApp(FacedancerApp):
 
         # Compute our quirk flags.
         if 'manual_set_address' in self.quirks:
-            if self.verbose > 0:
-                print("Handling SET_ADDRESS on the host side!")
+            logger.info("Handling SET_ADDRESS on the host side!")
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
         self.api.connect(self.max_ep0_packet_size, quirks)
         self.connected_device = usb_device
 
-        if self.verbose > 0:
-            print(self.app_name, "connected device", self.connected_device.name)
+        logger.info("Connecting to host.")
 
 
     def disconnect(self):
@@ -236,8 +242,7 @@ class GreatDancerApp(FacedancerApp):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        if self.verbose > 3:
-            print("sending on {}: {}".format(ep_num, data))
+        logger.log(LOGLEVEL_TRACE, f"EP{ep_num}/IN: <- {bytes(data)}")
 
         self._wait_until_ready_to_send(ep_num)
         self.api.send_on_endpoint(ep_num, bytes(data))
@@ -287,9 +292,8 @@ class GreatDancerApp(FacedancerApp):
         ep_num: The number of the endpoint to be stalled.
         """
 
-        if self.verbose > 2:
-            in_vs_out = "IN" if direction else "OUT"
-            print("Stalling EP{} {}".format(ep_num, in_vs_out))
+        in_vs_out = "IN" if direction else "OUT"
+        logger.log(LOGLEVEL_TRACE, "Stalling EP{} {}".format(ep_num, in_vs_out))
 
         self.endpoint_stalled[ep_num] = True
         self.api.stall_endpoint(self._endpoint_address(ep_num, direction))
@@ -297,7 +301,7 @@ class GreatDancerApp(FacedancerApp):
 
     def stall_ep0(self):
         """
-        Conveneince function that stalls the control endpoint zero.
+        Convenience function that stalls the control endpoint zero.
         """
         self.stall_endpoint(0)
 
@@ -448,10 +452,6 @@ class GreatDancerApp(FacedancerApp):
         if not status:
             return
 
-        if self.verbose > 5:
-            print("Out status: {}".format(bin(status & 0x0F)))
-            print("IN status: {}".format(bin(status >> 16)))
-
         # Figure out which endpoints have recently completed transfers,
         # and clean up any transactions on those endpoints. It's important
         # that this be done /before/ the _handle_transfer_complete... section
@@ -509,9 +509,6 @@ class GreatDancerApp(FacedancerApp):
             up.
         direction: The endpoint direction for which TD's should be cleaned.
         """
-
-        if self.verbose > 5:
-            print("Cleaning up transfers on {}".format(endpoint_number))
 
         # Ask the device to clean up any transaction descriptors related to the transfer.
         self.api.clean_up_transfer(self._endpoint_address(endpoint_number, direction))
@@ -571,6 +568,7 @@ class GreatDancerApp(FacedancerApp):
             # callback.
             else:
                 data = self._finish_primed_read_on_endpoint(endpoint_number)
+                logging.log(LOGLEVEL_TRACE, f"EP{endpoint_number}/OUT -> {data}")
                 self.connected_device.handle_data_available(endpoint_number, data)
 
 
@@ -616,8 +614,8 @@ class GreatDancerApp(FacedancerApp):
         # Check the status of every endpoint /except/ endpoint zero,
         # which is always a control endpoint and set handled by our
         # control transfer handler.
-        for interface in self.configuration.interfaces:
-            for endpoint in interface.endpoints:
+        for interface in self.configuration.get_interfaces():
+            for endpoint in interface.get_endpoints():
 
                 # Check to see if the endpoint is ready to be primed.
                 if self._is_ready_for_priming(endpoint.number, endpoint.direction):
@@ -679,9 +677,7 @@ class GreatDancerApp(FacedancerApp):
         Triggers the GreatDancer to perform its side of a bus reset.
         """
 
-        if self.verbose > 0:
-            print("-- Reset requested! --")
-
+        logger.debug("Host issued bus reset.")
         self.api.bus_reset()
 
 
@@ -700,8 +696,8 @@ class GreatDancerApp(FacedancerApp):
         status = self._fetch_endpoint_nak_status()
 
         # Iterate over each usable endpoint.
-        for interface in self.configuration.interfaces:
-            for endpoint in interface.endpoints:
+        for interface in self.configuration.get_interfaces():
+            for endpoint in interface.get_endpoints():
 
                 # If the endpoint has NAK'd, issued the relevant callback.
                 if self._has_issued_nak(status, endpoint.number, endpoint.direction):
@@ -764,4 +760,3 @@ class GreatDancerApp(FacedancerApp):
 
         if status & self.USBSTS_D_NAKI:
             self._handle_nak_events()
-

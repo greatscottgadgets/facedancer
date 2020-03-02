@@ -4,6 +4,7 @@
 """ Functionality for describing USB endpoints. """
 
 import struct
+import logging
 
 from dataclasses import dataclass
 
@@ -13,6 +14,10 @@ from .magic      import AutoInstantiable
 from .descriptor import USBDescribable
 from .request    import USBRequestHandler, get_request_handler_methods, standard_request_handler, to_endpoint
 from .types      import USBDirection, USBTransferType, USBSynchronizationType, USBUsageType
+
+
+# Create a default logger for the module.
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -39,10 +44,70 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         self._request_handler_methods = get_request_handler_methods(self)
 
 
+    @staticmethod
+    def address_for_number(endpoint_number: int, direction: USBDirection):
+        direction_mask = 0x80 if direction == USBDirection.IN else 0x00
+        return endpoint_number | direction_mask
+
+
+    #
+    # User interface.
+    #
+
+    def get_device(self):
+        """ Returns the device associated with the given descriptor. """
+        return self.parent.get_device()
+
+
+    def send(self, data, *, blocking=False):
+        """ Sends data on this endpoint. Valid only for IN endpoints.
+
+        Parameters:
+            data     -- The data to be sent.
+            blocking -- True if we should block until the backend reports
+                        the transmission to be complete.
+        """
+        self.get_device()._send_in_packets(self.number, data,
+            packet_size=self.max_packet_size, blocking=blocking)
+
+
+    #
+    # Event handlers.
+    #
+
+    def handle_data_received(self, data: bytes):
+        """ Handler for receipt of non-control request data.
+
+        Parameters:
+            data   -- The raw bytes received.
+        """
+        logger.info(f"EP{self.number} received {len(data)} bytes of data; "
+                "but has no handler.")
+
+
+    def handle_data_requested(self):
+        """ Handler called when the host requests data on this endpoint."""
+
+
+    def handle_buffer_empty(self):
+        """ Handler called when this endpoint first has an empty buffer. """
+
+
+
+    #
+    # Properties.
+    #
+
+    @property
+    def address(self):
+        """ Fetches the address for the given endpoint. """
+        return self.address_for_number(self.number, self.direction)
+
+
     def get_address(self):
-        """ Returns the address for the given endpoint. """
-        direction_mask = 0x80 if self.direction == USBDirection.IN else 0x00
-        return self.number | direction_mask
+        """ Method alias for the address property. For backend support. """
+        return self.address
+
 
 
     def __repr__(self):
@@ -64,8 +129,8 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     @standard_request_handler(number=1)
     @to_endpoint
     def handle_clear_feature_request(self, req):
-        print("received CLEAR_FEATURE request for endpoint", self.number,
-                "with value", req.value)
+        logger.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
+            f"with value {req.value}")
         self.parent.configuration.device.maxusb_app.send_on_endpoint(0, b'')
 
 
@@ -93,16 +158,6 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         dev.maxusb_app.send_on_endpoint(self.number, data, blocking=blocking)
 
 
-    def send(self, data):
-        # Send the relevant data one packet at a time,
-        # chunking if we're larger than the max packet size.
-        # This matches the behavior of the MAX3420E.
-        while data:
-            packet = data[0:self.max_packet_size]
-            data = data[self.max_packet_size:]
-
-            self.send_packet(packet)
-
 
     def recv(self):
         dev = self.parent.parent.parent
@@ -110,7 +165,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         return data
 
     def get_identifier(self):
-        return self.number
+        return self.address
 
 
     #

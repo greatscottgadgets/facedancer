@@ -93,6 +93,11 @@ class USBInterface(USBDescribable):
         )
 
 
+    def get_endpoints(self):
+        """ Returns an iterable over all endpoints in this interface. """
+        return self.endpoints
+
+
     def add_endpoint(self, endpoint):
         """
         Adds an endpoint the interface.

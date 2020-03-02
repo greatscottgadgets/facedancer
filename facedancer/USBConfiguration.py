@@ -102,6 +102,12 @@ class USBConfiguration(USBDescribable):
             self.configuration_index, len(set(interface.number for interface in self.interfaces)), self.attributes, max_power_mA)
 
 
+    def get_interfaces(self):
+        """ Returns an iterable of all interfaces on the provided device. """
+        return self.interfaces
+
+
+
     def set_device(self, device):
         self.device = device
 

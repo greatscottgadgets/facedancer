@@ -10,11 +10,13 @@ import logging
 
 from dataclasses  import dataclass
 
+from .types       import USBDirection
+from .magic       import instantiate_subordinates, AutoInstantiable
+from .request     import USBRequestHandler, USBControlRequest
+
 from .interface   import USBInterface
 from .descriptor  import USBDescribable
-
-from .magic       import instantiate_subordinates, AutoInstantiable
-from .request     import USBRequestHandler
+from .endpoint    import USBEndpoint
 
 # TODO: Section these out into their own folder?
 from ..USBClass import USBClass
@@ -22,7 +24,7 @@ from ..HIDClass import HIDClass
 
 
 # Create a default logger for the module.
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("configuration")
 
 @dataclass
 class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
@@ -31,115 +33,146 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     DESCRIPTOR_TYPE_NUMBER     = 0x02
     DESCRIPTOR_SIZE_BYTES      = 9
 
-    parent               : typing.Any = None
 
-    configuration_index  : int = 1
-    configuration_string : str = None
+    configuration_index  : int            = 1
+    configuration_string : str            = None
 
-    attributes           : int = 0xe0
-    max_power            : int = 250
+    attributes           : int            = 0xe0
+    max_power            : int            = 250
+
+    parent               : USBDescribable = None
 
 
     def __post_init__(self):
-        self.device = self.parent
 
-        # FIXME: handle this
-        self.configuration_string_index =  0
-
-        # FIXME: use our dictionary
-        self._interfaces = instantiate_subordinates(self, USBInterface)
-        self.interfaces = list(self._interfaces.values())
-
-        print(self._interfaces)
-
-        for i in self.interfaces:
-            i.set_configuration(self)
+        # Gather any interfaces
+        self.interfaces = instantiate_subordinates(self, USBInterface)
 
 
-    @classmethod
-    def from_binary_descriptor(cls, data):
-        """
-        Generates a new USBConfiguration object from a configuration descriptor,
-        handling any attached subordiate descriptors.
+    #
+    # User API.
+    #
 
-        data: The raw bytes for the descriptor to be parsed.
-        """
-
-        length = data[0]
-
-        # Unpack the main colleciton of data into the descriptor itself.
-        descriptor_type, total_length, num_interfaces, index, string_index, \
-            attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
-
-        # Extract the subordinate descriptors, and parse them.
-        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
-        return cls(index, string_index, interfaces, attributes, max_power, total_length)
+    def get_device(self):
+        """ Returns a reference to the associated device."""
+        return self.parent
 
 
-    @classmethod
-    def _parse_subordinate_descriptors(cls, data):
-        """
-        Generates descriptor objects from the list of subordinate desciptors.
+    def add_interface(self, interface: USBInterface):
+        """ Adds an interface to the configuration. """
+        self.interfaces[interface.number] = interface
 
-        data: The raw bytes for the descriptor to be parsed.
+
+    def get_endpoint(self, number: int, direction: USBDirection) -> USBEndpoint:
+        """ Attempts to find an endpoint with the given number + direction.
+
+        Paramters:
+            number    -- The endpoint number to look for.
+            direction -- Whether to look for an IN or OUT endpoint.
         """
 
-        # TODO: handle recieving interfaces out of order?
-        interfaces = []
+        # Search each of our interfaces for the relevant endpoint.
+        for interface in self.interfaces.values():
+            endpoint = interface.get_endpoint(number, direction)
+            if endpoint is not None:
+                return endpoint
 
-        # Continue parsing until we run out of descriptors.
-        while data:
-
-            # Determine the length and type of the next descriptor.
-            length          = data[0]
-            descriptor = USBDescribable.from_binary_descriptor(data[:length])
-
-            # If we have an interface descriptor, add it to our list of interfaces.
-            if isinstance(descriptor, USBInterface):
-                interfaces.append(descriptor)
-            elif isinstance(descriptor, USBEndpoint):
-                interfaces[-1].add_endpoint(descriptor)
-            elif isinstance(descriptor, USBClass):
-                interfaces[-1].set_class(descriptor)
-
-            # Move on to the next descriptor.
-            data = data[length:]
-
-        return interfaces
+        # If none have one, return None.
+        return None
 
 
-    def __repr__(self):
+    #
+    # Event handlers.
+    #
+
+
+    def handle_data_received(self, endpoint_number: int, data: bytes):
+        """ Handler for receipt of non-control request data.
+
+        Typically, this method will delegate any data received to the
+        appropriate configuration/interface/endpoint. If overridden, the
+        overriding function will receive all data; and can delegate it by
+        calling the `.handle_data_received` method on `self.configuration`.
+
+        Parameters:
+            endpoint_number -- The endpoint number on which the data was received.
+            data            -- The raw bytes received on the relevant endpoint.
         """
-        Generates a pretty form of the configuation for printing.
+
+        for interface in self.interfaces.values():
+            if interface.has_endpoint(endpoint_number, direction=USBDirection.OUT):
+                interface.handle_data_received(endpoint_number, data)
+                return
+
+        # If no one interface owned the targeted endpoint, consider the data unexpected.
+        self.get_device().handle_unexpected_data_received(endpoint_number, data)
+
+
+    def handle_data_requested(self, endpoint_number: int):
+        """ Handler called when the host requests data on a non-control endpoint.
+
+        Typically, this method will delegate the request to the appropriate
+        interface+endpoint. If overridden, the overriding function will receive
+        all data.
+
+        Parameters:
+            endpoint_number -- The endpoint number on which the host requested data.
         """
-        # TODO: make attributes readable
 
-        max_power_mA = self.max_power * 2
-        return "<USBConfiguration index={} num_interfaces={} attributes=0x{:02X} max_power={}mA>".format(
-            self.configuration_index, len(set(interface.number for interface in self.interfaces)), self.attributes, max_power_mA)
+        for interface in self.interfaces.values():
+            if interface.has_endpoint(endpoint_number, direction=USBDirection.IN):
+                interface.handle_data_requested(endpoint_number)
+                return
+
+        # If no one interface owned the targeted endpoint, consider the data unexpected.
+        self.get_device().handle_unexpected_data_requested(endpoint_number)
 
 
-    def set_device(self, device):
-        self.device = device
+    def handle_buffer_empty(self, endpoint_number: int):
+        """ Handler called when a given endpoint first has an empty buffer.
 
-    def set_configuration_string_index(self, i):
-        self.configuration_string_index = i
+        Often, an empty buffer indicates an opportunity to queue data
+        for sending ('prime an endpoint'), but doesn't necessarily mean
+        that the host is planning on reading the data.
+
+        This function is called only once per buffer.
+        """
+
+        for interface in self.interfaces.values():
+            if interface.has_endpoint(endpoint_number, direction=USBDirection.IN):
+                interface.handle_buffer_empty(endpoint_number)
+                return
+
+
+
+    #
+    # Backend interface functions.
+    #
+
+    def get_interfaces(self):
+        """ Returns an iterable of all interfaces on the provided device. """
+        return self.interfaces.values()
+
 
     def get_descriptor(self):
         interface_descriptors = bytearray()
-        for i in self.interfaces:
-            interface_descriptors += i.get_descriptor()
+
+        # FIXME: sort these by their interface numbers
+        for interface in self.interfaces.values():
+            interface_descriptors += interface.get_descriptor()
 
         total_len = len(interface_descriptors) + 9
+
+        string_manager = self.get_device().strings
 
         d = bytes([
                 9,          # length of descriptor in bytes
                 2,          # descriptor type 2 == configuration
                 total_len & 0xff,
                 (total_len >> 8) & 0xff,
-                len(set(interface.number for interface in self.interfaces)),
+                len(set(interface.number for interface in self.interfaces.values())),
                 self.configuration_index,
-                self.configuration_string_index,
+                string_manager.get_index(self.configuration_string),
                 self.attributes,
                 self.max_power
         ])
@@ -147,17 +180,21 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         return d + interface_descriptors
 
 
+
+
+    #
+    # Interfacing functions for AutoInstantiable.
+    #
     def get_identifier(self):
         return self.configuration_index
 
 
     #
-    # Request handler functions.
+    # Backend functions for our RequestHandler class.
     #
 
     def _request_handlers(self):
         return ()
 
-
     def _get_subordinate_handlers(self):
-        return self._interfaces.values()
+        return self.interfaces.values()

@@ -54,8 +54,6 @@ class USBKeyboardDevice(USBDevice):
                 raw         : bytes = b'\x05\x01\x09\x06\xA1\x01\x05\x07\x19\xE0\x29\xE7\x15\x00\x25\x01\x75\x01\x95\x08\x81\x02\x95\x01\x75\x08\x81\x01\x19\x00\x29\x65\x15\x00\x25\x65\x75\x08\x95\x01\x81\x00\xC0'
 
 
-
-
     def __post_init__(self):
         super().__post_init__()
 
@@ -64,7 +62,7 @@ class USBKeyboardDevice(USBDevice):
         self.modifiers   = 0
 
 
-    def handle_nak(self, ep_num):
+    def handle_data_requested(self, endpoint_number: int):
         """ Provide data once per host request. """
 
         if self.active_keys:
@@ -72,7 +70,7 @@ class USBKeyboardDevice(USBDevice):
         else:
             report = bytes([0, 0, 0])
 
-        self.backend.send_on_endpoint(ep_num, report)
+        self.get_endpoint(endpoint_number, USBDirection.IN).send(report)
 
 
     #
@@ -88,27 +86,27 @@ class USBKeyboardDevice(USBDevice):
         self.active_keys.remove(code)
 
 
-    async def type_scancode(self, code, duration=0.2):
+    async def type_scancode(self, code, duration=0.1):
         self.key_down(code)
         await asyncio.sleep(duration)
         self.key_up(code)
 
 
-    async def type_scancodes(self, *codes, duration=0.2):
+    async def type_scancodes(self, *codes, duration=0.1):
         for code in codes:
             await self.type_scancode(code, duration=duration)
 
 
-    async def type_letter(self, letter, duration=0.2):
+    async def type_letter(self, letter, duration=0.1):
         await self.type_scancode(KeyboardKeys.get_simple_code(letter))
 
 
-    async def type_letters(self, *letters, duration=0.2):
+    async def type_letters(self, *letters, duration=0.1):
         for letter in letters:
             await self.type_letter(letter, duration=duration)
 
 
-    async def type_string(self, string, duration=0.2):
+    async def type_string(self, string, duration=0.1):
         for letter in string:
             await self.type_letter(letter, duration=duration)
 
