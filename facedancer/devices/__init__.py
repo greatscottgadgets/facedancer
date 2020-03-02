@@ -25,6 +25,7 @@ def default_main(device_or_type, *coroutines):
     # Instantiate the relevant device, and connect it to our host.
     parser = argparse.ArgumentParser(description=f"Emulation frontend for {device_or_type.name}(s).")
     parser.add_argument('--print-only', action='store_true', help="Prints information about the device without emulating.")
+    parser.add_argument('--suggest', action='store_true', help="Prints suggested code additions after device emualtion is complete.")
     parser.add_argument('-v', '--verbose', help="Controls verbosity. 0=silent, 3=default, 5=spammy", default=3)
     args = parser.parse_args()
 
@@ -48,3 +49,6 @@ def default_main(device_or_type, *coroutines):
 
     # Run the relevant code, along with any added coroutines.
     device.emulate(*coroutines)
+
+    if args.suggest:
+        device.print_suggested_additions()

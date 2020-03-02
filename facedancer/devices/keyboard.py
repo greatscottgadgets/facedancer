@@ -6,9 +6,11 @@ import asyncio
 
 from .             import default_main
 
-from ..future      import USBDevice, USBConfiguration, USBInterface, USBEndpoint, USBTransferType
+from ..future      import USBDevice, USBConfiguration, USBInterface, USBEndpoint
 from ..future      import USBDescriptor, USBClassDescriptor, USBDirection, USBDescriptorTypeNumber
-from ..future      import use_inner_classes_automatically
+from ..future      import USBTransferType, USBStandardRequests
+
+from ..future      import use_inner_classes_automatically, class_request_handler, to_interface
 
 from ..classes.hid import KeyboardKeys
 
@@ -54,6 +56,13 @@ class USBKeyboardDevice(USBDevice):
                 raw         : bytes = b'\x05\x01\x09\x06\xA1\x01\x05\x07\x19\xE0\x29\xE7\x15\x00\x25\x01\x75\x01\x95\x08\x81\x02\x95\x01\x75\x08\x81\x01\x19\x00\x29\x65\x15\x00\x25\x65\x75\x08\x95\x01\x81\x00\xC0'
 
 
+            @class_request_handler(number=USBStandardRequests.GET_INTERFACE, direction=USBDirection.OUT)
+            @to_interface
+            def handle_get_interface_request(self, request):
+                # Replace me with your handler.
+                request.stall()
+
+
     def __post_init__(self):
         super().__post_init__()
 
@@ -62,15 +71,20 @@ class USBKeyboardDevice(USBDevice):
         self.modifiers   = 0
 
 
-    def handle_data_requested(self, endpoint_number: int):
+    def _generate_hid_report(self) -> bytes:
+        """ Generates a single HID report for the given keyboard state. """
+
+        # If we have active keypresses, compose a set of scancodes from them.
+        # TODO: use construct?
+        scancodes = self.active_keys if self.active_keys else (0,)
+        return bytes([self.modifiers, 0, *scancodes])
+
+
+
+    def handle_data_requested(self, endpoint: USBEndpoint):
         """ Provide data once per host request. """
-
-        if self.active_keys:
-            report = bytes([0, 0, *self.active_keys])
-        else:
-            report = bytes([0, 0, 0])
-
-        self.get_endpoint(endpoint_number, USBDirection.IN).send(report)
+        report = self._generate_hid_report()
+        endpoint.send(report)
 
 
     #

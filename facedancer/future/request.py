@@ -168,7 +168,7 @@ class USBControlRequest:
         3:  'INVALID',
     }
 
-    _recipent_descriptions = {
+    _recipient_descriptions = {
         0: 'device',
         1: 'interface',
         2: 'endpoint',
@@ -183,7 +183,7 @@ class USBControlRequest:
         5: 'SET_ADDRESS',
         6: 'GET_DESCRIPTOR',
         7: 'SET_DESCRIPTOR',
-        8: 'GET_CONFIGRUATION',
+        8: 'GET_CONFIGURATION',
         9: 'SET_CONFIGURATION',
         10: 'GET_INTERFACE',
         11: 'SET_INTERFACE',
@@ -275,6 +275,11 @@ class USBControlRequest:
         return self.get_type()
 
 
+    @property
+    def direction(self):
+        return self.get_direction()
+
+
     def __str__(self):
         s = "dir=%d, type=%x, rec=%x, r=%x, v=%x, i=%x, l=%d" \
                 % (self.get_direction(), self.get_type(), self.get_recipient(),
@@ -301,7 +306,7 @@ class USBControlRequest:
         return self._type_descriptions[self.get_type()]
 
     def get_recipient_string(self):
-        return self._recipent_descriptions[self.get_recipient()]
+        return self._recipient_descriptions[self.get_recipient()]
 
     def get_request_number_string(self):
         if self.get_type() == 0:

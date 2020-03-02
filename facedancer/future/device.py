@@ -2,6 +2,7 @@
 # This file is part of FaceDancer.
 #
 
+import sys
 import asyncio
 import logging
 import warnings
@@ -9,14 +10,19 @@ import warnings
 from typing         import Dict, Iterable
 from dataclasses    import dataclass, field
 
+from prompt_toolkit import HTML, print_formatted_text
+
 from ..             import FacedancerUSBApp
-from .types         import DescriptorTypes, LanguageIDs, USBDirection
+from .types         import DescriptorTypes, LanguageIDs
+from .types         import USBDirection, USBRequestType, USBRequestRecipient, USBStandardRequests
 from .magic         import instantiate_subordinates
 
 from .descriptor    import USBDescribable, USBDescriptor, StringDescriptorManager
 from .configuration import USBConfiguration
+from .endpoint      import USBEndpoint
 from .request       import USBControlRequest, USBRequestHandler
 from .request       import standard_request_handler, to_device, get_request_handler_methods
+
 
 # Create a default logger for the module.
 logger = logging.getLogger("device")
@@ -91,6 +97,12 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # Populate our control request handlers, and any subordinate classes we'll need to create.
         self._request_handler_methods = get_request_handler_methods(self)
         self.configurations = instantiate_subordinates(self, USBConfiguration)
+
+        # Create a set of suggested requests. We'll use this to store the vitals
+        # of any unhandled requests, so we can provide user suggestions later.
+        self._suggested_requests = set()
+        self._suggested_request_metadata = {}
+
 
     #
     # Control interface.
@@ -221,8 +233,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             self.backend.send_on_endpoint(endpoint_number, packet, blocking=blocking)
 
 
-
-    def get_endpoint(self, endpoint_number: int, direction: USBDirection):
+    def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
         """ Attempts to find a subordinate endpoint matching the given number/direction.
 
         Parameters:
@@ -251,16 +262,29 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     # Backend / low-level event receivers.
     #
 
-    def handle_nak(self, ep_num):
+
+    def handle_nak(self, ep_num: int):
         """ Backend data-requested handler; for legacy compatibility.
 
-        Prefer overriding handle_data_requested().
+        Prefer overriding handle_data_requested() and handle_unexpected_data_Requested
         """
-        self.handle_data_requested(ep_num)
+        endpoint = self.get_endpoint(ep_num, USBDirection.IN)
+
+        if endpoint:
+            self.handle_data_requested(endpoint)
+        else:
+            self.handle_unexpected_data_requested(ep_num)
 
 
     def handle_buffer_available(self, ep_num):
-        pass
+        """ Backend data-buffer-empty handler; for legacy compatibility.
+
+        Prefer overriding handle_buffer_available().
+        """
+        endpoint = self.get_endpoint(ep_num, USBDirection.IN)
+
+        if endpoint:
+            self.handle_buffer_empty(endpoint)
 
 
     def handle_data_available(self, ep_num, data):
@@ -268,7 +292,12 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         Prefer overriding handle_data_received().
         """
-        self.handle_data_received(ep_num, data)
+        endpoint = self.get_endpoint(ep_num, USBDirection.OUT)
+
+        if endpoint:
+            self.handle_data_received(endpoint)
+        else:
+            self.handle_unexpected_data_received(ep_num)
 
 
     #
@@ -293,12 +322,13 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # we'll need to stall the endpoint if no handler was found.
         if not handled:
             logger.warning(f"Unhandled control request [{request}]; stalling.")
+            self._add_request_suggestion(request)
             self.stall()
 
         return handled
 
 
-    def handle_data_received(self, endpoint_number: int, data: bytes):
+    def handle_data_received(self, endpoint: USBEndpoint, data: bytes):
         """ Handler for receipt of non-control request data.
 
         Typically, this method will delegate any data received to the
@@ -312,14 +342,14 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # If we have a configuration, delegate to it.
         if self.configuration:
-            self.configuration.handle_data_received(endpoint_number, data)
+            self.configuration.handle_data_received(endpoint, data)
 
         # If we're un-configured, we don't expect to receive
         # anything other than control data; defer to our "unexpected data".
         else:
             logger.error(f"Received non-control data when unconfigured!"
                     "This is invalid host behavior.")
-            self.handle_unexpected_data_received(endpoint_number, data)
+            self.handle_unexpected_data_received(endpoint.number, data)
 
 
     def handle_unexpected_data_received(self, endpoint_number: int, data: bytes):
@@ -336,7 +366,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         logger.error(f"Received {len(data)} bytes of data on invalid EP{endpoint_number}/OUT.")
 
 
-    def handle_data_requested(self, endpoint_number: int):
+    def handle_data_requested(self, endpoint: USBEndpoint):
         """ Handler called when the host requests data on a non-control endpoint.
 
         Typically, this method will delegate the request to the appropriate
@@ -349,14 +379,14 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # If we have a configuration, delegate to it.
         if self.configuration:
-            self.configuration.handle_data_requested(endpoint_number)
+            self.configuration.handle_data_requested(endpoint)
 
         # If we're un-configured, we don't expect to receive
         # anything other than control data; defer to our "unexpected data".
         else:
             logger.error(f"Received non-control data when unconfigured!"
                     "This is invalid host behavior.")
-            self.handle_unexpected_data_requested(endpoint_number)
+            self.handle_unexpected_data_requested(endpoint.number)
 
 
     def handle_unexpected_data_requested(self, endpoint_number: int):
@@ -372,7 +402,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         logger.error(f"Host requested data on invalid EP{endpoint_number}/IN.")
 
 
-    def handle_buffer_empty(self, endpoint_number: int):
+    def handle_buffer_empty(self, endpoint: USBEndpoint):
         """ Handler called when a given endpoint first has an empty buffer.
 
         Often, an empty buffer indicates an opportunity to queue data
@@ -384,7 +414,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # If we have a configuration, delegate to it.
         if self.configuration:
-            self.configuration.handle_buffer_empty(endpoint_number)
+            self.configuration.handle_buffer_empty(endpoint)
 
 
     #
@@ -398,6 +428,129 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def _get_subordinate_handlers(self):
         # As a device, our subordinates are our configurations.
         return self.configurations.values()
+
+
+    #
+    # Suggestion engine.
+    #
+
+    def _add_request_suggestion(self, request: USBControlRequest):
+        """ Adds a 'suggestion' to the list of requests that may need implementing.
+
+        Parameters:
+            request -- The unhandled request on which the suggestion should be based.
+         """
+
+        # Build a tuple of the relevant immutable parts of the request,
+        # and store it as a suggestion.
+        suggestion_summary = (request.direction, request.type, request.recipient, request.number)
+
+        self._suggested_requests.add(suggestion_summary)
+        self._suggested_request_metadata[suggestion_summary] = {'length': request.length}
+
+
+    def _print_suggested_requests(self):
+        """ Prints a collection of suggested additions to the stdout. """
+
+        # Create a quick printing shortcut.
+        print_html = lambda data : print_formatted_text(HTML(data))
+
+        # Look-ups for the function's decorators / etc.
+        request_type_decorator = {
+            USBRequestType.STANDARD:    '@standard_request_handler',
+            USBRequestType.VENDOR:      '@vendor_request_handler',
+            USBRequestType.CLASS:       '@class_request_handler',
+            USBRequestRecipient.OTHER:  '@reserved_request_handler'
+        }
+        target_decorator = {
+            USBRequestRecipient.DEVICE:    '@to_device',
+            USBRequestRecipient.INTERFACE: '@to_interface',
+            USBRequestRecipient.ENDPOINT:  '@to_endpoint',
+            USBRequestRecipient.OTHER:     '@to_other',
+        }
+
+        print_html("\n<u>Request handler code:</u>")
+
+        if not self._suggested_requests:
+            print_html("\t No suggestions.")
+            return
+
+        # Print each suggestion.
+        for suggestion in self._suggested_requests:
+            direction, request_type, recipient, number = suggestion
+
+            # Find the last request length.
+            length_note = self._suggested_request_metadata[suggestion]['length']
+
+            # Find the associated text descriptions for the relevant field.
+            decorator = request_type_decorator[request_type]
+            direction_name = USBDirection(direction).name
+
+            # Figure out if we want to use a cleaner request number.
+            try:
+                request_number = f"USBStandardRequests.{USBStandardRequests(number).name}"
+                function_name  = f"handle_{USBStandardRequests(number).name.lower()}_request"
+            except ValueError:
+                request_number = f"<ansiblue>{number}</ansiblue>"
+                function_name = f"handle_control_request_{number}"
+
+            # Figure out if we should include a target decorator.
+            if recipient in target_decorator:
+                recipient_decorator = target_decorator[recipient]
+                specific_recipient  = ""
+            else:
+                recipient_decorator = None
+                specific_recipient = f"recipient=<ansiblue>{recipient}</ansiblue>, "
+
+            #
+            # Print the code block.
+            #
+            print_html("")
+
+            # Primary request decorator, e.g. "@standard_request_handler".
+            print_html(f"    <ansigreen>{decorator}</ansigreen>("
+                    f"number={request_number}, "
+                    f"{specific_recipient}"
+                    f"direction=USBDirection.{direction_name}"
+                    f")")
+
+            # Recipient speicifier; e.g. "@to_device"
+            if recipient_decorator:
+                print_html(f"    <ansigreen>{recipient_decorator}</ansigreen>")
+
+            # Function definition.
+            print_html(f"    <ansiwhite><b>def</b></ansiwhite> "
+                    f"<ansiyellow>{function_name}</ansiyellow>"
+                    "(self, request):"
+            )
+
+            # Note about the requested length, if applicable.
+            if direction == USBDirection.IN:
+                print_html(f"        <ansimagenta># Most recent request was for {length_note}B of data.</ansimagenta>")
+
+            # Default function body.
+            print_html(f"        <ansimagenta># Replace me with your handler.</ansimagenta>")
+            print_html(f"        request.stall()")
+
+
+    def print_suggested_additions(self):
+        """ Prints a collection of suggested additions to the stdout. """
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        # Create a quick printing shortcut.
+        print_html = lambda data : print_formatted_text(HTML(data))
+
+        # Header.
+        print_html("")
+        print_html("<b><u>Automatic Suggestions</u></b>")
+        print_html("These suggestions are based on simple observed behavior;")
+        print_html("not all of these suggestions may be useful / desireable.")
+        print_html("")
+
+        self._print_suggested_requests()
+        print_html("")
 
 
 

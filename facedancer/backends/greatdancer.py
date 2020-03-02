@@ -214,6 +214,7 @@ class GreatDancerApp(FacedancerApp):
 
     def disconnect(self):
         """ Disconnects the GreatDancer from its target host. """
+        logger.info("Disconnecting from host.")
         self.device.comms.release_exclusive_access()
         self.api.disconnect()
 

@@ -8,7 +8,7 @@ from enum import Enum, IntFlag, IntEnum
 class USBDirection(IntEnum):
     """ Class representing USB directions. """
     OUT = 0
-    IN = 1
+    IN  = 1
 
     def is_in(self):
         return self is self.IN
@@ -430,3 +430,17 @@ class USBUsageType(IntEnum):
     DATA              = 0
     FEEDBACK          = 1
     IMPLICIT_FEEDBACK = 2
+
+
+class USBStandardRequests(IntEnum):
+    GET_STATUS = 0
+    CLEAR_FEATURE = 1
+    SET_FEATURE = 3
+    SET_ADDRESS = 5
+    GET_DESCRIPTOR = 6
+    SET_DESCRIPTOR = 7
+    GET_CONFIGURATION = 8
+    SET_CONFIGURATION = 9
+    GET_INTERFACE = 10
+    SET_INTERFACE = 11
+    SYNCH_FRAME = 12

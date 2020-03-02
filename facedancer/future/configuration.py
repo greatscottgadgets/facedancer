@@ -86,7 +86,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     #
 
 
-    def handle_data_received(self, endpoint_number: int, data: bytes):
+    def handle_data_received(self, endpoint: USBEndpoint, data: bytes):
         """ Handler for receipt of non-control request data.
 
         Typically, this method will delegate any data received to the
@@ -95,20 +95,20 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         calling the `.handle_data_received` method on `self.configuration`.
 
         Parameters:
-            endpoint_number -- The endpoint number on which the data was received.
-            data            -- The raw bytes received on the relevant endpoint.
+            endpoint -- The endpoint on which the data was received.
+            data     -- The raw bytes received on the relevant endpoint.
         """
 
         for interface in self.interfaces.values():
-            if interface.has_endpoint(endpoint_number, direction=USBDirection.OUT):
-                interface.handle_data_received(endpoint_number, data)
+            if interface.has_endpoint(endpoint.number, direction=USBDirection.OUT):
+                interface.handle_data_received(endpoint, data)
                 return
 
-        # If no one interface owned the targeted endpoint, consider the data unexpected.
-        self.get_device().handle_unexpected_data_received(endpoint_number, data)
+        # If no interface owned the targeted endpoint, consider the data unexpected.
+        self.get_device().handle_unexpected_data_received(endpoint.number, data)
 
 
-    def handle_data_requested(self, endpoint_number: int):
+    def handle_data_requested(self, endpoint: USBEndpoint):
         """ Handler called when the host requests data on a non-control endpoint.
 
         Typically, this method will delegate the request to the appropriate
@@ -120,15 +120,15 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         """
 
         for interface in self.interfaces.values():
-            if interface.has_endpoint(endpoint_number, direction=USBDirection.IN):
-                interface.handle_data_requested(endpoint_number)
+            if interface.has_endpoint(endpoint.number, direction=USBDirection.IN):
+                interface.handle_data_requested(endpoint)
                 return
 
         # If no one interface owned the targeted endpoint, consider the data unexpected.
-        self.get_device().handle_unexpected_data_requested(endpoint_number)
+        self.get_device().handle_unexpected_data_requested(endpoint.number)
 
 
-    def handle_buffer_empty(self, endpoint_number: int):
+    def handle_buffer_empty(self, endpoint: USBEndpoint):
         """ Handler called when a given endpoint first has an empty buffer.
 
         Often, an empty buffer indicates an opportunity to queue data
@@ -139,8 +139,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         """
 
         for interface in self.interfaces.values():
-            if interface.has_endpoint(endpoint_number, direction=USBDirection.IN):
-                interface.handle_buffer_empty(endpoint_number)
+            if interface.has_endpoint(endpoint.number, direction=USBDirection.IN):
+                interface.handle_buffer_empty(endpoint)
                 return
 
 

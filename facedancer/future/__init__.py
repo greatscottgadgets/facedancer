@@ -13,7 +13,7 @@ from .request       import to_device, to_endpoint, to_interface, to_other
 
 # Raw types.
 from .types         import USBDirection, USBTransferType, USBUsageType, USBSynchronizationType
-from .types         import USBRequestType, USBRequestRecipient
+from .types         import USBRequestType, USBRequestRecipient, USBStandardRequests
 
 # Decorators.
 from .magic import use_automatically, use_inner_classes_automatically
