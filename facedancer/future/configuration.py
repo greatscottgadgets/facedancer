@@ -3,36 +3,25 @@
 #
 """ Functionality for describing USB device configurations. """
 
-
-import typing
-import struct
-import logging
-
-from dataclasses  import dataclass
+from dataclasses  import dataclass, field
+from typing       import Iterable
 
 from .types       import USBDirection
 from .magic       import instantiate_subordinates, AutoInstantiable
-from .request     import USBRequestHandler, USBControlRequest
+from .request     import USBRequestHandler
 
 from .interface   import USBInterface
 from .descriptor  import USBDescribable
 from .endpoint    import USBEndpoint
 
-# TODO: Section these out into their own folder?
-from ..USBClass import USBClass
-from ..HIDClass import HIDClass
 
-
-# Create a default logger for the module.
-logger = logging.getLogger("configuration")
 
 @dataclass
 class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBDevice's configuration. """
 
-    DESCRIPTOR_TYPE_NUMBER     = 0x02
-    DESCRIPTOR_SIZE_BYTES      = 9
-
+    DESCRIPTOR_TYPE_NUMBER  = 0x02
+    DESCRIPTOR_SIZE_BYTES   = 9
 
     configuration_index  : int            = 1
     configuration_string : str            = None
@@ -41,12 +30,13 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     max_power            : int            = 250
 
     parent               : USBDescribable = None
+    interfaces           : USBInterface = field(default_factory=dict)
 
 
     def __post_init__(self):
 
-        # Gather any interfaces
-        self.interfaces = instantiate_subordinates(self, USBInterface)
+        # Gather any interfaces defined on the object.
+        self.interfaces.update(instantiate_subordinates(self, USBInterface))
 
 
     #
@@ -149,22 +139,26 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     # Backend interface functions.
     #
 
-    def get_interfaces(self):
-        """ Returns an iterable of all interfaces on the provided device. """
+    def get_interfaces(self) -> Iterable[USBInterface]:
+        """ Returns an iterable over all interfaces on the provided device. """
         return self.interfaces.values()
 
 
-    def get_descriptor(self):
+    def get_descriptor(self) -> bytes:
+        """ Returns this configurations's configuration descriptor, including subordinates. """
         interface_descriptors = bytearray()
 
-        # FIXME: sort these by their interface numbers
-        for interface in self.interfaces.values():
+        # FIXME: use construct
+
+        # All all subordinate descriptors together to create a big subordinate desciptor.
+        interfaces = sorted(self.interfaces.values(), key=lambda item: item.number)
+        for interface in interfaces:
             interface_descriptors += interface.get_descriptor()
 
-        total_len = len(interface_descriptors) + 9
-
+        total_len      = len(interface_descriptors) + 9
         string_manager = self.get_device().strings
 
+        # Build the core interface descriptor.
         d = bytes([
                 9,          # length of descriptor in bytes
                 2,          # descriptor type 2 == configuration
@@ -180,12 +174,10 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         return d + interface_descriptors
 
 
-
-
     #
     # Interfacing functions for AutoInstantiable.
     #
-    def get_identifier(self):
+    def get_identifier(self) -> int:
         return self.configuration_index
 
 
@@ -193,8 +185,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     # Backend functions for our RequestHandler class.
     #
 
-    def _request_handlers(self):
+    def _request_handlers(self) -> Iterable[callable]:
         return ()
 
-    def _get_subordinate_handlers(self):
+    def _get_subordinate_handlers(self) -> Iterable[USBInterface]:
         return self.interfaces.values()

@@ -3,30 +3,56 @@
 #
 """ Functionality for declaring and working with USB control requests. """
 
-
 import inspect
 import logging
 import warnings
 import functools
-#import construct
 
-from enum import IntEnum
-from abc import ABCMeta, abstractmethod
+from typing      import List, Iterable
+from dataclasses import dataclass
+from abc         import ABCMeta, abstractmethod
 
-from .types import USBDirection, USBRequestRecipient, USBRequestType
+
+from .descriptor import USBDescribable
+from .types      import USBRequestRecipient, USBRequestType, USBDirection
 
 logger = logging.getLogger(__name__)
 
-def _wrap_with_field_matcher(func, field_name, field_value):
-    """ Internal function that generates a request-refinement decorator.
+def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
+    """ Internal function; generates a request-refinement decorator.
 
-    TODO: better doctstring
+    This generates a decorator that ensures a request-handler is only executed
+    if its one if its field (named `field_name`) matches a given value.
+
+    As an example, if this is called with `field_name`='index' and 'field_value'=3,
+    this modifies `func` so it is only executed for requests with an index of 3.
+
+    Parmaters:
+        func        -- The handler function to wrap.
+        field_name  -- The name of the field to check.
+        field_value -- The value the given field must have for the function to execute.
+
+        match_index -- If true, the matcher is further refined in order to only execute
+                       for requests targeting a given e.g. interface or endpoint object.
+
+                       In this case, the handler is only executed if the low byte of the
+                       function's index matches the owning object's identifier, as verified
+                       with `matches_identifier`.
     """
 
     @functools.wraps(func)
     def _wrapped(caller, request):
-        if getattr(request, field_name) == field_value:
+
+        # Compute our two conditions...
+        field_matches = (getattr(request, field_name) == field_value)
+        index_matches = \
+            caller.matches_identifier(request.index & 0xff) if match_index else True
+
+        # ... and call the inner function only if they match.
+        if field_matches and index_matches:
             func(caller, request)
+
+        # Otherwise, raise NotImplemented, which translates to a "not handled here".
         else:
             raise NotImplementedError()
 
@@ -47,6 +73,7 @@ class ControlRequestHandler:
 
 
     def __call__(self, caller, request):
+        """ Primary execution; calls the relevant handler if our conditions are met. """
         if self._condition(request):
             try:
                 self._handler(caller, request)
@@ -132,95 +159,91 @@ def to_device(func):
     """ Decorator; refines a handler so it's only called on requests with a device recipient. """
     return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.DEVICE)
 
+def to_this_endpoint(func):
+    """ Decorator; refines a handler so it's only called on requests targeting this endpoint. """
+    return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.ENDPOINT, match_index=True)
 
-# FIXME: should this implicitly be "to_this_endpoint" and "to_any_endpoint"?
-def to_endpoint(func):
+def to_any_endpoint(func):
     """ Decorator; refines a handler so it's only called on requests with an endpoint recipient. """
     return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.ENDPOINT)
 
-
-# FIXME: should this implicitly be "to_this_interface" and "to_any_interface"?
-def to_interface(func):
-    """ Decorator; refines a handler so it's only called on requests with an interface recipient. """
+def to_this_interface(func):
+    """ Decorator; refines a handler so it's only called on requests targeting this interface. """
     return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.INTERFACE)
 
+def to_any_interface(func):
+    """ Decorator; refines a handler so it's only called on requests with an interface recipient. """
+    return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.INTERFACE)
 
 def to_other(func):
     """ Decorator; refines a handler so it's only called on requests with an Other (TM) recipient. """
     return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.OTHER)
 
 
+#
+# Metaprogramming aides.
+#
 
+def get_request_handler_methods(cls) -> List[callable]:
+    """ Returns a list of all handler methods on a given class or object.
 
-def get_request_handler_methods(cls):
+    This is used to find all methods of an object decorated with the
+    @*_request_handler decorators.
+    """
+
     members = inspect.getmembers(cls)
     return [m for _, m in members if isinstance(m, ControlRequestHandler)]
 
 
+#
+# Control request definitions.
+#
 
+@dataclass
 class USBControlRequest:
-    """ Class encapsulating a USB control request. """
+    """ Class encapsulating a USB control request.
 
-    _type_descriptions = {
-        0:  'standard',
-        1:  'class',
-        2:  'vendor',
-        3:  'INVALID',
-    }
+    TODO: document parameters
+    """
 
-    _recipient_descriptions = {
-        0: 'device',
-        1: 'interface',
-        2: 'endpoint',
-        3: 'other',
-    }
+    direction    : USBDirection
+    type         : USBRequestType
+    recipient    : USBRequestRecipient
 
-    # TODO: split me up by recipient
-    _standard_req_descriptions = {
-        0: 'GET_STATUS',
-        1: 'CLEAR_FEATURE',
-        3: 'SET_FEATURE',
-        5: 'SET_ADDRESS',
-        6: 'GET_DESCRIPTOR',
-        7: 'SET_DESCRIPTOR',
-        8: 'GET_CONFIGURATION',
-        9: 'SET_CONFIGURATION',
-        10: 'GET_INTERFACE',
-        11: 'SET_INTERFACE',
-        12: 'SYNCH_FRAME'
-    }
+    number       : int
+    value        : int
+    index        : int
+    length       : int
 
-    _descriptor_number_description = {
-        1: 'DEVICE',
-        2: 'CONFIGURATION',
-        3: 'STRING',
-        4: 'INTERFACE',
-        5: 'ENDPOINT',
-        6: 'DEVICE_QUALIFIER',
-        7: 'OTHER_SPEED_CONFIG',
-        8: 'POWER',
-        33: 'HID',
-        34: 'REPORT',
-    }
-
-    def __init__(self, raw_bytes, *, device=None):
-        """Expects raw 8-byte setup data request packet"""
-
-        self.request_type   = raw_bytes[0]
-        self.number         = raw_bytes[1]
-        self.value          = (raw_bytes[3] << 8) | raw_bytes[2]
-        self.index          = (raw_bytes[5] << 8) | raw_bytes[4]
-        self.length         = (raw_bytes[7] << 8) | raw_bytes[6]
-        self.data           = raw_bytes[8:]
-
-        self.device = device
+    data         : bytes = b""
+    device       : USBDescribable = None
 
 
     @classmethod
-    def from_raw_bytes(cls, raw_bytes, *, device=None):
+    def from_raw_bytes(cls, raw_bytes: bytes, *, device = None):
+        """ Creates a request object from a sequency of raw bytes.
 
-        # TODO: move the __init__ content here and make this a proper dataclass
-        return cls(raw_bytes, device=device)
+        Parameters:
+            raw_bytes -- The raw bytes to create the object from.
+            device    -- The USBDevice to associate with the given request.
+                         Optional, but necessary to use the .reply() / .acknowledge()
+                         methods.
+        """
+
+        # FIXME: parse using construct
+        fields = {
+            'direction': (raw_bytes[0] >> 7) & 0b1,
+            'type':      (raw_bytes[0] >> 5) & 0b11,
+            'recipient': (raw_bytes[0] >> 0) & 0b11111,
+
+            'number':    raw_bytes[1],
+            'value':     (raw_bytes[3] << 8) | raw_bytes[2],
+            'index':     (raw_bytes[5] << 8) | raw_bytes[4],
+            'length':    (raw_bytes[7] << 8) | raw_bytes[6],
+            'data':      raw_bytes[8:],
+            'device':    device
+        }
+        return cls(**fields)
 
 
     #
@@ -232,17 +255,27 @@ class USBControlRequest:
         self.device.send(endpoint_number=0, data=data)
 
 
-    def acknowledge(self):
-        """ Acknowledge the given request without replying. """
-        self.device.send(endpoint_number=0, data=b"")
+    def acknowledge(self, *, blocking: bool = False):
+        """ Acknowledge the given request without replying.
+
+        Parameters:
+            blocking -- If true, the relevant control request will complete
+                        finish before returning.
+        """
+        self.device.send(endpoint_number=0, data=b"", blocking=blocking)
 
 
-    def ack(self):
+    def ack(self, *, blocking: bool = False):
         """ Acknowledge the given request without replying.
 
         Convenience alias for .acknowledge().
+
+        Parameters:
+            blocking -- If true, the relevant control request will complete
+                        finish before returning.
+
         """
-        self.acknowledge()
+        self.acknowledge(blocking=blocking)
 
 
     def stall(self):
@@ -260,109 +293,58 @@ class USBControlRequest:
 
 
     @property
-    def request(self):
+    def request(self) -> int:
         warnings.warn('`request` should be replaced with `number`', DeprecationWarning)
         return self.number
 
+    @property
+    def request_type(self) -> int:
+        """ Fetches the whole `request_type` byte. """
+        return (self.direction << 7) | \
+               (self.type      << 5) | \
+               (self.recipient << 0)
 
     @property
-    def recipient(self):
-        return self.get_recipient()
-
-
-    @property
-    def type(self):
-        return self.get_type()
-
+    def value_low(self) -> int:
+        return self.value & 0xff
 
     @property
-    def direction(self):
-        return self.get_direction()
+    def value_high(self) -> int:
+        return self.value >> 8
+
+    @property
+    def index_low(self) -> int:
+        return self.index & 0xff
+
+    @property
+    def index_high(self) -> int:
+        return self.index >> 8
+
+    def get_direction(self) -> USBDirection:
+        return self.direction
+
+    def get_type(self) -> USBRequestType:
+        return self.type
+
+    def get_recipient(self) -> USBRequestRecipient:
+        return self.recipient
 
 
-    def __str__(self):
-        s = "dir=%d, type=%x, rec=%x, r=%x, v=%x, i=%x, l=%d" \
-                % (self.get_direction(), self.get_type(), self.get_recipient(),
-                   self.number, self.value, self.index, self.length)
-        return s
+    #
+    # Pretty printing.
+    #
 
+    def raw(self) -> bytes:
+        """ Returns the raw bytes that compose the request. """
 
-    def __repr__(self):
-        direction_marker = "<" if self.get_direction() == 1 else ">"
-
-        # Pretty print, where possible.
-        type = self.get_type_string()
-        recipient = self.get_recipient_string()
-        request = self.get_request_number_string()
-        value = self.get_value_string()
-
-        s = "%s, %s request to %s (%s: value=%s, index=%x, length=%d)" \
-                % (direction_marker, type, recipient, request,
-                   value, self.index, self.length)
-        return s
-
-
-    def get_type_string(self):
-        return self._type_descriptions[self.get_type()]
-
-    def get_recipient_string(self):
-        return self._recipient_descriptions[self.get_recipient()]
-
-    def get_request_number_string(self):
-        if self.get_type() == 0:
-            return self._get_standard_request_number_string()
-        else:
-            type = self.get_type_string()
-            return "{} request {}".format(type, self.request)
-
-    def _get_standard_request_number_string(self):
-        if self.request in self._standard_req_descriptions:
-            return self._standard_req_descriptions[self.request]
-        else:
-            return "unknown request {}".format(self.request)
-
-    def get_value_string(self):
-        # If this is a GET_DESCRIPTOR request, parse it.
-        if self.get_type() == 0 and self.request == 6:
-            descriptor_index = self.value & 0xff
-            description = self.get_descriptor_number_string()
-            return "{} descriptor (index=0x{:02x})".format(description, descriptor_index)
-        else:
-            return "%x" % self.value
-
-    def get_descriptor_number_string(self):
-        try:
-            descriptor_index = self.value >> 8
-            return self._descriptor_number_description[descriptor_index]
-        except KeyError:
-            return "unknown descriptor 0x%x" % self.value
-
-    def raw(self):
-        """returns request as bytes"""
-        b = bytes([ self.request_type, self.request,
+        # FIXME: use construct?
+        b = bytes([ self.request_type, self.number,
                     self.value  & 0xff, (self.value  >> 8) & 0xff,
                     self.index  & 0xff, (self.index  >> 8) & 0xff,
                     self.length & 0xff, (self.length >> 8) & 0xff
                   ])
         return b
 
-    def get_direction(self):
-        return (self.request_type >> 7) & 0x01
-
-    def get_type(self):
-        return (self.request_type >> 5) & 0x03
-
-    def get_recipient(self):
-        return self.request_type & 0x1f
-
-    # meaning of bits in wIndex changes whether we're talking about an
-    # interface or an endpoint (see USB 2.0 spec section 9.3.4)
-    def get_index(self):
-        rec = self.get_recipient()
-        if rec == 1:                # interface
-            return self.index
-        elif rec == 2:              # endpoint
-            return self.index & 0x0f
 
 
 class USBRequestHandler(metaclass=ABCMeta):
@@ -370,23 +352,26 @@ class USBRequestHandler(metaclass=ABCMeta):
 
 
     @abstractmethod
-    def _request_handlers(self):
+    def _request_handlers(self) -> Iterable[callable]:
         """ Returns an iterable of request handlers provided by the class. """
 
 
-    def _get_subordinate_handlers(self):
-        """ Returns a list of subordinate handlers who should have an opportunity to handle requests.
+    def _get_subordinate_handlers(self) -> Iterable[callable]:
+        """ Returns an iterable of subordinate handlers who should have an opportunity to handle requests.
 
         Normally called by _call_subordinate_handlers; may not be valid if that function is overridden.
         """
         return ()
 
 
-    def _call_subordinate_handlers(self, request):
+    def _call_subordinate_handlers(self, request: USBControlRequest) -> bool:
         """ Calls the ``handle_request`` method of any subordinate handlers.
 
         This default implementation uses get_subordinates to get an iterable
         of subordinates we should call handle_request on.
+
+        Returns:
+            true iff the request is handled
         """
 
         handled = False
@@ -398,7 +383,7 @@ class USBRequestHandler(metaclass=ABCMeta):
 
 
 
-    def handle_request(self, request):
+    def handle_request(self, request: USBControlRequest) -> bool:
         """ Core control request handler.
 
         This function can be overridden by a subclass if desired; but the typical way to
@@ -406,6 +391,9 @@ class USBRequestHandler(metaclass=ABCMeta):
 
         Parameters:
             request -- the USBControlRequest object representing the relevant request
+
+        Returns:
+            true iff the request is handled
         """
 
         handled = False

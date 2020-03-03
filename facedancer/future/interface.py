@@ -1,29 +1,29 @@
-# USBInterface.py
 #
-# Contains class definition for USBInterface.
+# This file is part of facedancer.
+#
+""" Functionality for defining USB interfaces. """
 
-import struct
 import logging
 
-from typing       import List, Dict
+from typing       import Dict, Iterable
 from dataclasses  import dataclass, field
-
-from ..USB import *
-from ..USBClass import USBClass
 
 from .magic       import instantiate_subordinates, AutoInstantiable
 from .types       import USBDirection, USBStandardRequests
 
-from .descriptor  import USBDescribable, USBDescriptor, USBClassDescriptor
-from .request     import USBRequestHandler, get_request_handler_methods
-from .request     import standard_request_handler, to_interface
+from .            import device
+from .descriptor  import USBDescribable, USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber
+from .request     import USBControlRequest, USBRequestHandler, get_request_handler_methods
+from .request     import standard_request_handler, to_this_interface
 from .endpoint    import USBEndpoint
 
-# Create a default logger for the module.
-logger = logging.getLogger("interface")
 
 @dataclass
 class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
+    """ Class represenging a USBDevice interface.
+
+    TODO: parameter docs
+    """
     DESCRIPTOR_TYPE_NUMBER = 0x4
 
     name                   : str = "generic USB interface"
@@ -35,33 +35,31 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     subclass_number        : int = 0
     protocol_number        : int = 0
 
-    # FIXME: replace with an interface string
-    interface_string_index : int = 0
+    interface_string       : str = None
 
     descriptors            : Dict[int, bytes] = field(default_factory=dict)
     class_descriptor       : bytes = None
 
+    endpoints              : Dict[int, USBEndpoint] = field(default_factory=dict)
     parent                 : USBDescribable = None
 
 
     def __post_init__(self):
 
-        # FIXME: cleanup
+        # Capture any descriptors/endpoints declared directly on the class.
+        self.endpoints.update(instantiate_subordinates(self, USBEndpoint))
+        self.descriptors.update(instantiate_subordinates(self, USBDescriptor))
 
-        self.endpoints = instantiate_subordinates(self, USBEndpoint)
-
-        subordinate_descriptors = instantiate_subordinates(self, USBDescriptor)
-        self.descriptors.update(subordinate_descriptors)
-
-        # If we weren't provided with a class descriptor, try to find one provided on the class.
+        # If we weren't provided with a class descriptor, try to find one
+        # provided on the class.
         if self.class_descriptor is None:
             class_descriptors = instantiate_subordinates(self, USBClassDescriptor)
             self.class_descriptor = list(class_descriptors.values())[0] if class_descriptors else None
 
-        self.descriptors[USB.desc_type_interface] = self.get_descriptor
-        self.configuration = None
+        # Add in our general interface-descriptor handler.
+        self.descriptors[USBDescriptorTypeNumber.INTERFACE] = self.get_descriptor
 
-        # populate our handlers
+        # Populate our request handlers.
         self._request_handler_methods = get_request_handler_methods(self)
 
 
@@ -72,6 +70,11 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     def get_device(self):
         """ Returns the device associated with the given descriptor. """
         return self.parent.get_device()
+
+
+    def add_endpoint(self, endpoint: USBEndpoint):
+        """ Adds the provided endpoint to the interface. """
+        self.endpoints[endpoint.get_identifier()] = endpoint
 
 
     def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
@@ -165,51 +168,25 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     # Internal interface.
     #
 
-    # USB 2.0 specification, section 9.4.3 (p 281 of pdf)
-    # HACK: blatant copypasta from USBDevice pains me deeply
-    @standard_request_handler(number=6)
-    @to_interface
-    def handle_get_descriptor_request(self, req):
-        dtype  = (req.value >> 8) & 0xff
-        dindex = req.value & 0xff
-        lang   = req.index
-        n      = req.length
+    @standard_request_handler(number=USBStandardRequests.GET_DESCRIPTOR)
+    @to_this_interface
+    def handle_get_descriptor_request(self, request):
+        """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
+        logging.debug("Handling GET_DESCRIPTOR on endpoint.")
 
-        response = None
-
-        logger.debug(f"{self.name} received GET_DESCRIPTOR at interface req {dtype}, index {dindex}, " \
-                    + f"language {lang:04x}, length {n}")
-
-        # TODO: handle KeyError
-        try:
-            response = self.descriptors[dtype]
-        except KeyError:
-            req.stall()
-
-        if callable(response):
-            response = response(dindex)
-
-        if response:
-            n = min(n, len(response))
-            req.reply(response[:n])
-
-            logger.debug(f"sent {n} bytes in response")
-
-
-    #
-    # Alternate interface support.
-    #
-
-    # TODO: support these!
-
-    @standard_request_handler(number=USBStandardRequests.SET_INTERFACE)
-    @to_interface
-    def handle_set_interface_request(self, request):
-        request.stall()
+        # This is the same as the USBDevice get descriptor request;
+        # delegate to its unbound method to avoid duplication.
+        device.USBDevice.handle_generic_get_descriptor_request(self, request)
 
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)
-    def get_descriptor(self):
+    def get_descriptor(self) -> bytes:
+        """ Retrieves the given interface's interface descriptor, with subordinates. """
+
+        # FIXME: use construct
+
+        string_manager = self.get_device().strings
+
         d = bytearray([
                 9,          # length of descriptor in bytes
                 4,          # descriptor type 4 == interface
@@ -219,7 +196,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
                 self.class_number,
                 self.subclass_number,
                 self.protocol_number,
-                self.interface_string_index
+                string_manager.get_index(self.interface_string)
         ])
 
         # If we have a class object, append its class descriptor...
@@ -236,19 +213,30 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
         return d
 
     #
+    # Alternate interface support.
+    #
+
+    # TODO: support these!
+
+    @standard_request_handler(number=USBStandardRequests.SET_INTERFACE)
+    @to_this_interface
+    def handle_set_interface_request(self, request: USBControlRequest):
+        request.stall()
+
+
+    #
     # Automatic instantiation support.
     #
 
-    def get_identifier(self):
+    def get_identifier(self) -> int:
         return self.number
-
 
     #
     # Request handler functions.
     #
 
-    def _request_handlers(self):
+    def _request_handlers(self) -> Iterable[callable]:
         return self._request_handler_methods
 
-    def _get_subordinate_handlers(self):
+    def _get_subordinate_handlers(self) -> Iterable[callable]:
         return self.endpoints.values()

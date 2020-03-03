@@ -1,20 +1,22 @@
 #
 # This file is part of FaceDancer.
 #
+""" Functionality for defining USB devices. """
 
 import sys
 import asyncio
 import logging
 import warnings
 
-from typing         import Dict, Iterable
+from typing         import Dict, Iterable, Union
 from dataclasses    import dataclass, field
 
 from prompt_toolkit import HTML, print_formatted_text
 
-from ..             import FacedancerUSBApp
-from .types         import DescriptorTypes, LanguageIDs
-from .types         import USBDirection, USBRequestType, USBRequestRecipient, USBStandardRequests
+from ..             import FacedancerUSBApp, LOGLEVEL_TRACE
+from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
+from .types         import USBDirection, USBRequestType, USBRequestRecipient
+
 from .magic         import instantiate_subordinates
 
 from .descriptor    import USBDescribable, USBDescriptor, StringDescriptorManager
@@ -24,54 +26,45 @@ from .request       import USBControlRequest, USBRequestHandler
 from .request       import standard_request_handler, to_device, get_request_handler_methods
 
 
-# Create a default logger for the module.
-logger = logging.getLogger("device")
-
-# FIXME: abstract this to the logging library
-LOGLEVEL_TRACE = 5
-
 @dataclass
 class USBBaseDevice(USBDescribable, USBRequestHandler):
     """
     Base-most class for FaceDancer USB devices. This version is very similar to the USBDevice type,
     except that it does not define _any_ standard handlers. This allows you the freedom to declare
     whatever standard requests you'd like.
+
+    TODO: define parameter documentation, here
     """
 
     DESCRIPTOR_TYPE_NUMBER    = 0x01
     DESCRIPTOR_LENGTH         = 0x12
 
 
-    name                 : str = "generic device"
+    name                     : str = "generic device"
 
-    device_class         : int  = 0
-    device_subclass      : int  = 0
+    device_class             : int  = 0
+    device_subclass          : int  = 0
 
-    protocol_rel_num     : int  = 0
-    max_packet_size_ep0  : int  = 64
+    protocol_revision_number : int  = 0
+    max_packet_size_ep0      : int  = 64
 
-    vendor_id            : int  = 0x610b
-    product_id           : int  = 0x4653
+    vendor_id                : int  = 0x610b
+    product_id               : int  = 0x4653
 
-    manufacturer_string  : str  = "FaceDancer"
-    product_string       : str  = "Generic USB Device"
-    serial_number_string : str  = "S/N 3420E"
+    manufacturer_string      : str  = "FaceDancer"
+    product_string           : str  = "Generic USB Device"
+    serial_number_string     : str  = "S/N 3420E"
 
     # I feel bad for putting this as the default language ID / propagating anglocentrism,
     # but this appears to be the only language ID supported by some systems, so here it is.
-    supported_langauges  : tuple = (LanguageIDs.ENGLISH_US,)
+    supported_langauges      : tuple = (LanguageIDs.ENGLISH_US,)
 
-    device_rev           : int = 0
-    usb_spec_version     : int  = 0x0002
+    device_revision          : int  = 0
+    usb_spec_version         : int  = 0x0002
 
-    descriptors          : Dict[int, bytes]  = field(default_factory=dict)
-    backend              : FacedancerUSBApp = None
-
-
-    @property
-    def maxusb_app(self):
-        warnings.warn('maxusb_app should be replaced with backend', DeprecationWarning)
-        return self.backend
+    descriptors              : Dict[int, Union[bytes, callable]] = field(default_factory=dict)
+    configurations           : Dict[int, USBConfiguration]       = field(default_factory=dict)
+    backend                  : FacedancerUSBApp = None
 
 
     def __post_init__(self):
@@ -107,6 +100,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     #
     # Control interface.
     #
+
+    def add_configuration(self, configuration: USBConfiguration):
+        """ Adds the provided configuration to this device. """
+        self.configurations[configuration.number] = configuration
+
 
     def connect(self):
         """ Connects this device to the host; e.g. turning on our presence-detect pull up. """
@@ -162,7 +160,6 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             pass
         finally:
             self.disconnect()
-
 
 
     #
@@ -250,12 +247,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             return None
 
 
-
     #
     # Backend interface helpers.
     #
-    def create_request(self, raw_data):
-        return USBControlRequest(raw_data, device=self)
+    def create_request(self, raw_data: bytes) -> USBControlRequest:
+        return USBControlRequest.from_raw_bytes(raw_data, device=self)
 
 
     #
@@ -295,9 +291,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         endpoint = self.get_endpoint(ep_num, USBDirection.OUT)
 
         if endpoint:
-            self.handle_data_received(endpoint)
+            self.handle_data_received(endpoint, data)
         else:
-            self.handle_unexpected_data_received(ep_num)
+            self.handle_unexpected_data_received(ep_num, data)
 
 
     #
@@ -313,7 +309,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         Parameters:
             request -- the USBControlRequest object representing the relevant request
         """
-        logger.debug(f"{self.name} received request: {request}")
+        logging.debug(f"{self.name} received request: {request}")
 
         # Call our base USBRequestHandler method.
         handled = super().handle_request(request)
@@ -321,7 +317,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # As the top-most handle_request function, we have an extra responsibility:
         # we'll need to stall the endpoint if no handler was found.
         if not handled:
-            logger.warning(f"Unhandled control request [{request}]; stalling.")
+            logging.warning(f"Unhandled control request [{request}]; stalling.")
             self._add_request_suggestion(request)
             self.stall()
 
@@ -335,7 +331,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         appropriate configuration/interface/endpoint. If overridden, the
         overriding function will receive all data.
 
-        Parameteres:
+        Parameters:
             endpoint_number -- The endpoint number on which the data was received.
             data            -- The raw bytes received on the relevant endpoint.
         """
@@ -347,7 +343,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # If we're un-configured, we don't expect to receive
         # anything other than control data; defer to our "unexpected data".
         else:
-            logger.error(f"Received non-control data when unconfigured!"
+            logging.error(f"Received non-control data when unconfigured!"
                     "This is invalid host behavior.")
             self.handle_unexpected_data_received(endpoint.number, data)
 
@@ -363,7 +359,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             endpoint_number -- The endpoint number on which the data was received.
             data            -- The raw bytes received on the relevant endpoint.
         """
-        logger.error(f"Received {len(data)} bytes of data on invalid EP{endpoint_number}/OUT.")
+        logging.error(f"Received {len(data)} bytes of data on invalid EP{endpoint_number}/OUT.")
 
 
     def handle_data_requested(self, endpoint: USBEndpoint):
@@ -384,7 +380,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # If we're un-configured, we don't expect to receive
         # anything other than control data; defer to our "unexpected data".
         else:
-            logger.error(f"Received non-control data when unconfigured!"
+            logging.error(f"Received non-control data when unconfigured!"
                     "This is invalid host behavior.")
             self.handle_unexpected_data_requested(endpoint.number)
 
@@ -399,7 +395,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         Parameters:
             endpoint_number -- The endpoint number the data was received.
         """
-        logger.error(f"Host requested data on invalid EP{endpoint_number}/IN.")
+        logging.error(f"Host requested data on invalid EP{endpoint_number}/IN.")
 
 
     def handle_buffer_empty(self, endpoint: USBEndpoint):
@@ -421,11 +417,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     # Methods for USBRequestHandler.
     #
 
-    def _request_handlers(self):
+    def _request_handlers(self) -> Iterable[callable]:
         return self._request_handler_methods
 
 
-    def _get_subordinate_handlers(self):
+    def _get_subordinate_handlers(self) -> Iterable[callable]:
         # As a device, our subordinates are our configurations.
         return self.configurations.values()
 
@@ -446,7 +442,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         suggestion_summary = (request.direction, request.type, request.recipient, request.number)
 
         self._suggested_requests.add(suggestion_summary)
-        self._suggested_request_metadata[suggestion_summary] = {'length': request.length}
+        self._suggested_request_metadata[suggestion_summary] = {
+            'length': request.length,
+            'data':   request.data
+        }
 
 
     def _print_suggested_requests(self):
@@ -464,8 +463,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         }
         target_decorator = {
             USBRequestRecipient.DEVICE:    '@to_device',
-            USBRequestRecipient.INTERFACE: '@to_interface',
-            USBRequestRecipient.ENDPOINT:  '@to_endpoint',
+            USBRequestRecipient.INTERFACE: '@to_this_interface',
+            USBRequestRecipient.ENDPOINT:  '@to_this_endpoint',
             USBRequestRecipient.OTHER:     '@to_other',
         }
 
@@ -478,9 +477,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # Print each suggestion.
         for suggestion in self._suggested_requests:
             direction, request_type, recipient, number = suggestion
-
-            # Find the last request length.
-            length_note = self._suggested_request_metadata[suggestion]['length']
+            metadata = self._suggested_request_metadata[suggestion]
 
             # Find the associated text descriptions for the relevant field.
             decorator = request_type_decorator[request_type]
@@ -526,7 +523,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
             # Note about the requested length, if applicable.
             if direction == USBDirection.IN:
-                print_html(f"        <ansimagenta># Most recent request was for {length_note}B of data.</ansimagenta>")
+                print_html(f"        <ansimagenta># Most recent request was for {metadata['length']}B of data.</ansimagenta>")
+            else:
+                print_html(f"        <ansimagenta># Most recent request data: {metadata['data']}.</ansimagenta>")
 
             # Default function body.
             print_html(f"        <ansimagenta># Replace me with your handler.</ansimagenta>")
@@ -553,21 +552,29 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         print_html("")
 
 
-
     #
     # Backend helpers.
     #
 
+    def set_address(self, address: int, defer: bool = False):
+        """ Updates the device's knowledge of its own address.
 
-    def ack_status_stage(self, blocking=False):
-        self.backend.ack_status_stage(blocking=blocking)
-
-
-    def set_address(self, address, defer=False):
+        Parameters:
+            address -- The address to apply.
+            defer   -- If true, the address change should be deferred
+                       until the next time a control request ends. Should
+                       be set if we're changing the addres before we ack
+                       the relevant transaction.
+        """
+        self.address = address
         self.backend.set_address(address, defer)
 
 
-    def get_descriptor(self, n=0x12):
+    def get_descriptor(self) -> bytes:
+        """ Returns a complete descriptor for this device. """
+
+        # FIXME: use construct, here!
+
         d = bytearray([
             18,         # length of descriptor in bytes
             1,          # descriptor type 1 == device
@@ -575,29 +582,31 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             self.usb_spec_version & 0xff,
             self.device_class,
             self.device_subclass,
-            self.protocol_rel_num,
+            self.protocol_revision_number,
             self.max_packet_size_ep0,
             self.vendor_id & 0xff,
             (self.vendor_id >> 8) & 0xff,
             self.product_id & 0xff,
             (self.product_id >> 8) & 0xff,
-            (self.device_rev >> 8) & 0xff,
-            self.device_rev & 0xff,
+            (self.device_revision >> 8) & 0xff,
+            self.device_revision & 0xff,
             self.strings.get_index(self.manufacturer_string),
             self.strings.get_index(self.product_string),
             self.strings.get_index(self.serial_number_string),
             len(self.configurations)
         ])
-        return d[:n]
-
-    def send_control_message(self, data):
-        self.backend.send_on_endpoint(0, data)
-
-    def get_configuration_descriptor(self, num):
-        return self.configurations[num + 1].get_descriptor()
+        return d
 
 
-    def handle_get_supported_langauges_descriptor(self):
+    def get_configuration_descriptor(self, index: int) -> bytes:
+        """ Returns the configuration descriptor with the given configuration number. """
+
+        # The index argument is zero-indexed; here, but configuration numbers
+        # are one-indexed (as 0 is unconfigured). Adjust accordingly.
+        return self.configurations[index + 1].get_descriptor()
+
+
+    def handle_get_supported_langauges_descriptor(self) -> bytes:
         """ Returns the special string-descriptor-zero that indicates which langauges are supported. """
 
         # Our string descriptor is going to have two header bytes, plus two bytes
@@ -611,7 +620,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         return bytes(packet)
 
 
-    def get_string_descriptor(self, index):
+    def get_string_descriptor(self, index:int) -> bytes:
         """ Returns the string descriptor associated with a given index. """
 
         if index == 0:
@@ -620,130 +629,164 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             return self.strings[index]
 
 
+    def handle_generic_get_descriptor_request(self, request: USBControlRequest):
+        """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
 
-class USBDevice(USBBaseDevice):
-    """ Class representing the behavior of a USB device. """
+        logging.debug(f"received GET_DESCRIPTOR request {request}")
 
+        # Extract the core parameters from the request.
+        descriptor_type  = request.value_high
+        descriptor_index = request.value_low
 
-    @standard_request_handler(number=0)
-    @to_device
-    def handle_get_status_request(self, req):
-        # USB 2.0 specification, section 9.4.5 (p 282 of pdf)
+        # Try to find the descriptor associate with the request.
+        response = self.descriptors.get(descriptor_type, None)
 
-        logger.debug("received GET_STATUS request")
-
-        # self-powered and remote-wakeup (USB 2.0 Spec section 9.4.5)
-        response = b'\x03\x00'
-        self.send_control_message(response)
-
-
-    @standard_request_handler(number=1)
-    @to_device
-    def handle_clear_feature_request(self, req):
-        # USB 2.0 specification, section 9.4.1 (p 280 of pdf)
-
-        logger.info(f"Received CLEAR_FEATURE request with type {req.number} and value {req.value}.")
-        self.ack_status_stage()
-
-
-    # USB 2.0 specification, section 9.4.9 (p 286 of pdf)
-    @standard_request_handler(number=3)
-    @to_device
-    def handle_set_feature_request(self, req):
-        logger.info("received SET_FEATURE request")
-
-
-    # USB 2.0 specification, section 9.4.6 (p 284 of pdf)
-    @standard_request_handler(number=5)
-    @to_device
-    def handle_set_address_request(self, req):
-        self.address = req.value
-        self.ack_status_stage(blocking=True)
-        self.set_address(self.address)
-
-
-    # USB 2.0 specification, section 9.4.3 (p 281 of pdf)
-    @standard_request_handler(number=6)
-    @to_device
-    def handle_get_descriptor_request(self, request):
-        dtype  = (request.value >> 8) & 0xff
-        dindex = request.value & 0xff
-        lang   = request.index
-        n      = request.length
-
-        response = None
-        logger.debug(f"received GET_DESCRIPTOR request {request}")
-
-        response = self.descriptors.get(dtype, None)
-
+        # If we have a callable, we need to evaluate it to figure
+        # out what the actual descriptor should be.
         while callable(response):
-            response = response(dindex)
+            response = response(descriptor_index)
 
+        # If we wound up with a valid response, reply with it.
         if response:
-            n = min(n, len(response))
-            request.reply(response[:n])
-            logger.log(LOGLEVEL_TRACE, f"sent {n} bytes in response")
+            response_length = min(request.length, len(response))
+            request.reply(response[:response_length])
+
+            logging.log(LOGLEVEL_TRACE, f"sending {response_length} bytes in response")
         else:
+            logging.log(LOGLEVEL_TRACE, f"stalling descriptor request")
             request.stall()
 
-    # USB 2.0 specification, section 9.4.8 (p 285 of pdf)
-    @standard_request_handler(number=7)
-    @to_device
-    def handle_set_descriptor_request(self, req):
-        logger.info("received SET_DESCRIPTOR request")
 
 
-    # USB 2.0 specification, section 9.4.2 (p 281 of pdf)
-    @standard_request_handler(number=8)
+class USBDevice(USBBaseDevice):
+    """ Class representing the behavior of a USB device.
+
+    This default implementation provides standard request handlers
+    in order to facilitate creating a host-compatible USB device.
+
+    These functions can be overloaded to change their behavior. If
+    you want to dramatically change the behavior of these requests,
+    you can opt to use USBBaseDevice, which lacks standard request
+    handling.
+    """
+
+
+    @standard_request_handler(number=USBStandardRequests.GET_STATUS)
     @to_device
-    def handle_get_configuration_request(self, req):
-        logger.debug(f"received GET_CONFIGURATION request with data {req.value}")
+    def handle_get_status_request(self, request):
+        """ Handles GET_STATUS requests; per USB2 [9.4.5]."""
+
+        logging.debug("received GET_STATUS request")
+
+        # self-powered and remote-wakeup (USB 2.0 Spec section 9.4.5)
+        request.reply(b'\x03\x00')
+
+
+    @standard_request_handler(number=USBStandardRequests.CLEAR_FEATURE)
+    @to_device
+    def handle_clear_feature_request(self, request):
+        """ Handle CLEAR_FEATURE requests; per USB2 [9.4.1] """
+        logging.debug(f"Received CLEAR_FEATURE request with type {request.number} and value {request.value}.")
+        request.acknowledge()
+
+
+    @standard_request_handler(number=USBStandardRequests.SET_FEATURE)
+    @to_device
+    def handle_set_feature_request(self, request):
+        """ Handle SET_FEATURE requests; per USB2 [9.4.9] """
+        logging.debug("received SET_FEATURE request")
+        request.stall()
+
+
+    @standard_request_handler(number=USBStandardRequests.SET_ADDRESS)
+    @to_device
+    def handle_set_address_request(self, request):
+        """ Handle SET_ADDRESS requests; per USB2 [9.4.6] """
+        request.acknowledge(blocking=True)
+        self.set_address(request.value)
+
+
+    @standard_request_handler(number=USBStandardRequests.GET_DESCRIPTOR)
+    @to_device
+    def handle_get_descriptor_request(self, request):
+        """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
+
+        # Defer to our generic get_descriptor handler.
+        self.handle_generic_get_descriptor_request(request)
+
+
+
+    @standard_request_handler(number=USBStandardRequests.SET_DESCRIPTOR)
+    @to_device
+    def handle_set_descriptor_request(self, request):
+        """ Handle SET_DESCRIPTOr requests; per USB2 [9.4.8] """
+        logging.debug("received SET_DESCRIPTOR request")
+        request.stall()
+
+
+    @standard_request_handler(number=USBStandardRequests.GET_CONFIGURATION)
+    @to_device
+    def handle_get_configuration_request(self, request):
+        """ Handle GET_CONFIGURATION requests; per USB2 [9.4.2] """
+        logging.debug(f"received GET_CONFIGURATION request for configuration {request.value}")
 
         # If we haven't yet been configured, send back a zero configuration value.
         if self.configuration is None:
-            self.send_control_message(b'\x00')
+            request.reply(b"\x00")
+
         # Otherwise, return the index for our configuration.
         else:
             config_index = self.configuration.configuration_index
-            self.send_control_message(config_index.to_bytes(1, byteorder='little'))
+            request.reply(config_index.to_bytes(1, byteorder='little'))
 
 
-    # USB 2.0 specification, section 9.4.7 (p 285 of pdf)
-    @standard_request_handler(number=9)
+    @standard_request_handler(number=USBStandardRequests.SET_CONFIGURATION)
     @to_device
-    def handle_set_configuration_request(self, req):
-        logger.debug("received SET_CONFIGURATION request")
+    def handle_set_configuration_request(self, request):
+        """ Handle SET_CONFIGURATION requests; per USB2 [9.4.7] """
+        logging.debug("received SET_CONFIGURATION request")
 
-        self.configuration = self.configurations[req.value]
-        req.acknowledge()
+        self.configuration = self.configurations[request.value]
+        request.acknowledge()
 
-        # notify the device of the reconfiguration, in case
+        # Notify the backend of the reconfiguration, in case
         # it needs to e.g. set up endpoints accordingly
         self.backend.configured(self.configuration)
 
 
-    # USB 2.0 specification, section 9.4.4 (p 282 of pdf)
-    @standard_request_handler(number=10)
+    @standard_request_handler(number=USBStandardRequests.GET_INTERFACE)
     @to_device
-    def handle_get_interface_request(self, req):
-        logger.debug("received GET_INTERFACE request")
+    def handle_get_interface_request(self, request):
+        """ Handle GET_INTERFACE requests; per USB2 [9.4.4] """
+        logging.debug("received GET_INTERFACE request")
 
-        if req.index == 0:
-            # HACK: currently only support one interface
-            self.send_control_message(b'\x00')
+        # TODO: support alternate interfaces.
+        # Since we don't support alternate interfaces [yet], we'll always
+        # indicate use of interface zero.
+        if self.configuration and (request.index_low in self.configuration.interfaces):
+            request.reply(b'\x00')
         else:
-            self.backend.stall_ep0()
+            request.stall()
 
 
-    # USB 2.0 specification, section 9.4.10 (p 288 of pdf)
-    @standard_request_handler(number=11)
+    @standard_request_handler(number=USBStandardRequests.SET_INTERFACE)
     @to_device
-    def handle_set_interface_request(self, req):
-        logger.debug(f"f{self.name} received SET_INTERFACE request")
+    def handle_set_interface_request(self, request):
+        """ Handle SET_INTERFACE requests; per USB2 [9.4.10] """
+        logging.debug(f"f{self.name} received SET_INTERFACE request")
+
+        # We don't support alternate interfaces; so ACK setting
+        # interface zero, and stall all others.
+        if request.index_low == 0:
+            request.acknowledge()
+        else:
+            request.stall()
 
 
     # USB 2.0 specification, section 9.4.11 (p 288 of pdf)
-    @standard_request_handler(number=12)
+    @standard_request_handler(number=USBStandardRequests.SYNCH_FRAME)
     @to_device
-    def handle_synch_frame_request(self, req):
-        logger.debug(f"f{self.name} received SYNCH_FRAME request")
+    def handle_synch_frame_request(self, request):
+        """ Handle SYNC_FRAME requests; per USB2 [9.4.10] """
+        logging.debug(f"f{self.name} received SYNCH_FRAME request")
+        request.acknowledge()

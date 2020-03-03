@@ -3,26 +3,25 @@
 #
 """ Functionality for describing USB endpoints. """
 
-import struct
 import logging
 
+from typing      import Iterable
 from dataclasses import dataclass
-
-from ..USB import *
 
 from .magic      import AutoInstantiable
 from .descriptor import USBDescribable
-from .request    import USBRequestHandler, get_request_handler_methods, standard_request_handler, to_endpoint
-from .types      import USBDirection, USBTransferType, USBSynchronizationType, USBUsageType
-
-
-# Create a default logger for the module.
-logger = logging.getLogger(__name__)
+from .request    import USBRequestHandler, get_request_handler_methods
+from .request    import to_this_endpoint, standard_request_handler
+from .types      import USBDirection, USBTransferType, USBSynchronizationType
+from .types      import USBUsageType, USBStandardRequests
 
 
 @dataclass
 class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
+    """ Class represenging a USBEndpoint object.
 
+    TODO: document parameters
+    """
     DESCRIPTOR_TYPE_NUMBER      = 0x05
 
     # Core identifiers.
@@ -41,25 +40,27 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     def __post_init__(self):
+
+        # Grab our request handlers.
         self._request_handler_methods = get_request_handler_methods(self)
-
-
-    @staticmethod
-    def address_for_number(endpoint_number: int, direction: USBDirection):
-        direction_mask = 0x80 if direction == USBDirection.IN else 0x00
-        return endpoint_number | direction_mask
-
 
     #
     # User interface.
     #
+
+    @staticmethod
+    def address_for_number(endpoint_number: int, direction: USBDirection) -> int:
+        """ Computes the endpoint address for a given number + direction. """
+        direction_mask = 0x80 if direction == USBDirection.IN else 0x00
+        return endpoint_number | direction_mask
+
 
     def get_device(self):
         """ Returns the device associated with the given descriptor. """
         return self.parent.get_device()
 
 
-    def send(self, data, *, blocking=False):
+    def send(self, data: bytes, *, blocking: bool =False):
         """ Sends data on this endpoint. Valid only for IN endpoints.
 
         Parameters:
@@ -81,7 +82,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         Parameters:
             data   -- The raw bytes received.
         """
-        logger.info(f"EP{self.number} received {len(data)} bytes of data; "
+        logging.info(f"EP{self.number} received {len(data)} bytes of data; "
                 "but has no handler.")
 
 
@@ -92,6 +93,13 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     def handle_buffer_empty(self):
         """ Handler called when this endpoint first has an empty buffer. """
 
+
+    @standard_request_handler(number=USBStandardRequests.CLEAR_FEATURE)
+    @to_this_endpoint
+    def handle_clear_feature_request(self, request):
+        logging.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
+            f"with value {req.value}")
+        request.acknowledge()
 
 
     #
@@ -109,43 +117,23 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         return self.address
 
 
-
-    def __repr__(self):
-        # TODO: make these nice string representations
-        transfer_type = self.transfer_type
-        sync_type = self.synchronization_type
-        usage_type = self.usage_type
-        direction = "IN" if self.direction else "OUT"
-
-        # TODO: handle high/superspeed; don't assume 1ms frames
-        interval = self.interval
-
-        return "<USBEndpoint number={} direction={} transfer_type={} sync_type={} usage_type={} max_packet_size={} interval={}ms>".format(
-            self.number, direction, transfer_type, sync_type, usage_type, self.max_packet_size, interval
-        )
+    @property
+    def attributes(self):
+        """ Fetches the attributes for the given endpoint, as a single byte. """
+        return (self.transfer_type & 0x03)               | \
+               ((self.synchronization_type & 0x03) << 2) | \
+               ((self.usage_type & 0x03) << 4)
 
 
-
-    @standard_request_handler(number=1)
-    @to_endpoint
-    def handle_clear_feature_request(self, req):
-        logger.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
-            f"with value {req.value}")
-        self.parent.configuration.device.maxusb_app.send_on_endpoint(0, b'')
-
-
-    # see Table 9-13 of USB 2.0 spec (pdf page 297)
-    def get_descriptor(self):
-        address = (self.number & 0x0f) | (self.direction << 7)
-        attributes = (self.transfer_type & 0x03) \
-                   | ((self.synchronization_type & 0x03) << 2) \
-                   | ((self.usage_type & 0x03) << 4)
+    def get_descriptor(self) -> bytes:
+        """ Get a descriptor string for this endpoint. """
+        # FIXME: use construct
 
         d = bytearray([
                 7,          # length of descriptor in bytes
                 5,          # descriptor type 5 == endpoint
-                address,
-                attributes,
+                self.address,
+                self.attributes,
                 self.max_packet_size & 0xff,
                 (self.max_packet_size >> 8) & 0xff,
                 self.interval
@@ -153,24 +141,35 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         return d
 
-    def send_packet(self, data, blocking=False):
-        dev = self.parent.parent.parent
-        dev.maxusb_app.send_on_endpoint(self.number, data, blocking=blocking)
 
+    #
+    # Automatic instantiation helpers.
+    #
 
-
-    def recv(self):
-        dev = self.parent.parent.parent
-        data = dev.maxusb_app.read_from_endpoint(self.number)
-        return data
-
-    def get_identifier(self):
+    def get_identifier(self) -> int:
         return self.address
+
+    def matches_identifier(self, other:int) -> bool:
+        # Use only the MSB and the lower nibble; per the USB specification.
+        masked_other = 0b10001111
+        return self.get_identifier() == masked_other
 
 
     #
     # Request handling.
     #
 
-    def _request_handlers(self):
+    def _request_handlers(self) -> Iterable[callable]:
         return self._request_handler_methods
+
+
+    #
+    # Pretty-printing.
+    #
+    def __str__(self):
+        direction     = USBDirection(self.direction).name
+        transfer_type = USBTransferType(self.transfer_type).name
+        is_interrupt  = (self.transfer_type == USBTransferType.INTERRUPT)
+        additional    = f" every {self.interval}ms" if is_interrupt else ""
+
+        return f"endpoint {self.number:02x}/{direction}: {transfer_type} transfers{additional}"

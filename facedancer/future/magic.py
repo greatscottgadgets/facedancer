@@ -4,13 +4,24 @@
 """ Functionally for automatic instantiations / tracking via decorators. """
 
 import inspect
+
+from abc         import ABCMeta, abstractmethod
 from dataclasses import dataclass
 
 
 # FIXME: this should have get_identifier on it
-class AutoInstantiable:
+class AutoInstantiable(metaclass=ABCMeta):
     """ Base class for methods that can be decorated with use_automatically. """
-    pass
+
+    @abstractmethod
+    def get_identifier(self) -> int:
+        """ Returns a unique integer identifier for this object.
+
+        This is usually the index or address of the relevant USB object.
+        """
+
+    def matches_identifier(self, other: int) -> bool:
+        return (other == self.get_identifier())
 
 
 class AutoInstantiator:
@@ -28,7 +39,7 @@ class AutoInstantiator:
         return issubclass(self._target_type, expected_type)
 
     def __call__(self, parent):
-        instance = self._target_type(parent=parent)
+        instance   = self._target_type(parent=parent)
         identifier = self._identifier
 
         if identifier is None:

@@ -1,17 +1,13 @@
 #
 # This file is part of FaceDancer.
 #
+# pylint: disable=unused-wildcard-import, wildcard-import
 
 import asyncio
 
 from .             import default_main
 
-from ..future      import USBDevice, USBConfiguration, USBInterface, USBEndpoint
-from ..future      import USBDescriptor, USBClassDescriptor, USBDirection, USBDescriptorTypeNumber
-from ..future      import USBTransferType, USBStandardRequests
-
-from ..future      import use_inner_classes_automatically, class_request_handler, to_interface
-
+from ..future      import *
 from ..classes.hid import KeyboardKeys
 
 
@@ -56,10 +52,10 @@ class USBKeyboardDevice(USBDevice):
                 raw         : bytes = b'\x05\x01\x09\x06\xA1\x01\x05\x07\x19\xE0\x29\xE7\x15\x00\x25\x01\x75\x01\x95\x08\x81\x02\x95\x01\x75\x08\x81\x01\x19\x00\x29\x65\x15\x00\x25\x65\x75\x08\x95\x01\x81\x00\xC0'
 
 
-            @class_request_handler(number=USBStandardRequests.GET_INTERFACE, direction=USBDirection.OUT)
-            @to_interface
+            @class_request_handler(number=USBStandardRequests.GET_INTERFACE)
+            @to_this_interface
             def handle_get_interface_request(self, request):
-                # Replace me with your handler.
+                # Silently stall GET_INTERFACE class requests.
                 request.stall()
 
 

@@ -10,3 +10,4 @@ from .devices import default_main as main
 
 # Set up our extra log levels.
 logging.addLevelName(5, 'TRACE')
+LOGLEVEL_TRACE = 5
