@@ -6,6 +6,7 @@ import sys
 import time
 import codecs
 import struct
+import logging
 
 from ..core import *
 
@@ -99,7 +100,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
             greatfet.GreatFET()
             return True
         except ImportError:
-            sys.stderr.write("NOTE: Skipping GreatFET-based devices, as the greatfet python module isn't installed.\n")
+            logging.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
             return False
         except:
             return False
@@ -375,7 +376,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
 
         endpoint_number -- The endpoint number on which to send.
         expected_read_size -- The expected amount of data to be read.
-        data_packet_pid -- The data packet PID to use (1 or 0). 
+        data_packet_pid -- The data packet PID to use (1 or 0).
             Ignored if the endpoint is set to automatically alternate data PIDs.
 
         raises an IOError on a communications error or stall

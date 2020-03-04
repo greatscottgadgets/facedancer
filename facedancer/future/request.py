@@ -14,7 +14,7 @@ from abc         import ABCMeta, abstractmethod
 
 
 from .descriptor import USBDescribable
-from .types      import USBRequestRecipient, USBRequestType, USBDirection
+from .types      import USBRequestRecipient, USBRequestType, USBDirection, USBStandardRequests
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,7 @@ class ControlRequestHandler:
 
     def __call__(self, caller, request):
         """ Primary execution; calls the relevant handler if our conditions are met. """
+
         if self._condition(request):
             try:
                 self._handler(caller, request)
@@ -330,10 +331,6 @@ class USBControlRequest:
         return self.recipient
 
 
-    #
-    # Pretty printing.
-    #
-
     def raw(self) -> bytes:
         """ Returns the raw bytes that compose the request. """
 
@@ -344,6 +341,26 @@ class USBControlRequest:
                     self.length & 0xff, (self.length >> 8) & 0xff
                   ])
         return b
+
+    #
+    # Pretty printing & log output.
+    #
+    def __str__(self):
+
+        direction = USBDirection(self.direction).name
+        type_name = USBRequestType(self.type).name
+        recipient = USBRequestRecipient(self.recipient).name
+        name      = f"0x{self.number:02x}"
+
+        # If this is a standard request, try to convert it to a name.
+        if self.type == USBRequestType.STANDARD:
+            try:
+                name = f"{USBStandardRequests(self.number).name} (0x{self.number:02x})"
+            except KeyError:
+                pass
+
+        return f"{direction} {type_name} request {name} to {recipient} " \
+                f"[value=0x{self.value:04x}, index=0x{self.index:04x}, length={self.length}]"
 
 
 
@@ -404,8 +421,8 @@ class USBRequestHandler(metaclass=ABCMeta):
         # Calling the handler for _every_ matching request (as opposed to e.g. the first one)
         # allows one to trivially add observers.
         for handler in self._request_handlers():
-            handled = handled or handler(self, request)
+            handled = handler(self, request) or handled
 
         # Pass our requests down to our subordinates, as well.
-        handled = handled or self._call_subordinate_handlers(request)
+        handled = self._call_subordinate_handlers(request) or handled
         return handled

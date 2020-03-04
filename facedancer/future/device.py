@@ -33,12 +33,23 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     except that it does not define _any_ standard handlers. This allows you the freedom to declare
     whatever standard requests you'd like.
 
-    TODO: define parameter documentation, here
+    Fields:
+        device_class/device_subclass/protocol_revision_number --
+                The USB descriptor fields that select the class, subclass, and protcol.
+        vendor_id, product_id --
+                The USB vendor and product ID for this device.
+        manufacturer_string, product_string, serial_number_string --
+                Python strings identifying the device to the USB host.
+        supported_languages --
+                A tuple containing all of the language IDs supported by the device.
+        device_revision --
+                Number indicating the hardware revision of this device. Typically BCD.
+        usb_spec_revision --
+                Number indicating the version of the USB specification we adhere to. Typically 0x0200.
     """
 
     DESCRIPTOR_TYPE_NUMBER    = 0x01
     DESCRIPTOR_LENGTH         = 0x12
-
 
     name                     : str = "generic device"
 
@@ -104,6 +115,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def add_configuration(self, configuration: USBConfiguration):
         """ Adds the provided configuration to this device. """
         self.configurations[configuration.number] = configuration
+        configuration.parent = self
 
 
     def connect(self):
@@ -121,6 +133,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     async def run(self):
         """ Runs the actual device emulation. """
+
+        # Sanity check to avoid common issues.
+        if len(self.configurations) == 0:
+            logging.error("No configurations defined on the emulated device! "
+                    "Did you forget @use_inner_classes_automatically?")
 
         if self.backend is None:
             self.connect()
@@ -300,6 +317,17 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     # Event handlers.
     #
 
+    def handle_bus_reset(self):
+        """ Event handler for a bus reset. """
+        logging.info("Host issued a bus reset; resetting our connection.")
+
+        # Clear our state back to address zero and no configuration.
+        self.configuration = None
+        self.address = 0
+
+        self.backend.reset()
+
+
     def handle_request(self, request: USBControlRequest):
         """ Core control request handler.
 
@@ -317,7 +345,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # As the top-most handle_request function, we have an extra responsibility:
         # we'll need to stall the endpoint if no handler was found.
         if not handled:
-            logging.warning(f"Unhandled control request [{request}]; stalling.")
+            logging.warning(f"Stalling unhandled {request}.")
             self._add_request_suggestion(request)
             self.stall()
 
@@ -483,13 +511,18 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             decorator = request_type_decorator[request_type]
             direction_name = USBDirection(direction).name
 
+            # Generate basic metadata for our function.
+            request_number = f"<ansiblue>{number}</ansiblue>"
+            function_name = f"handle_control_request_{number}"
+
             # Figure out if we want to use a cleaner request number.
-            try:
-                request_number = f"USBStandardRequests.{USBStandardRequests(number).name}"
-                function_name  = f"handle_{USBStandardRequests(number).name.lower()}_request"
-            except ValueError:
-                request_number = f"<ansiblue>{number}</ansiblue>"
-                function_name = f"handle_control_request_{number}"
+            if request_type == USBRequestType.STANDARD:
+                try:
+                    request_number = f"USBStandardRequests.{USBStandardRequests(number).name}"
+                    function_name  = f"handle_{USBStandardRequests(number).name.lower()}_request"
+                except ValueError:
+                    pass
+
 
             # Figure out if we should include a target decorator.
             if recipient in target_decorator:
@@ -511,7 +544,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
                     f"direction=USBDirection.{direction_name}"
                     f")")
 
-            # Recipient speicifier; e.g. "@to_device"
+            # Recipient specifier; e.g. "@to_device"
             if recipient_decorator:
                 print_html(f"    <ansigreen>{recipient_decorator}</ansigreen>")
 
@@ -668,6 +701,20 @@ class USBDevice(USBBaseDevice):
     you want to dramatically change the behavior of these requests,
     you can opt to use USBBaseDevice, which lacks standard request
     handling.
+
+    Fields:
+        device_class/device_subclass/protocol_revision_number --
+                The USB descriptor fields that select the class, subclass, and protcol.
+        vendor_id, product_id --
+                The USB vendor and product ID for this device.
+        manufacturer_string, product_string, serial_number_string --
+                Python strings identifying the device to the USB host.
+        supported_languages --
+                A tuple containing all of the language IDs supported by the device.
+        device_revision --
+                Number indicating the hardware revision of this device. Typically BCD.
+        usb_spec_revision --
+                Number indicating the version of the USB specification we adhere to. Typically 0x0200.
     """
 
 
@@ -746,8 +793,19 @@ class USBDevice(USBBaseDevice):
         """ Handle SET_CONFIGURATION requests; per USB2 [9.4.7] """
         logging.debug("received SET_CONFIGURATION request")
 
-        self.configuration = self.configurations[request.value]
-        request.acknowledge()
+        # If the host is requesting configuration zero, they're asking
+        # us to drop our configuration.
+        if request.value == 0:
+            self.configuration = None
+            request.acknowledge()
+
+        # Otherwise, we'll find a given configuration and apply it.
+        else:
+            try:
+                self.configuration = self.configurations[request.value]
+                request.acknowledge()
+            except KeyError:
+                request.stall()
 
         # Notify the backend of the reconfiguration, in case
         # it needs to e.g. set up endpoints accordingly

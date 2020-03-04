@@ -20,7 +20,13 @@ from .types      import USBUsageType, USBStandardRequests
 class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class represenging a USBEndpoint object.
 
-    TODO: document parameters
+    Field:
+        number          -- The endpoint number (without the direction bit) for this endpoint.
+        direction       -- A USBDirection constant indicating this endpoint's direction.
+
+        transfer_type   -- A USBTransferType contant indicating the type of communications used.
+        max_packet_size -- The maximum packet size for this endpoint.
+        interval        -- The polling interval, for an INTERRUPT endpoint.
     """
     DESCRIPTOR_TYPE_NUMBER      = 0x05
 

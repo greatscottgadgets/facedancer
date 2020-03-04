@@ -9,6 +9,7 @@
 import os
 import sys
 import time
+import logging
 
 from ..core import FacedancerApp
 from ..backends.MAXUSBApp import MAXUSBApp
@@ -37,7 +38,7 @@ class RaspdancerMaxUSBApp(MAXUSBApp):
             rd = Raspdancer()
             return True
         except ImportError as e:
-            sys.stderr.write("NOTE: Skipping Raspdancer devices, as prequisites aren't installed ({}).\n".format(e))
+            logging.info("Skipping Raspdancer devices, as prequisites aren't installed ({}).".format(e))
             return False
         except:
             return False

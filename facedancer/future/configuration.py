@@ -18,19 +18,29 @@ from .endpoint    import USBEndpoint
 
 @dataclass
 class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
-    """ Class representing a USBDevice's configuration. """
+    """ Class representing a USBDevice's configuration.
+
+    Fields:
+        number                 -- The configuration's number; one-indexed.
+        configuration_string   -- A string describing the configuration; or None if not provided.
+        max_power              -- The maximum power expected to be drawn by the device when using
+                                  this interface, in mA. Typically 500mA, for maximum possible.
+        supports_remote_wakeup -- True iff this device should be able to wake the host from suspend.
+    """
 
     DESCRIPTOR_TYPE_NUMBER  = 0x02
     DESCRIPTOR_SIZE_BYTES   = 9
 
-    configuration_index  : int            = 1
-    configuration_string : str            = None
+    number                 : int            = 1
+    configuration_string   : str            = None
 
-    attributes           : int            = 0xe0
-    max_power            : int            = 250
+    max_power              : int            = 500
 
-    parent               : USBDescribable = None
-    interfaces           : USBInterface = field(default_factory=dict)
+    self_powered           : bool         = True
+    supports_remote_wakeup : bool         = True
+
+    parent                 : USBDescribable = None
+    interfaces             : USBInterface = field(default_factory=dict)
 
 
     def __post_init__(self):
@@ -38,6 +48,20 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         # Gather any interfaces defined on the object.
         self.interfaces.update(instantiate_subordinates(self, USBInterface))
 
+
+    @property
+    def attributes(self):
+        """ Retrives the "attributes" composite word. """
+
+        # Start off with the required bits set to one...
+        attributes = 0b10000000
+
+        # ... and then add in our attributes.
+        attributes |= (1 << 6) if self.self_powered           else 0
+        attributes |= (1 << 5) if self.supports_remote_wakeup else 0
+
+
+        return attributes
 
     #
     # User API.
@@ -51,6 +75,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     def add_interface(self, interface: USBInterface):
         """ Adds an interface to the configuration. """
         self.interfaces[interface.number] = interface
+        interface.parent = self
 
 
     def get_endpoint(self, number: int, direction: USBDirection) -> USBEndpoint:
@@ -165,10 +190,10 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
                 total_len & 0xff,
                 (total_len >> 8) & 0xff,
                 len(set(interface.number for interface in self.interfaces.values())),
-                self.configuration_index,
+                self.number,
                 string_manager.get_index(self.configuration_string),
                 self.attributes,
-                self.max_power
+                self.max_power // 2
         ])
 
         return d + interface_descriptors
@@ -178,7 +203,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     # Interfacing functions for AutoInstantiable.
     #
     def get_identifier(self) -> int:
-        return self.configuration_index
+        return self.number
 
 
     #

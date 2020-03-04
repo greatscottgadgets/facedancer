@@ -1,9 +1,17 @@
-# FaceDancer 2.2
+# FaceDancer 2.9
 
 This repository houses the next generation of FaceDancer software. Descended from
 the original GoodFET-based FaceDancer, this repository provides a python module 
 that provides expanded FaceDancer support-- including support for multiple boards 
 and some pretty significant new features.
+
+## Where are my scripts?
+
+In preparation for the 3.0 release of FaceDancer, scripts in the "old" style have
+been moved to `legacy-applets`. Their functionality should be unchanged.
+
+These will continue working even after the 3.0 merge; as `facedancer.compat` will
+continue to support the old scripts and their syntax.
 
 ## What is a FaceDancer?
 
@@ -53,26 +61,28 @@ the software know which type of FaceDancer board you'd like to use. If this vari
 isn't set, the software will try to guess for you based on what's connected. It doesn't
 always make the best guesses, so you're probably better off setting it yourself.
 
-Next, you can run any of the pre-made scripts, e.g. ```facedancer-serial.py```.
+Next, you'll probably want to check out one of the examples, or one of the pre-made scripts.
+Examples in the new syntax are located under `examples`. The core FaceDancer scripts in the
+"old" syntax are located in `legacy-applets`. 
 
 For example:
 
 ```sh
-export BACKEND=goodfet
-./facedancer-serial.py
+export BACKEND=greatfet
+./examples/rubber-ducky.py
 ```
 
 ## What boards are currently supported?
 
- * All GoodFET-based facedancers, including the common FaceDancer21 (```BACKEND=goodfet```)
+ * All GoodFET-based FaceDancers, including the common FaceDancer21 (```BACKEND=goodfet```)
  * The [GreatFET One](http://greatscottgadgets.com/greatfet/) (```BACKEND=greatfet```)
- * The NXP LPC4330 Xplorer board (```BACKEND=greatfet```)
+ * The NXP LPC4330 Xplorer board. (```BACKEND=greatfet```)
  * The CCCamp 2015 rad1o badge with GreatFET l0adable (```BACKEND=greatfet```)
  * RPi + Max3241 Raspdancer boards (```BACKEND=raspdancer```)
 
 Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulating
 more complex devices-- there's limitation on the number/type of endpoints that can be
-set up. The LPC4330 boards-- such as the GreatFET-- don't suffer these limitations.
+set up. The LPC4330 boards-- such as the GreatFET-- have fewer limitations.
 
 For a similar reason, the MAX3420/MAX3421 boards (`BACKEND=goodfet` or `BACKEND=raspdancer`)
 currently cannot be used as USBProxy-nv MITM devices. All modern boards (`BACKEND=greatfet`)
@@ -80,25 +90,29 @@ should be fully functional.
 
 ## What boards could be supported soon?
 
+ * The [LUNA USB multitool](https://github.com/greatscottgadgets/luna).
  * Any Linux computer with gadgetfs support (e.g. the Pi Zero or Beaglebone Black)
+ * Anything supporting USB-over-IP.
 
 ## What features do you plan on adding?
 
 The roadmap is hazy, but in addition to multi-board support, this repository
 eventually will be home to some cool new features, such as:
 
- * High-speed ("USB 2.0") device emulation on devices with USB 2.0 PHYS
+ * High-speed ("USB 2.0") device emulation on devices with USB 2.0 PHYs.
+ * On-the-fly
 
 ## Whose fault _is_ this?
 
 There are a lot of people to blame for the awesomeness that is this repo,
 including:
 
+ * Kate Temkin (@ktemkin)
  * Travis Goodspeed (@travisgoodspeed)
  * Sergey Bratus (@sergeybratus)
- * ktemkin (@ktemkin)
  * Dominic Spill (@dominicgs)
  * Michael Ossmann (@michaelossmann)
+ * Mikaela Szekely (@Qyriad)
  * anyone whose name appears in the git history :)
 
 ## Contributions?

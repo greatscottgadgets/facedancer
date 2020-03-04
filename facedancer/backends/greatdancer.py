@@ -63,7 +63,7 @@ class GreatDancerApp(FacedancerApp):
             gf = greatfet.GreatFET()
             return gf.supports_api('greatdancer')
         except ImportError:
-            sys.stderr.write("NOTE: Skipping GreatFET-based devices, as the greatfet python module isn't installed.\n")
+            logging.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
             return False
         except:
             return False
@@ -169,6 +169,10 @@ class GreatDancerApp(FacedancerApp):
             applied to the GreatDancer.
         """
         arguments = []
+
+        # If our configuration is None, there's nothing to configure; bail out.
+        if config is None:
+            return arguments
 
         for interface in config.get_interfaces():
             for endpoint in interface.get_endpoints():
@@ -672,7 +676,19 @@ class GreatDancerApp(FacedancerApp):
         """
 
         logging.debug("Host issued bus reset.")
+
+        if self.connected_device:
+            self.connected_device.handle_bus_reset()
+        else:
+            self.api.bus_reset()
+
+
+    def reset(self):
+        """
+        Triggers the GreatFET to handle its side of a bus reset.
+        """
         self.api.bus_reset()
+
 
 
     def _handle_nak_events(self):

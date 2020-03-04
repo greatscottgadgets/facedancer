@@ -140,7 +140,7 @@ class StringDescriptorManager:
         if isinstance(index, str):
             index = self.get_index(index)
 
-        return self.descriptors[index]
+        return self.descriptors.get(index, None)
 
 
 class USBDescriptorTypeNumber(IntEnum):

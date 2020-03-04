@@ -20,9 +20,15 @@ from .endpoint    import USBEndpoint
 
 @dataclass
 class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
-    """ Class represenging a USBDevice interface.
+    """ Class representing a USBDevice interface.
 
-    TODO: parameter docs
+    Fields:
+        number --
+                The interface's index. Zero indexed.
+        class_number, subclass_number, protocol_number --
+                The USB class adhered to on this interface; usually a USBDeviceClass constant.
+        interface_string --
+                A short, descriptive string used to identify the endpoint; or None if not providd.
     """
     DESCRIPTOR_TYPE_NUMBER = 0x4
 
@@ -75,6 +81,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     def add_endpoint(self, endpoint: USBEndpoint):
         """ Adds the provided endpoint to the interface. """
         self.endpoints[endpoint.get_identifier()] = endpoint
+        endpoint.parent = self
 
 
     def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:

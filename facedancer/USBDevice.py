@@ -232,7 +232,7 @@ class USBDevice(USBDescribable):
         if req_type == USB.request_type_standard:
             handler_entity = recipient
         elif req_type == USB.request_type_class:
-            handler_entity = recipient.interface
+            handler_entity = recipient.device_class
         elif req_type == USB.request_type_vendor:
             handler_entity = recipient.device_vendor
 
@@ -423,6 +423,10 @@ class USBDevice(USBDescribable):
     def handle_synch_frame_request(self, req):
         print(self.name, "received SYNCH_FRAME request")
 
+
+    def handle_bus_reset(self):
+        self.maxusb_app.reset()
+
     #
     # Backend interface helpers.
     #
@@ -571,5 +575,3 @@ class USBDeviceRequest:
             return self.index
         elif rec == 2:              # endpoint
             return self.index & 0x0f
-
-
