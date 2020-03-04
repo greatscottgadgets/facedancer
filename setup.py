@@ -11,20 +11,28 @@ def read(fname):
 if sys.version_info.major < 3:
     raise RuntimeError("Facedancer is not compatible with python2; and requires python 3.0 or later.")
 
-dynamic_options = {}
-version = None
+
+setup_req=[]
+setup_options = {}
 
 # Deduce version, if possible.
-if os.path.isfile('../VERSION'):
-    version = read('../VERSION')
+if os.path.isfile('VERSION'):
+    setup_options['version'] = read('VERSION')
 else:
-    dynamic_options['version_format'] = '{tag}.dev{commitcount}+git.{gitsha}'
-    dynamic_options['setup_requires'] = ['setuptools-git-version']
+    setup_options['version_config'] =  {
+        "version_format": '{tag}.dev+git.{sha}',
+        "starting_version": "v2.9"
+    }
+    setup_req.append('even-better-setuptools-git-version')
 
 setup(
-    name='Facedancer',
-    version=version,
-    url='https://greatscottgadgets.com/greatfet/',
+    name='facedancer',
+    setup_requires=setup_req,
+
+    url='https://github.com/usb-tools/facedancer',
+    author = "Kate Temkin",
+    author_email = "kate@ktemkin.com",
+
     license='BSD',
     tests_require=[''],
     install_requires=['pyusb'],
@@ -33,6 +41,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     platforms='any',
+
     classifiers = [
         'Development Status :: 4 - Beta',
         'Natural Language :: English',
@@ -48,5 +57,5 @@ setup(
         "Programming Language :: Python :: 3",
         ],
     extras_require={},
-    **dynamic_options
+    **setup_options
 )
