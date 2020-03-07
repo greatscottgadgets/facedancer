@@ -208,9 +208,13 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
                                until the backend indicates the send is complete.
         """
 
+        # EP0 is special, as it conceptually belongs to the whole device, as it's used
+        # for control requests and configuration. We'll handle it directly, here.
+        #
+        # All of our backends currently automatically handle packetization and ZLPs for
+        # the control endpoint, so we'll skip packetizing it (which would generate spurious ZLPs).
         if endpoint_number == 0:
-            self._send_in_packets(endpoint_number, data,
-                packet_size=self.max_packet_size_ep0, blocking=blocking)
+            self.backend.send_on_endpoint(0, data, blocking=blocking)
         elif self.configuration:
             endpoint = self.configuration.get_endpoint(endpoint_number, USBDirection.IN)
             endpoint.send(data, blocking=blocking)
