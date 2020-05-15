@@ -21,8 +21,8 @@ finally:
 class PrintWrapper:
     def __init__(self):
         def fake_print(*args):
-                screen.addstr(' '.join([str(arg) for arg in args]) + '\n')
-                screen.refresh()
+            screen.addstr(' '.join([str(arg) for arg in args]) + '\n')
+            screen.refresh()
         self.original = __builtins__.__dict__['print']
         self.fake = fake_print
 
@@ -150,9 +150,9 @@ class InteractiveUSBKeyboardInterface(USBKeyboardInterface):
             self.keys.append(codes_mapping[code])                 # <KEY DOWN>
             self.keys.append(bytes((KEY_DEFAULT_MASK, 0, 0x00)))  # <KEY UP>
 
-        if len(self.keys) == 0:
-            return
-        data = self.keys.pop(0)
+        data = bytes((KEY_DEFAULT_MASK, 0, 0x00))
+        if len(self.keys) != 0:
+            data = self.keys.pop(0)
         if self.verbose > 2:
             print(self.name, "sending keypress {}".format(data))
         self.endpoint.send(data)
