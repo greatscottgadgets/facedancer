@@ -170,7 +170,7 @@ def to_any_endpoint(func):
 
 def to_this_interface(func):
     """ Decorator; refines a handler so it's only called on requests targeting this interface. """
-    return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.INTERFACE)
+    return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.INTERFACE, match_index=True)
 
 def to_any_interface(func):
     """ Decorator; refines a handler so it's only called on requests with an interface recipient. """
