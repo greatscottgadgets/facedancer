@@ -181,9 +181,8 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
         logging.debug("Handling GET_DESCRIPTOR on endpoint.")
 
-        # This is the same as the USBDevice get descriptor request;
-        # delegate to its unbound method to avoid duplication.
-        device.USBDevice.handle_generic_get_descriptor_request(self, request)
+        # This is the same as the USBDevice get descriptor request => avoid duplication.
+        self.get_device().handle_generic_get_descriptor_request(self, request)
 
 
     # Table 9-12 of USB 2.0 spec (pdf page 296)

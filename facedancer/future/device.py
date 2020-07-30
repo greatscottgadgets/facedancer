@@ -21,6 +21,7 @@ from .magic         import instantiate_subordinates
 
 from .descriptor    import USBDescribable, USBDescriptor, StringDescriptorManager
 from .configuration import USBConfiguration
+from .interface     import USBInterface
 from .endpoint      import USBEndpoint
 from .request       import USBControlRequest, USBRequestHandler
 from .request       import standard_request_handler, to_device, get_request_handler_methods
@@ -665,8 +666,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         else:
             return self.strings[index]
 
-
-    def handle_generic_get_descriptor_request(self, request: USBControlRequest):
+    @staticmethod
+    def handle_generic_get_descriptor_request(
+            descriptor_container:Union['USBDevice', USBInterface],
+            request: USBControlRequest):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
 
         logging.debug(f"received GET_DESCRIPTOR request {request}")
@@ -676,7 +679,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         descriptor_index = request.value_low
 
         # Try to find the descriptor associate with the request.
-        response = self.descriptors.get(descriptor_type, None)
+        response = descriptor_container.descriptors.get(descriptor_type, None)
 
         # If we have a callable, we need to evaluate it to figure
         # out what the actual descriptor should be.
@@ -763,7 +766,7 @@ class USBDevice(USBBaseDevice):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
 
         # Defer to our generic get_descriptor handler.
-        self.handle_generic_get_descriptor_request(request)
+        self.handle_generic_get_descriptor_request(self, request)
 
 
 
