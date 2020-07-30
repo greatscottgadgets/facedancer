@@ -157,7 +157,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def matches_identifier(self, other:int) -> bool:
         # Use only the MSB and the lower nibble; per the USB specification.
-        masked_other = 0b10001111
+        masked_other = other & 0b10001111
         return self.get_identifier() == masked_other
 
 
