@@ -151,7 +151,7 @@ class USBDevice(USBDescribable):
         }
 
     def connect(self):
-        self.maxusb_app.connect(self)
+        self.maxusb_app.connect(self, self.max_packet_size_ep0)
 
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
         self.state = USB.state_powered

@@ -123,7 +123,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         if self.backend is None:
             self.backend = FacedancerUSBApp()
 
-        self.backend.connect(self)
+        self.backend.connect(self, self.max_packet_size_ep0)
 
 
     def disconnect(self):
