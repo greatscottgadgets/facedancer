@@ -27,7 +27,7 @@ def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
     As an example, if this is called with `field_name`='index' and 'field_value'=3,
     this modifies `func` so it is only executed for requests with an index of 3.
 
-    Parmaters:
+    Parameters:
         func        -- The handler function to wrap.
         field_name  -- The name of the field to check.
         field_value -- The value the given field must have for the function to execute.
@@ -222,7 +222,7 @@ class USBControlRequest:
 
     @classmethod
     def from_raw_bytes(cls, raw_bytes: bytes, *, device = None):
-        """ Creates a request object from a sequency of raw bytes.
+        """ Creates a request object from a sequence of raw bytes.
 
         Parameters:
             raw_bytes -- The raw bytes to create the object from.

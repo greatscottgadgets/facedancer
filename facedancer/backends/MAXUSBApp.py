@@ -212,7 +212,7 @@ class MAXUSBApp(FacedancerApp):
         Sets the device address of the Facedancer. Usually only used during
         initial configuration.
 
-        address: The address that the Facedance should assume.
+        address: The address that the Facedancer should assume.
         """
 
         # The MAXUSB chip handles this for us, so we don't need to do anything.
@@ -222,12 +222,12 @@ class MAXUSBApp(FacedancerApp):
     def configured(self, configuration):
         """
         Callback that's issued when a USBDevice is configured, e.g. by the
-        SET_CONFIGRUATION request. Allows us to apply the new configuration.
+        SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The configruation applied by the SET_CONFIG request.
+        configuration: The configuration applied by the SET_CONFIG request.
         """
 
         # For the MAXUSB case, we don't need to do anything, though it might
-        # be nice to print a message or store the active coniguration for
+        # be nice to print a message or store the active configuration for
         # use by the USBDevice, etc. etc.
         pass

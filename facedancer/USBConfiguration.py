@@ -43,14 +43,14 @@ class USBConfiguration(USBDescribable):
     def from_binary_descriptor(cls, data):
         """
         Generates a new USBConfiguration object from a configuration descriptor,
-        handling any attached subordiate descriptors.
+        handling any attached subordinate descriptors.
 
         data: The raw bytes for the descriptor to be parsed.
         """
 
         length = data[0]
 
-        # Unpack the main colleciton of data into the descriptor itself.
+        # Unpack the main collection of data into the descriptor itself.
         descriptor_type, total_length, num_interfaces, index, string_index, \
             attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
 
@@ -62,7 +62,7 @@ class USBConfiguration(USBDescribable):
     @classmethod
     def _parse_subordinate_descriptors(cls, data):
         """
-        Generates descriptor objects from the list of subordinate desciptors.
+        Generates descriptor objects from the list of subordinate descriptors.
 
         data: The raw bytes for the descriptor to be parsed.
         """
@@ -93,7 +93,7 @@ class USBConfiguration(USBDescribable):
 
     def __repr__(self):
         """
-        Generates a pretty form of the configuation for printing.
+        Generates a pretty form of the configuration for printing.
         """
         # TODO: make attributes readable
 

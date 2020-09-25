@@ -16,7 +16,7 @@ class TemplateDevice(USBDevice):
     """ This class is meant to act as a template to help you get acquainted with FaceDancer."""
 
     #
-    # Core 'dataclass' defintions.
+    # Core 'dataclass' definitions.
     # These define the basic way that a FaceDancer device advertises itself to the host.
     #
     # Every one of these is optional. The defaults are relatively sane, so you can mostly
@@ -52,8 +52,8 @@ class TemplateDevice(USBDevice):
     # This tuple is a list of languages we're choosing to support.
     # This gives us an opportunity to provide strings in various languages.
     # We don't typically use this; so we can leave this set to a language of
-    # your choice. 
-    supported_langauges      : tuple = (LanguageIDs.ENGLISH_US,)
+    # your choice.
+    supported_languages      : tuple = (LanguageIDs.ENGLISH_US,)
 
     # The revision of the device hardware. This doesn't matter to the USB specification,
     # but it's sometimes read by drivers.
@@ -67,7 +67,7 @@ class TemplateDevice(USBDevice):
     #
     # We'll define a single configuration on our device. To be compliant,
     # every device needs at least a configuration and an interface.
-    # 
+    #
     # Note that we don't need to do anything special to have this be used.
     # As long as we're using the @use_inner_classes_automatically decorator,
     # this configuration will automatically be instantiated and used.
@@ -151,7 +151,7 @@ class TemplateDevice(USBDevice):
                 # For a full speed device, a max-size value of 64 is typical.
                 max_packet_size      : int = 64
 
-                # For interupt endpoints, the interval specifies how often the host should
+                # For interrupt endpoints, the interval specifies how often the host should
                 # poll the endpoint, in milliseconds. 10ms is a typical value.
                 interval             : int = 0
 
@@ -239,7 +239,7 @@ class TemplateDevice(USBDevice):
     @vendor_request_handler(number=1, direction=USBDirection.OUT)
     @to_device
     def handle_another_request(self, request):
-        
+
         #
         # Another set of convenience decorators exist to refine requests.
         # Decorators like `to_device` or `to_any_endpoint` chain with our
@@ -277,5 +277,5 @@ main(TemplateDevice)
 
 #
 # Of course, this template looks verbose as heck.
-# For an example that's much less verbnose, check out `examples/hackrf-info.py`.
+# For an example that's much less verbose, check out `examples/hackrf-info.py`.
 #

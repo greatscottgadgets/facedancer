@@ -28,7 +28,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
         class_number, subclass_number, protocol_number --
                 The USB class adhered to on this interface; usually a USBDeviceClass constant.
         interface_string --
-                A short, descriptive string used to identify the endpoint; or None if not providd.
+                A short, descriptive string used to identify the endpoint; or None if not provided.
     """
     DESCRIPTOR_TYPE_NUMBER = 0x4
 

@@ -30,8 +30,8 @@ class FacedancerApp:
     @classmethod
     def autodetect(cls, verbose=0, quirks=None):
         """
-        Convenience function that automatically creates the apporpriate
-        sublass based on the BOARD environment variable and some crude internal
+        Convenience function that automatically creates the appropriate
+        subclass based on the BOARD environment variable and some crude internal
         automagic.
 
         verbose: Sets the verbosity level of the relevant app. Increasing
@@ -84,7 +84,7 @@ class FacedancerApp:
         class to connect to a facedancer given the board_name and other
         environmental factors.
 
-        board: The name of the backend, as typically retreived from the BACKEND
+        board: The name of the backend, as typically retrieved from the BACKEND
             environment variable, or None to try figuring things out based
             on other environmental factors.
         """
@@ -160,8 +160,8 @@ class FacedancerUSBHost:
     @classmethod
     def autodetect(cls, verbose=0, quirks=None):
         """
-        Convenience function that automatically creates the apporpriate
-        sublass based on the BOARD environment variable and some crude internal
+        Convenience function that automatically creates the appropriate
+        subclass based on the BOARD environment variable and some crude internal
         automagic.
 
         verbose: Sets the verbosity level of the relevant app. Increasing
@@ -218,7 +218,7 @@ class FacedancerUSBHost:
         class to connect to a facedancer given the board_name and other
         environmental factors.
 
-        board: The name of the backend, as typically retreived from the BACKEND
+        board: The name of the backend, as typically retrieved from the BACKEND
             environment variable, or None to try figuring things out based
             on other environmental factors.
         """
@@ -231,7 +231,7 @@ class FacedancerUSBHost:
 
         is_in -- True iff this is a DEVICE-to-HOST request.
         req_type -- The type of request to be used.
-        recipient -- The context in which this request should be interprted.
+        recipient -- The context in which this request should be interpreted.
 
         returns -- a request_type byte
         """
@@ -276,7 +276,7 @@ class FacedancerUSBHost:
         request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
         recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
         request -- The request number to be performed.
-        value, index -- The standad USB request arguments, to be included in the setup packet. Their meaning varies
+        value, index -- The standard USB request arguments, to be included in the setup packet. Their meaning varies
             depending on the request.
         length -- The maximum length of data expected in response, or 0 if we don't expect any data back.
         """
@@ -318,7 +318,7 @@ class FacedancerUSBHost:
         request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
         recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
         request -- The request number to be performed.
-        value, index -- The standad USB request arguments, to be included in the setup packet. Their meaning varies
+        value, index -- The standard USB request arguments, to be included in the setup packet. Their meaning varies
             depending on the request.
         data -- The data to be transmitted with this control request.
         """
@@ -338,7 +338,7 @@ class FacedancerUSBHost:
 
     def initialize_device(self, apply_configuration=0, assign_address=0):
         """
-        Sets up a conenction to a directly-attached USB device.
+        Sets up a connection to a directly-attached USB device.
 
         apply_configuration -- If non-zero, the configuration with the given
             index will be applied to the relevant device.
@@ -403,7 +403,7 @@ class FacedancerUSBHost:
 
 
     def get_configuration_descriptor(self, index=0, include_subordinates=True):
-        """ Returns the device's configuration desctriptor.
+        """ Returns the device's configuration descriptor.
 
         include_subordinate -- if true, subordinate descriptors will also be returned
         """

@@ -2,7 +2,7 @@
 USB Class definitions for Qualcomm QDLoader 9008 Firehose
 (c) B. Kerler 2018
 At least set up hwid and hash.
-serial and sbversion is optional for testing.
+serial and sblversion is optional for testing.
 Supports extraction of firehose/EDL loaders, saves as [hwid].bin in local directory
 '''
 
@@ -67,12 +67,12 @@ class USBSaharaInterface(USBInterface):
     SAHARA_EXEC_CMD_SWITCH_TO_STREAM_DLOAD = 0x05
     SAHARA_EXEC_CMD_READ_DEBUG_DATA = 0x06
     SAHARA_EXEC_CMD_GET_SOFTWARE_VERSION_SBL = 0x07
-    
+
     SAHARA_MODE_IMAGE_TX_PENDING = 0x0
     SAHARA_MODE_IMAGE_TX_COMPLETE = 0x1
     SAHARA_MODE_MEMORY_DEBUG = 0x2
     SAHARA_MODE_COMMAND = 0x3
-    
+
     def __init__(self, hash,serial,hwid,sblversion,verbose=0):
         descriptors = { }
         self.hwid=hwid
@@ -88,7 +88,7 @@ class USBSaharaInterface(USBInterface):
         self.buffer=bytes(b'')
         self.loader=bytes(b'')
         self.receive_buffer = bytes(b'')
-        
+
         self.endpoints = [
         USBEndpoint(
                 1,          # endpoint number
@@ -131,7 +131,7 @@ class USBSaharaInterface(USBInterface):
         elif ep==1:
             return self.endpoints[0].send(data)
         assert("Send_on_endpoint: wrong endpoint given.")
-        
+
     def send_data(self, data):
         #print ("TX: ")
         #rec=binascii.hexlify(data)
@@ -242,7 +242,7 @@ class USBSaharaInterface(USBInterface):
                 elif req[2] == self.SAHARA_EXEC_CMD_READ_DEBUG_DATA: #6
                     packet = reply.pack(self.SAHARA_EXECUTE_RSP, 0x10, self.SAHARA_EXEC_CMD_READ_DEBUG_DATA, 0x40)
                 '''
-                
+
                 self.send_data(packet)
                 print("Done SAHARA_EXECUTE_REQ.")
             elif opcode == self.SAHARA_EXECUTE_DATA: #0xF
@@ -348,7 +348,7 @@ class USBSaharaDevice(USBDevice):
     name = "USB QC Sahara EDL Device"
 
     def __init__(self, maxusb_app, verbose=0):
-    
+
         #z ultra c 6833 msm8974_23_4_aid_4
         #hash = bytearray.fromhex("49109A8016C239CD8F76540FE4D5138C87B2297E49C6B30EC31852330BDDB177")
         #hwid = 0x04000100E1007B00

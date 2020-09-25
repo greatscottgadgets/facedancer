@@ -244,7 +244,7 @@ class USBDevice(USBDescribable):
         handler = handler_entity.request_handlers.get(req.request, None)
 
         if not handler:
-            print(self.name, "received unhandled EP0 control request; stallling:\n {}".format(repr(req)))
+            print(self.name, "received unhandled EP0 control request; stalling:\n {}".format(repr(req)))
             self.maxusb_app.stall_ep0()
             return
 
@@ -401,7 +401,7 @@ class USBDevice(USBDescribable):
         # HACK: blindly acknowledge request
         self.ack_status_stage()
 
-        # notify the device of the recofiguration, in case
+        # notify the device of the reconfiguration, in case
         # it needs to e.g. set up endpoints accordingly
         self.maxusb_app.configured(self.configuration)
 
@@ -462,7 +462,7 @@ class USBDeviceRequest:
         5: 'SET_ADDRESS',
         6: 'GET_DESCRIPTOR',
         7: 'SET_DESCRIPTOR',
-        8: 'GET_CONFIGRUATION',
+        8: 'GET_CONFIGURATION',
         9: 'SET_CONFIGURATION',
         10: 'GET_INTERFACE',
         11: 'SET_INTERFACE',

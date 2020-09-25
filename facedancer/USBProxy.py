@@ -44,7 +44,7 @@ class USBProxyFilter:
         """
         Filters the data response from the proxied device during an IN control
         request. This allows us to modify the data returned from the proxied
-        devide during a setup stage.
+        device during a setup stage.
 
         req: The request that was issued to the target host.
         data: The data being proxied during the data stage.
@@ -90,7 +90,7 @@ class USBProxyFilter:
     def filter_in_token(self, ep_num):
         """
         Filters an IN token before it's passed to the proxied device.
-        This allows modification of e.g. the endpoint or absorpotion of
+        This allows modification of e.g. the endpoint or absorption of
         the IN token before it's issued to the real device.
 
         ep_num: The endpoint number on which the IN token is to be proxied.
@@ -106,7 +106,7 @@ class USBProxyFilter:
         to the host issuing an IN token).
 
         ep_num: The endpoint number associated with the data packet.
-        data: The data packet recieved from the proxied device.
+        data: The data packet received from the proxied device.
 
         returns: A modified version of the arguments. If data is set to none,
             the packet will be absorbed, and a NAK will be issued instead of
@@ -120,7 +120,7 @@ class USBProxyFilter:
         Filters a packet sent from the host via an OUT token.
 
         ep_num: The endpoint number associated with the data packet.
-        data: The data packet recieved from host.
+        data: The data packet received from host.
 
         returns: A modified version of the arguments. If data is set to none,
             the packet will be absorbed,

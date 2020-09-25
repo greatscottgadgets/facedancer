@@ -1,7 +1,7 @@
 #
 # Raspdancer
 #
-# Implementation of the Facedacner API that supports direct access to the MAX324x
+# Implementation of the Facedancer API that supports direct access to the MAX324x
 # chip via a RasPi's SoC SPI bus. Emulates talking to a Facedancer, but ignores
 # the details of the GreatFET protocol.
 #
@@ -38,7 +38,7 @@ class RaspdancerMaxUSBApp(MAXUSBApp):
             rd = Raspdancer()
             return True
         except ImportError as e:
-            logging.info("Skipping Raspdancer devices, as prequisites aren't installed ({}).".format(e))
+            logging.info("Skipping Raspdancer devices, as perquisites aren't installed ({}).".format(e))
             return False
         except:
             return False
