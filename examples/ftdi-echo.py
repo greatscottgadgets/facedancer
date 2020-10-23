@@ -2,10 +2,7 @@
 #
 # This file is part of FaceDancer.
 #
-
-
-import logging
-
+from facedancer import logger
 from facedancer import main
 from facedancer.devices.ftdi import FTDIDevice
 
@@ -14,11 +11,11 @@ device = FTDIDevice()
 async def send_hello():
     """ Waits for the host to connect, and then says hello. """
 
-    logging.info("Waiting for the host to connect.")
+    logger.info("Waiting for the host to connect.")
     await device.wait_for_host()
-    logging.info("Host connected!")
+    logger.info("Host connected!")
 
-    logging.info("Telling the user hello...")
+    logger.info("Telling the user hello...")
     device.transmit("Hello! Welcome to the FTDI demo.\n")
     device.transmit("Enter any text you'd like, and we'll send it back in UPPERCASE.\n")
 

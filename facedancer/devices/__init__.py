@@ -2,17 +2,14 @@
 # This file is part of FaceDancer.
 #
 
-import sys
-import pprint
+import argparse
 import asyncio
 import inspect
 import logging
-import argparse
+import pprint
+import sys
 
-
-# Log formatting strings.
-LOG_FORMAT_COLOR = "\u001b[37;1m%(levelname)-8s| \u001b[0m\u001b[1m%(module)-15s|\u001b[0m %(message)s"
-LOG_FORMAT_PLAIN = "%(levelname)-8s:n%(module)-15s>%(message)s"
+from .. import logger
 
 
 def default_main(device_or_type, *coroutines):
@@ -26,17 +23,19 @@ def default_main(device_or_type, *coroutines):
     parser = argparse.ArgumentParser(description=f"Emulation frontend for {device_or_type.name}(s).")
     parser.add_argument('--print-only', action='store_true', help="Prints information about the device without emulating.")
     parser.add_argument('--suggest', action='store_true', help="Prints suggested code additions after device emualtion is complete.")
-    parser.add_argument('-v', '--verbose', help="Controls verbosity. 0=silent, 3=default, 5=spammy", default=3)
+    parser.add_argument('-v', '--verbose',
+        help="Controls verbosity. 0=silent, 3=default, 5=spammy. Default = %(default)s",
+        default=3, choices={0, 3, 5}, type=int)
     args = parser.parse_args()
 
-    if sys.stdout.isatty():
-        log_format = LOG_FORMAT_COLOR
-    else:
-        log_format = LOG_FORMAT_PLAIN
-
     # Set up our logging output.
-    python_loglevel = 50 - (int(args.verbose) * 10)
-    logging.basicConfig(level=python_loglevel, format=log_format)
+    python_loglevel = 100
+    verbose = args.verbose
+    if verbose == 3:
+        python_loglevel = logging.INFO
+    elif verbose == 5:
+        python_loglevel = logging.DEBUG
+    logger.level = python_loglevel
 
     if inspect.isclass(device_or_type):
         device = device_or_type()

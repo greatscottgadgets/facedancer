@@ -5,11 +5,11 @@
 """ Emulation of an FTDI USB-to-serial converter. """
 
 import asyncio
-import logging
 
 from enum   import IntFlag
 from typing import Union
 
+from .. import logger
 from .         import default_main
 from ..future  import *
 from ..classes import USBDeviceClass
@@ -94,7 +94,7 @@ class FTDIDevice(USBDevice):
 
     @vendor_request_handler(number=0)
     def handle_reset_request(self, request):
-        logging.debug("Received FTDI reset; assuming initial settings.")
+        logger.debug("Received FTDI reset; assuming initial settings.")
 
         self.reset_ftdi()
         request.acknowledge()
@@ -102,7 +102,7 @@ class FTDIDevice(USBDevice):
 
     @vendor_request_handler(number=1)
     def handle_modem_ctrl_request(self, req):
-        logging.debug("received modem_ctrl request")
+        logger.debug("received modem_ctrl request")
 
         dtr          = bool(req.value & 0x0001)
         rts          = bool(req.value & 0x0002)
@@ -110,9 +110,9 @@ class FTDIDevice(USBDevice):
         self.use_rts = bool(req.value & 0x0200)
 
         if dtr:
-            logging.info("DTR set -- host appears to have connected via virtual serial.")
+            logger.info("DTR set -- host appears to have connected via virtual serial.")
         else:
-            logging.info("DTR cleared -- host appears to have disconnected from virtual serial.")
+            logger.info("DTR cleared -- host appears to have disconnected from virtual serial.")
 
         if self.use_dtr:
             self.data_terminal_ready = dtr
@@ -131,9 +131,9 @@ class FTDIDevice(USBDevice):
             self.flow_control = FTDIFlowControl(request.value)
 
             if self.flow_control:
-                logging.info(f"Host has set up {self.flow_control.name} flow control.")
+                logger.info(f"Host has set up {self.flow_control.name} flow control.")
             else:
-                logging.info(f"Host has disabled flow control.")
+                logger.info(f"Host has disabled flow control.")
 
             request.acknowledge()
         except KeyError:
@@ -146,7 +146,7 @@ class FTDIDevice(USBDevice):
         """ Control request to set our baud rate. """
 
         if request.value > 9:
-            logging.warning("Host specified an unknown baud rate value. Stalling.")
+            logger.warning("Host specified an unknown baud rate value. Stalling.")
             request.stall()
             return
 
@@ -161,13 +161,13 @@ class FTDIDevice(USBDevice):
         elif request.value == 9:
             self.baud_rate = 115200
 
-        logging.info(f"Host set baud rate to {self.baud_rate}.")
+        logger.info(f"Host set baud rate to {self.baud_rate}.")
         request.acknowledge()
 
 
     @vendor_request_handler(number=4)
     def handle_set_data_request(self, request):
-        logging.debug("received set_data request")
+        logger.debug("received set_data request")
         request.acknowledge()
 
 
@@ -187,25 +187,25 @@ class FTDIDevice(USBDevice):
 
     @vendor_request_handler(number=6)
     def handle_set_event_char_request(self, request):
-        logging.debug("received set_event_char request")
+        logger.debug("received set_event_char request")
         request.acknowledge()
 
 
     @vendor_request_handler(number=7)
     def handle_set_error_char_request(self, request):
-        logging.debug("received set_error_char request")
+        logger.debug("received set_error_char request")
         request.acknowledge()
 
 
     @vendor_request_handler(number=9)
     def handle_set_latency_timer_request(self, request):
-        logging.debug("received set_latency_timer request")
+        logger.debug("received set_latency_timer request")
         request.acknowledge()
 
 
     @vendor_request_handler(number=10)
     def handle_get_latency_timer_request(self, request):
-        logging.debug("received get_latency_timer request")
+        logger.debug("received get_latency_timer request")
 
         # Per Travis Goodspeed, this is a "bullshit value".
         request.reply(b'\x01')
@@ -237,7 +237,7 @@ class FTDIDevice(USBDevice):
 
         Subclasses should override this to capture data from the host.
         """
-        logging.debug(f"Received serial data: {data}")
+        logger.debug(f"Received serial data: {data}")
 
 
     def transmit(self, data: Union[str, bytes], *, blocking: bool = False, adjust_endings: bool = True):

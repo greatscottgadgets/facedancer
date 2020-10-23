@@ -3,10 +3,10 @@
 #
 """ Functionality for defining USB interfaces. """
 
-import logging
-
 from typing       import Dict, Iterable
 from dataclasses  import dataclass, field
+
+from ..           import logger
 
 from .magic       import instantiate_subordinates, AutoInstantiable
 from .types       import USBDirection, USBStandardRequests
@@ -179,7 +179,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     @to_this_interface
     def handle_get_descriptor_request(self, request):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
-        logging.debug("Handling GET_DESCRIPTOR on endpoint.")
+        logger.debug("Handling GET_DESCRIPTOR on endpoint.")
 
         # This is the same as the USBDevice get descriptor request;
         # delegate to its unbound method to avoid duplication.

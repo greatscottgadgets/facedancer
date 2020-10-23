@@ -3,11 +3,10 @@
 #
 """ Functionality for describing USB endpoints. """
 
-import logging
-
 from typing      import Iterable
 from dataclasses import dataclass
 
+from ..          import logger
 from .magic      import AutoInstantiable
 from .descriptor import USBDescribable
 from .request    import USBRequestHandler, get_request_handler_methods
@@ -88,7 +87,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         Parameters:
             data   -- The raw bytes received.
         """
-        logging.info(f"EP{self.number} received {len(data)} bytes of data; "
+        logger.info(f"EP{self.number} received {len(data)} bytes of data; "
                 "but has no handler.")
 
 
@@ -103,7 +102,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     @standard_request_handler(number=USBStandardRequests.CLEAR_FEATURE)
     @to_this_endpoint
     def handle_clear_feature_request(self, request):
-        logging.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
+        logger.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
             f"with value {req.value}")
         request.acknowledge()
 

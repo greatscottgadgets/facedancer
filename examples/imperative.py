@@ -13,8 +13,7 @@
 # which may be useful in some circumstances.
 #
 
-import logging
-
+from facedancer         import logger
 from facedancer         import main
 from facedancer.future  import *
 
@@ -56,7 +55,7 @@ class ImperativeDevice(USBDevice):
     # ... and callbacks continue to work the same way.
     #
     def handle_data_received(self, endpoint, data):
-        logging.info(f"New data: {data} on {endpoint}.")
+        logger.info(f"New data: {data} on {endpoint}.")
 
 
 main(ImperativeDevice())

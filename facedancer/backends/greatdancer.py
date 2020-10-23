@@ -3,15 +3,13 @@
 import sys
 import time
 import codecs
-import logging
 import traceback
 
+from .. import logger, LOGLEVEL_TRACE
 from ..core import *
 from ..USB import *
 from ..USBEndpoint import USBEndpoint
 
-# FIXME: abstract this to the logging library
-LOGLEVEL_TRACE = 5
 
 class GreatDancerApp(FacedancerApp):
     """
@@ -63,7 +61,7 @@ class GreatDancerApp(FacedancerApp):
             gf = greatfet.GreatFET()
             return gf.supports_api('greatdancer')
         except ImportError:
-            logging.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
+            logger.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
             return False
         except:
             return False
@@ -176,7 +174,7 @@ class GreatDancerApp(FacedancerApp):
 
         for interface in config.get_interfaces():
             for endpoint in interface.get_endpoints():
-                logging.info(f"Configuring {endpoint}.")
+                logger.info(f"Configuring {endpoint}.")
 
                 triple = (endpoint.get_address(), endpoint.max_packet_size, endpoint.transfer_type,)
                 arguments.append(triple)
@@ -199,19 +197,19 @@ class GreatDancerApp(FacedancerApp):
 
         # Compute our quirk flags.
         if 'manual_set_address' in self.quirks:
-            logging.info("Handling SET_ADDRESS on the host side!")
+            logger.info("Handling SET_ADDRESS on the host side!")
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
         self.api.connect(self.max_ep0_packet_size, quirks)
         self.connected_device = usb_device
 
-        logging.info("Connecting to host.")
+        logger.info("Connecting to host.")
 
 
     def disconnect(self):
         """ Disconnects the GreatDancer from its target host. """
-        logging.info("Disconnecting from host.")
+        logger.info("Disconnecting from host.")
         self.device.comms.release_exclusive_access()
         self.api.disconnect()
 
@@ -240,7 +238,7 @@ class GreatDancerApp(FacedancerApp):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        logging.log(LOGLEVEL_TRACE, f"EP{ep_num}/IN: <- {bytes(data)}")
+        logger.log(LOGLEVEL_TRACE, f"EP{ep_num}/IN: <- {bytes(data)}")
 
         self._wait_until_ready_to_send(ep_num)
         self.api.send_on_endpoint(ep_num, bytes(data))
@@ -291,7 +289,7 @@ class GreatDancerApp(FacedancerApp):
         """
 
         in_vs_out = "IN" if direction else "OUT"
-        logging.log(LOGLEVEL_TRACE, "Stalling EP{} {}".format(ep_num, in_vs_out))
+        logger.log(LOGLEVEL_TRACE, "Stalling EP{} {}".format(ep_num, in_vs_out))
 
         self.endpoint_stalled[ep_num] = True
         self.api.stall_endpoint(self._endpoint_address(ep_num, direction))
@@ -566,7 +564,7 @@ class GreatDancerApp(FacedancerApp):
             # callback.
             else:
                 data = self._finish_primed_read_on_endpoint(endpoint_number)
-                logging.log(LOGLEVEL_TRACE, f"EP{endpoint_number}/OUT -> {data}")
+                logger.log(LOGLEVEL_TRACE, f"EP{endpoint_number}/OUT -> {data}")
                 self.connected_device.handle_data_available(endpoint_number, data)
 
 
@@ -675,7 +673,7 @@ class GreatDancerApp(FacedancerApp):
         Triggers the GreatDancer to perform its side of a bus reset.
         """
 
-        logging.debug("Host issued bus reset.")
+        logger.debug("Host issued bus reset.")
 
         if self.connected_device:
             self.connected_device.handle_bus_reset()

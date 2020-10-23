@@ -4,7 +4,6 @@
 """ Functionality for declaring and working with USB control requests. """
 
 import inspect
-import logging
 import warnings
 import functools
 
@@ -12,11 +11,8 @@ from typing      import List, Iterable
 from dataclasses import dataclass
 from abc         import ABCMeta, abstractmethod
 
-
 from .descriptor import USBDescribable
 from .types      import USBRequestRecipient, USBRequestType, USBDirection, USBStandardRequests
-
-logger = logging.getLogger(__name__)
 
 def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
     """ Internal function; generates a request-refinement decorator.

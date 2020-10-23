@@ -5,8 +5,7 @@
 #
 """ Example template for creating new FaceDancer devices. """
 
-import logging
-
+from facedancer         import logger
 from facedancer         import main
 from facedancer.future  import *
 from facedancer.classes import USBDeviceClass
@@ -183,7 +182,7 @@ class TemplateDevice(USBDevice):
                 # This one is called whenever data is sent to this endpoint.
                 #
                 def handle_data_received(self, data):
-                    logging.info(f"Received data: {data}")
+                    logger.info(f"Received data: {data}")
 
 
     #

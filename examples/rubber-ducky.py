@@ -5,8 +5,8 @@
 """ USB 'Rubber Ducky' example; enters some text via the keyboard module. """
 
 import asyncio
-import logging
 
+from facedancer import logger
 from facedancer import main
 from facedancer.devices.keyboard     import USBKeyboardDevice
 from facedancer.classes.hid.keyboard import KeyboardModifiers
@@ -14,7 +14,7 @@ from facedancer.classes.hid.keyboard import KeyboardModifiers
 device = USBKeyboardDevice()
 
 async def type_letters():
-    logging.info("Beginning message typing demo...")
+    logger.info("Beginning message typing demo...")
 
     # Type ls.
     await asyncio.sleep(5)
@@ -25,13 +25,13 @@ async def type_letters():
     await device.type_string("echo hi, user\n")
 
     # Finally, try to pop calc, just for fun.
-    logging.info("Bonus: trying to pop calc.")
+    logger.info("Bonus: trying to pop calc.")
     await device.type_string('r', modifiers=KeyboardModifiers.MOD_LEFT_META)
     await asyncio.sleep(0.5)
     await device.type_string('calc\n')
 
 
-    logging.info("Typing complete. Idly handling USB requests.")
+    logger.info("Typing complete. Idly handling USB requests.")
 
 
 main(device, type_letters())
