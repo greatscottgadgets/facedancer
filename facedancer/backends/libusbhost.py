@@ -46,7 +46,7 @@ class LibUSBHostApp(FacedancerUSBHost):
         """
 
         self.verbose = verbose
-    
+
         # If we have a specified bus/port, accept them.
         # TODO: accept these via quirks?
         desired_bus = os.environ.get('LIBUSB_BUS')
@@ -191,13 +191,13 @@ class LibUSBHostApp(FacedancerUSBHost):
 
         endpoint_number -- The endpoint number on which to send.
         expected_read_size -- The expected amount of data to be read.
-        data_packet_pid -- The data packet PID to use (1 or 0). 
+        data_packet_pid -- The data packet PID to use (1 or 0).
             Ignored if the endpoint is set to automatically alternate data PIDs.
 
         raises an IOError on a communications error or stall
         """
         data = self.device.read(endpoint_number, expected_read_size)
-        return data.tostring()
+        return data.tobytes()
 
 
     def control_request_in(self, request_type, recipient, request, value=0, index=0, length=0):
@@ -214,7 +214,7 @@ class LibUSBHostApp(FacedancerUSBHost):
         request_type = self._build_request_type(True, request_type, recipient)
         data = self.device.ctrl_transfer(request_type, request,
                                          value, index, length)
-        return data.tostring()
+        return data.tobytes()
 
 
     def control_request_out(self, request_type, recipient, request, value=0, index=0, data=[]):

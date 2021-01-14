@@ -416,5 +416,5 @@ class GreatDancerHostApp(FacedancerUSBHost):
         # Otherwise, read the data from the endpoint and return it.
         data = self.device.comms._vendor_request_in(self.vendor_requests.USBHOST_FINISH_NONBLOCKING_READ,
                                              index=endpoint_number, length=length)
-        return data.tostring()
+        return data.tobytes()
 
