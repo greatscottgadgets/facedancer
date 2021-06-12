@@ -2,7 +2,9 @@
 import logging
 
 # Alias objects to make them easier to import.
-from .core import FacedancerUSBApp, FacedancerUSBHostApp, FacedancerBasicScheduler
+from .core import FacedancerUSBApp, FacedancerApp,
+from .core import FacedancerUSBHostApp, FacedancerBasicScheduler
+
 from .backends import *
 from .USBProxy import USBProxyFilter, USBProxyDevice
 

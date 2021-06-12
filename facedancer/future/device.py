@@ -13,7 +13,7 @@ from dataclasses    import dataclass, field
 
 from prompt_toolkit import HTML, print_formatted_text
 
-from ..             import FacedancerUSBApp, LOGLEVEL_TRACE
+from ..             import FacedancerApp, FacedancerUSBApp, LOGLEVEL_TRACE
 from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
 from .types         import USBDirection, USBRequestType, USBRequestRecipient
 
@@ -75,7 +75,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     descriptors              : Dict[int, Union[bytes, callable]] = field(default_factory=dict)
     configurations           : Dict[int, USBConfiguration]       = field(default_factory=dict)
-    backend                  : FacedancerUSBApp = None
+    backend                  : FacedancerApp = None
 
 
     def __post_init__(self):
