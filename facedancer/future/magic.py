@@ -80,7 +80,11 @@ def use_automatically(cls):
 
 
 def _use_inner_classes_automatically(cls):
-    """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
+    """
+    Decorator that acts as if all inner classes were
+    defined with `use_automatically` recursively.
+
+    """
 
     # Iterate over the relevant class...
     for name, member in inspect.getmembers(cls):
@@ -89,9 +93,15 @@ def _use_inner_classes_automatically(cls):
         # -and- use_inner_classes_automatically. The former
         if inspect.isclass(member) and issubclass(member, AutoInstantiable):
 
-            wrapped_class = _use_inner_classes_automatically(member)
-            wrapped_class = use_automatically(member)
+            # decorate the inner class with @user_inner_classes_automatically
+            _ = _use_inner_classes_automatically(member)
 
+            # wrap the inner class with @use_automatically, which will wrap the
+            # inner class with dataclass and then AutoInstantiator.
+            # the decorated inner classes can be instantiated
+            # using inner_class(parent), see AutoInstantiator.__call__
+            # and instantiate_subordinates (in the for loop)
+            wrapped_class = use_automatically(member)
             setattr(cls, name, wrapped_class)
 
     return cls
