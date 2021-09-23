@@ -91,6 +91,9 @@ ENV/
 .ropeproject
 tags
 
+# IntelliJ Project
+.idea/
+
 # Release files
 VERSION
 release-files

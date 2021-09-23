@@ -122,7 +122,7 @@ class GreatDancerApp(FacedancerApp):
 
     def init_commands(self):
         """
-        API compatibility fucntion; not necessary for GreatDancer.
+        API compatibility function; not necessary for GreatDancer.
         """
         pass
 
@@ -139,10 +139,10 @@ class GreatDancerApp(FacedancerApp):
     def ack_status_stage(self, direction=HOST_TO_DEVICE, endpoint_number=0, blocking=False):
         """
             Handles the status stage of a correctly completed control request,
-            by priming the appropriate endpint to handle the status phase.
+            by priming the appropriate endpoint to handle the status phase.
 
             direction: Determines if we're ACK'ing an IN or OUT vendor request.
-                (This should match the direcion of the DATA stage.)
+                (This should match the direction of the DATA stage.)
             endpoint_number: The endpoint number on which the control request
                 occurred.
             blocking: True if we should wait for the ACK to be fully issued
@@ -274,7 +274,7 @@ class GreatDancerApp(FacedancerApp):
     @staticmethod
     def _endpoint_address(ep_num, direction):
         """
-        Returns the endpoint number that corresponds to a given directio
+        Returns the endpoint number that corresponds to a given direction
         and address.
         """
         if direction:
@@ -310,7 +310,7 @@ class GreatDancerApp(FacedancerApp):
         initial configuration.
 
         address: The address that the GreatDancer should assume.
-        defer: True iff the set_addres request should wait for an active transaction to finish.
+        defer: True iff the set_address request should wait for an active transaction to finish.
         """
 
         self.api.set_address(address, 1 if defer else 0)
@@ -477,7 +477,7 @@ class GreatDancerApp(FacedancerApp):
 
         # Finally, after completing all of the above, we may now have idle
         # (unprimed) endpoints. For OUT endpoints, we'll need to re-prime them
-        # so we're ready for reciept; for IN endpoints, we'll want to give the
+        # so we're ready for receipt; for IN endpoints, we'll want to give the
         # emulated device a chance to provide new data.
         self._handle_transfer_readiness()
 
@@ -503,7 +503,7 @@ class GreatDancerApp(FacedancerApp):
         There's no harm in calling this if a transaction isn't complete, but it _must_
         be called at least once for each completed transaction.
 
-        endpoint_number: The endpoint number whose transfer desctiprots should be cleaned
+        endpoint_number: The endpoint number whose transfer descriptors should be cleaned
             up.
         direction: The endpoint direction for which TD's should be cleaned.
         """
@@ -523,7 +523,7 @@ class GreatDancerApp(FacedancerApp):
 
     def _handle_transfer_complete_on_endpoint(self, endpoint_number, direction):
         """
-        Handles a known-compelted transfer on a given endpoint.
+        Handles a known-completed transfer on a given endpoint.
 
         endpoint_number: The endpoint number for which a setup event should be serviced.
         """
@@ -532,11 +532,11 @@ class GreatDancerApp(FacedancerApp):
         # that we need to handle.
         if direction == self.HOST_TO_DEVICE:
 
-            # Special case: if we've just recieved data on a control endpoint,
+            # Special case: if we've just received data on a control endpoint,
             # we're completing a control request.
             if self._is_control_endpoint(endpoint_number):
 
-                # If we recieved a setup packet to handle, handle it.
+                # If we received a setup packet to handle, handle it.
                 if self.pending_control_request:
 
                     # Read the rest of the data from the endpoint, completing
@@ -588,7 +588,7 @@ class GreatDancerApp(FacedancerApp):
 
     def _prime_out_endpoint(self, endpoint_number):
         """
-        Primes an out endpoint, allowing it to recieve data the next time the host chooses to send it.
+        Primes an out endpoint, allowing it to receive data the next time the host chooses to send it.
 
         endpoint_number: The endpoint that should be primed.
         """
@@ -719,7 +719,7 @@ class GreatDancerApp(FacedancerApp):
         """
         Configures the GreatDancer's endpoints to match the provided configuration.
 
-        configurate: The USBConfigruation object that describes the endpoints provided.
+        configurate: The USBConfiguration object that describes the endpoints provided.
         """
         endpoint_triplets = self._generate_endpoint_config_arguments(configuration)
 
@@ -733,9 +733,9 @@ class GreatDancerApp(FacedancerApp):
     def configured(self, configuration):
         """
         Callback that's issued when a USBDevice is configured, e.g. by the
-        SET_CONFIGRUATION request. Allows us to apply the new configuration.
+        SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The configruation applied by the SET_CONFIG request.
+        configuration: The configuration applied by the SET_CONFIG request.
         """
         self._configure_endpoints(configuration)
         self.configuration = configuration

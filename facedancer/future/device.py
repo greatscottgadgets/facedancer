@@ -35,7 +35,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     Fields:
         device_class/device_subclass/protocol_revision_number --
-                The USB descriptor fields that select the class, subclass, and protcol.
+                The USB descriptor fields that select the class, subclass, and protocol.
         vendor_id, product_id --
                 The USB vendor and product ID for this device.
         manufacturer_string, product_string, serial_number_string --
@@ -68,7 +68,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     # I feel bad for putting this as the default language ID / propagating anglocentrism,
     # but this appears to be the only language ID supported by some systems, so here it is.
-    supported_langauges      : tuple = (LanguageIDs.ENGLISH_US,)
+    supported_languages      : tuple = (LanguageIDs.ENGLISH_US,)
 
     device_revision          : int  = 0
     usb_spec_version         : int  = 0x0002
@@ -387,7 +387,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         doesn't exist. Note that even if `handle_data_received` is overridden,
         this method can still be called e.g. by configuration.handle_data_received.
 
-        Parameteres:
+        Parameters:
             endpoint_number -- The endpoint number on which the data was received.
             data            -- The raw bytes received on the relevant endpoint.
         """
@@ -582,7 +582,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         print_html("")
         print_html("<b><u>Automatic Suggestions</u></b>")
         print_html("These suggestions are based on simple observed behavior;")
-        print_html("not all of these suggestions may be useful / desireable.")
+        print_html("not all of these suggestions may be useful / desirable.")
         print_html("")
 
         self._print_suggested_requests()
@@ -600,7 +600,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             address -- The address to apply.
             defer   -- If true, the address change should be deferred
                        until the next time a control request ends. Should
-                       be set if we're changing the addres before we ack
+                       be set if we're changing the address before we ack
                        the relevant transaction.
         """
         self.address = address
@@ -643,15 +643,15 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         return self.configurations[index + 1].get_descriptor()
 
 
-    def handle_get_supported_langauges_descriptor(self) -> bytes:
-        """ Returns the special string-descriptor-zero that indicates which langauges are supported. """
+    def handle_get_supported_languages_descriptor(self) -> bytes:
+        """ Returns the special string-descriptor-zero that indicates which languages are supported. """
 
         # Our string descriptor is going to have two header bytes, plus two bytes
         # for each language.
-        total_length = (len(self.supported_langauges) * 2) + 2
+        total_length = (len(self.supported_languages) * 2) + 2
         packet = bytearray([total_length, DescriptorTypes.STRING])
 
-        for language in self.supported_langauges:
+        for language in self.supported_languages:
             packet.extend(language.to_bytes(2, byteorder='little'))
 
         return bytes(packet)
@@ -661,7 +661,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         """ Returns the string descriptor associated with a given index. """
 
         if index == 0:
-            return self.handle_get_supported_langauges_descriptor()
+            return self.handle_get_supported_languages_descriptor()
         else:
             return self.strings[index]
 

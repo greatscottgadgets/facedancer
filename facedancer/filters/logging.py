@@ -100,7 +100,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
         return datetime.datetime.now().strftime("[%H:%M:%S]")
 
     def _magic_decode(self, data):
-        """ Simple decode function that attempts to find a nice string represetation for the console."""
+        """ Simple decode function that attempts to find a nice string representation for the console."""
         try:
             return bytes(data).decode('utf-16le')
         except:

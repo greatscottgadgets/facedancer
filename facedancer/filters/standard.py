@@ -94,7 +94,7 @@ class USBProxySetupFilters(USBProxyFilter):
 
                 self.device.configured(configuration)
 
-            # Otherwise, the host has applied a configruation without ever reading
+            # Otherwise, the host has applied a configuration without ever reading
             # its descriptor. This is mighty strange behavior!
             elif self.verbose > 0:
                 print("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))

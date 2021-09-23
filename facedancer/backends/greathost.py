@@ -12,7 +12,7 @@ from ..core import *
 
 class GreatDancerHostApp(FacedancerUSBHost):
     """
-    Class that represets a GreatFET-based USB host.
+    Class that represents a GreatFET-based USB host.
     """
     app_name = "GreatDancer Host"
 
@@ -409,7 +409,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
         if self.verbose > 4:
             print("Supposedly, we've got {} bytes of data to read".format(length))
 
-        # If there's no data available, we don't need to waste time reading anyting.
+        # If there's no data available, we don't need to waste time reading anything.
         if length == 0:
             return b''
 

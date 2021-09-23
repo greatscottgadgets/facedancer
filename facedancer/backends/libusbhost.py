@@ -13,7 +13,7 @@ from ..core import *
 
 class LibUSBHostApp(FacedancerUSBHost):
     """
-    Class that represets a libusb-based USB host.
+    Class that represents a libusb-based USB host.
     """
     app_name = "LibUSB Host"
 
@@ -35,7 +35,7 @@ class LibUSBHostApp(FacedancerUSBHost):
         if os.environ.get('LIBUSB_ADDRESS'):
             return True
 
-        # Never automaticaly instantiate the libusb backend,
+        # Never automatically instantiate the libusb backend,
         # as it's not a full implementation and requires host-OS oddities.
         return False
 
@@ -206,7 +206,7 @@ class LibUSBHostApp(FacedancerUSBHost):
         request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
         recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
         request -- The request number to be performed.
-        value, index -- The standad USB request arguments, to be included in the setup packet. Their meaning varies
+        value, index -- The standard USB request arguments, to be included in the setup packet. Their meaning varies
             depending on the request.
         length -- The maximum length of data expected in response, or 0 if we don't expect any data back.
         """
@@ -223,7 +223,7 @@ class LibUSBHostApp(FacedancerUSBHost):
         request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
         recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
         request -- The request number to be performed.
-        value, index -- The standad USB request arguments, to be included in the setup packet. Their meaning varies
+        value, index -- The standard USB request arguments, to be included in the setup packet. Their meaning varies
             depending on the request.
         data -- The data to be transmitted with this control request.
         """

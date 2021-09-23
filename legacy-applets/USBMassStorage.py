@@ -156,7 +156,7 @@ class USBMassStorageInterface(USBInterface):
             if self.verbose > 0:
                 print("{} handling {} ({}) {}:[{}]".format(direction_arrow, name.upper(), direction_name, expected_length, bytes_as_hex(cbw.cb[1:])))
 
-            # Delegate to its handler funciton.
+            # Delegate to its handler function.
             return handler(cbw)
 
         # Otherwise, run the unknown command handler.
@@ -767,7 +767,7 @@ class FAT32DiskImage(DiskImage):
 
     def handle_fat_read(self, address):
         """
-        Handles an access to the device's file allocaiton table.
+        Handles an access to the device's file allocation table.
         """
 
         # TODO: Create general method for reading from the FAT based on

@@ -59,7 +59,7 @@ class USBInterface(USBDescribable):
 
     def _handle_legacy_interface_class(self, interface_class, descriptors):
         """
-        Constructs a USBClass object from a legacy informtion set.
+        Constructs a USBClass object from a legacy information set.
         """
 
         iclass_desc_num = USB.interface_class_to_descriptor_type(interface_class)
