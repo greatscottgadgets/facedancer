@@ -21,7 +21,7 @@ class GoodfetMaxUSBApp(MAXUSBApp):
         Determines if the current environment seems appropriate
         for using the GoodFET::MaxUSB backend.
         """
-        # Check: if we have a backend name other than greatfet,
+        # Check: if we have a backend name other than goodfet,
         # the user is trying to use something else. Abort!
         if backend_name and backend_name != "goodfet":
             return False
