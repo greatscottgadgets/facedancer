@@ -35,7 +35,7 @@ setup(
 
     license='BSD',
     tests_require=[''],
-    install_requires=['pyusb'],
+    install_requires=['pyusb', 'pyserial'],
     description='Python library for emulating USB devices',
     long_description=read('README.md'),
     packages=find_packages(),
