@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "facedancer"
 dynamic = ["version"]
 authors = [
-    {name = "Kate Temkin", email = "kate@ktemkin.com"},
+    {name = "Great Scott Gadgets", email = "dev@greatscottgadgets.com"},
 ]
 license = { text = "BSD" }
 description = "Python library for emulating USB devices"
