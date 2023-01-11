@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=41", "wheel", "setuptools-git-versioning<2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "facedancer"
+dynamic = ["version"]
+authors = [
+    {name = "Kate Temkin", email = "kate@ktemkin.com"},
+]
+license = { text = "BSD" }
+description = "Python library for emulating USB devices"
+urls = { Source = "https://github.com/usb-tools/facedancer" }
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Natural Language :: English",
+    "Environment :: Console",
+    "Environment :: Plugins",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Security",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "pyusb",
+]
+
+[tool.setuptools-git-versioning]
+enabled = true
+starting_version = "v2.9"
