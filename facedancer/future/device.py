@@ -8,7 +8,7 @@ import asyncio
 import logging
 import warnings
 
-from typing         import Dict, Iterable, Union
+from typing         import Coroutine, Dict, Iterable, Union
 from dataclasses    import dataclass, field
 
 from prompt_toolkit import HTML, print_formatted_text
@@ -148,7 +148,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             await asyncio.sleep(0)
 
 
-    def run_with(self, *coroutines: Iterable[asyncio.coroutine]):
+    def run_with(self, *coroutines: Iterable[Coroutine]):
         """
         Runs the actual device emulation synchronously; running any provided
         coroutines simultaneously.
@@ -160,7 +160,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         asyncio.run(inner())
 
 
-    def emulate(self, *coroutines: Iterable[asyncio.coroutine]):
+    def emulate(self, *coroutines: Iterable[Coroutine]):
         """ Convenience method that runs a full method in a blocking manner.
         Performs connect, run, and then disconnect.
 
