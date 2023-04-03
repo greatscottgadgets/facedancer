@@ -787,7 +787,7 @@ class USBDevice(USBBaseDevice):
 
         # Otherwise, return the index for our configuration.
         else:
-            config_index = self.configuration.configuration_index
+            config_index = self.configuration.number
             request.reply(config_index.to_bytes(1, byteorder='little'))
 
 
