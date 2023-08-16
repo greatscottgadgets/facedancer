@@ -10,6 +10,11 @@ Install this package with the following command:
 ```
 pip install .
 ```
+After that you can import the facedancer package as usual:
+```
+$ python
+>>> import facedancer
+```
 
 ## Where are my scripts?
 
