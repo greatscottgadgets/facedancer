@@ -152,6 +152,9 @@ class USBProxyDevice(USBDevice):
         Sets up a new USBProxy instance.
         """
 
+        # Maintain a list of the current configuration's endpoints.
+        self.endpoints = {}
+
         # Open a connection to the proxied device...
         usb_devices = list(usb.core.find(find_all=True, **kwargs))
         if len(usb_devices) <= index:
@@ -210,8 +213,10 @@ class USBProxyDevice(USBDevice):
         configuration: The configuration to be applied.
         """
 
-        # Gather the configuration's endpoints for easy access, later...
+        # Clear endpoint list.
         self.endpoints = {}
+
+        # Gather the configuration's endpoints for easy access, later...
         for interface in configuration.interfaces:
             for endpoint in interface.endpoints:
                 self.endpoints[endpoint.number] = endpoint
@@ -345,6 +350,11 @@ class USBProxyDevice(USBDevice):
         in communications.
         """
 
+        # Make sure the endpoint exists for the current configuration
+        # before attempting to handle NAK events.
+        if not ep_num in self.endpoints:
+            return
+
         # TODO: Currently, we use this for _all_ non-control transfers, as we
         # don't e.g. periodically schedule isochronous or interrupt transfers.
         # We probably should set up those to be independently scheduled and
@@ -403,4 +413,3 @@ class USBProxyDevice(USBDevice):
         # If our data wasn't filtered out, transmit it to the target!
         if data:
             endpoint.send_packet(data)
-
