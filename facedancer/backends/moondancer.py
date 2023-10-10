@@ -9,6 +9,7 @@ import logging
 import traceback
 
 from ..core import *
+from ..constants import DeviceSpeed
 from ..USB import *
 from ..USBEndpoint import USBEndpoint
 
@@ -103,6 +104,9 @@ class MoondancerApp(FacedancerApp):
         # for data transfer readiness.
         self.configuration = None
 
+        # By default, Cynthion's target port operates at High speed.
+        self.device_speed = DeviceSpeed.HIGH
+
         #
         # Store our list of quirks to handle.
         #
@@ -158,6 +162,15 @@ class MoondancerApp(FacedancerApp):
         raise NotImplementedError()
 
 
+    def set_device_speed(self, device_speed):
+        """
+        Sets the speed to be used when connecting Cynthion's target port.
+
+        device_speed: a constants.DeviceSpeed value.
+        """
+        self.device_speed = device_speed
+
+
     def connect(self, usb_device, max_ep0_packet_size=64):
         """
         Prepares Cynthion to connect to the target host and emulate
@@ -167,7 +180,7 @@ class MoondancerApp(FacedancerApp):
                     emulated.
         """
 
-        logging.debug(f"moondancer.connect(max_ep0_packet_size={max_ep0_packet_size}, quirks={self.quirks})")
+        logging.debug(f"moondancer.connect(max_ep0_packet_size:{max_ep0_packet_size}, device_speed:{self.device_speed}, quirks:{self.quirks})")
 
         self.max_ep0_packet_size = max_ep0_packet_size
 
@@ -178,13 +191,13 @@ class MoondancerApp(FacedancerApp):
             quirks |= QuirkFlag.MANUAL_SET_ADDRESS
 
         # connect to target host
-        self.api.connect(self.max_ep0_packet_size, quirks)
+        self.api.connect(self.max_ep0_packet_size, self.device_speed, quirks)
         self.connected_device = usb_device
 
         # get device name
         device_name = f"{type(self.connected_device).__module__}.{type(self.connected_device).__qualname__}"
 
-        logging.info(f"Connecting '{device_name}' to target host.")
+        logging.info(f"Connected '{device_name}' to target host.")
 
 
     def disconnect(self):
