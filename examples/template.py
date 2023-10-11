@@ -175,7 +175,7 @@ class TemplateDevice(USBDevice):
                 # We'll use a more typical set of properties for our OUT endpoint.
                 #
                 number               : int                    = 1
-                direction            : USBDirection           = USBDirection.IN
+                direction            : USBDirection           = USBDirection.OUT
 
 
                 #
