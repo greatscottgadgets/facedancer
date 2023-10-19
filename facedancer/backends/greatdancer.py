@@ -297,11 +297,11 @@ class GreatDancerApp(FacedancerApp):
         self.api.stall_endpoint(self._endpoint_address(ep_num, direction))
 
 
-    def stall_ep0(self):
+    def stall_ep0(self, direction=0):
         """
         Convenience function that stalls the control endpoint zero.
         """
-        self.stall_endpoint(0)
+        self.stall_endpoint(0, direction)
 
 
     def set_address(self, address, defer=False):

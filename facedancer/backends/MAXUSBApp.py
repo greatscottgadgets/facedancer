@@ -125,8 +125,8 @@ class MAXUSBApp(FacedancerApp):
             raise ValueError("Invalid endpoint for MAXUSB device!")
 
 
-    def stall_ep0(self):
-        return self.stall_endpoint(0)
+    def stall_ep0(self, direction=0):
+        return self.stall_endpoint(0, direction)
 
 
     def get_version(self):
