@@ -709,6 +709,10 @@ class GreatDancerApp(FacedancerApp):
         for interface in self.configuration.get_interfaces():
             for endpoint in interface.get_endpoints():
 
+                # Skip OUT endpoints
+                if endpoint.direction == self.HOST_TO_DEVICE:
+                    continue
+
                 # If the endpoint has NAK'd, issued the relevant callback.
                 if self._has_issued_nak(status, endpoint.number, endpoint.direction):
                     self.connected_device.handle_nak(endpoint.number)
