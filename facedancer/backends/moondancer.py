@@ -68,6 +68,8 @@ class MoondancerApp(FacedancerApp):
         verbose: The verbosity level of the given application.
         """
 
+        #logging.getLogger().setLevel(logging.DEBUG)
+
         logging.info("Using the Moondancer backend.")
 
         import cynthion
@@ -244,6 +246,8 @@ class MoondancerApp(FacedancerApp):
         configuration: The USBConfiguration object applied by the SET_CONFIG request.
         """
 
+        logging.debug("fmoondancer.configured({configuration})")
+
         if configuration is None:
             logging.error("Target host configuration could not be applied.")
             return
@@ -273,6 +277,11 @@ class MoondancerApp(FacedancerApp):
         # need to be primed, or have NAKs waiting.
         # TODO do we need: self.handle_transfer_readiness()
         # TODO do we need: self.handle_nak_events()
+        for k, (endpoint_address, max_packet_size, transfer_type) in self.configured_endpoints.items():
+            is_in = (endpoint_address & 0x80) != 0
+            if is_in:
+                endpoint_number = endpoint_address & 0xf
+                self.connected_device.handle_nak(endpoint_number)
 
         logging.info("Target host configuration complete.")
 
@@ -289,7 +298,7 @@ class MoondancerApp(FacedancerApp):
         # Read from the given endpoint...
         data = self.api.read_endpoint(endpoint_number)
 
-        logging.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
+        logging.debug(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
 
         # Prime endpoint to receive data again...
         self.api.ep_out_prime_receive(endpoint_number)
@@ -310,7 +319,7 @@ class MoondancerApp(FacedancerApp):
         self.api.write_endpoint(endpoint_number, blocking, bytes(data))
 
         logging.debug(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
-        logging.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
+        logging.debug(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
 
 
     def ack_status_stage(self, direction=Direction.HOST_TO_DEVICE, endpoint_number=0, blocking=False):
@@ -331,7 +340,6 @@ class MoondancerApp(FacedancerApp):
         if direction == Direction.HOST_TO_DEVICE: # 0 = HOST_TO_DEVICE (OUT)
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
-            #self.send_on_endpoint(endpoint_number, data=[], blocking=blocking)
             self.api.write_endpoint(endpoint_number, blocking, bytes([]))
 
             logging.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, [])")
@@ -340,10 +348,9 @@ class MoondancerApp(FacedancerApp):
             # If this was an IN request, we'll need to set up a transfer descriptor
             # so the status phase can operate correctly. This effectively reads the
             # zero length packet from the STATUS phase.
-            data = self.api.read_endpoint(endpoint_number)
             self.api.ep_out_prime_receive(endpoint_number)
 
-            logging.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
+            logging.trace(f"  moondancer.api.ep_out_prime_receive({endpoint_number})")
 
 
     def stall_endpoint(self, endpoint_number, direction=0):
@@ -352,6 +359,9 @@ class MoondancerApp(FacedancerApp):
 
         endpoint_number: The number of the endpoint to be stalled.
         """
+
+        # USBDirection.OUT = 0
+        # USBDirection.IN  = 1
 
         in_vs_out = "IN" if direction else "OUT"
         endpoint_address = (endpoint_number | 0x80) if direction else endpoint_number
@@ -363,10 +373,10 @@ class MoondancerApp(FacedancerApp):
         # Stall endpoint address.
         if direction:
             self.api.stall_endpoint_in(endpoint_number)
-            logging.trace(f"  moondancer.api.stall_endpoint_in({endpoint_number})")
+            logging.debug(f"  moondancer.api.stall_endpoint_in({endpoint_number})")
         else:
             self.api.stall_endpoint_out(endpoint_number)
-            logging.trace(f"  moondancer.api.stall_endpoint_out({endpoint_number})")
+            logging.debug(f"  moondancer.api.stall_endpoint_out({endpoint_number})")
 
 
     def stall_ep0(self, direction=0):
@@ -449,7 +459,7 @@ class MoondancerApp(FacedancerApp):
         data    = bytearray(self.api.read_control())
         request = self.connected_device.create_request(data)
 
-        logging.trace(f"  moondancer.api.read_control({endpoint_number}) -> {len(data)} '{request}'")
+        logging.debug(f"  moondancer.api.read_control({endpoint_number}) -> {len(data)} '{request}'")
 
         # If this is an OUT request, handle the data stage,
         # and add it to the request.
@@ -488,7 +498,7 @@ class MoondancerApp(FacedancerApp):
 
         # If we have a pending control request with a data stage...
         # TODO support endpoints other than EP0
-        if endpoint_number == 0 and self.pending_control_request:
+        if self.pending_control_request and endpoint_number == 0:
 
             # Read the rest of the data from the endpoint, completing the control request.
             new_data = self.api.read_endpoint(endpoint_number)
