@@ -298,10 +298,10 @@ class MoondancerApp(FacedancerApp):
         # Read from the given endpoint...
         data = self.api.read_endpoint(endpoint_number)
 
-        logging.debug(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
-
         # Prime endpoint to receive data again...
         self.api.ep_out_prime_receive(endpoint_number)
+
+        logging.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
 
         # Finally, return the result.
         return data
@@ -316,10 +316,11 @@ class MoondancerApp(FacedancerApp):
         blocking: If true, this function will wait for the transfer to complete.
         """
 
+        logging.debug(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
+
         self.api.write_endpoint(endpoint_number, blocking, bytes(data))
 
-        logging.debug(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
-        logging.debug(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
+        logging.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
 
 
     def ack_status_stage(self, direction=Direction.HOST_TO_DEVICE, endpoint_number=0, blocking=False):
@@ -433,8 +434,6 @@ class MoondancerApp(FacedancerApp):
         Triggers Moondancer to perform its side of a bus reset.
         """
 
-        logging.info("Host issued bus reset.")
-
         if self.connected_device:
             self.connected_device.handle_bus_reset()
         else:
@@ -526,22 +525,19 @@ class MoondancerApp(FacedancerApp):
         # Read the data from the endpoint
         data = self.api.read_endpoint(endpoint_number)
 
-        logging.debug(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
+        # Prime endpoint to receive again.
+        self.api.ep_out_prime_receive(endpoint_number)
+
+        logging.debug(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)}")
 
         if len(data) == 0:
             # it's an ack
-            logging.debug("  received ACK")
-
-            # Prime endpoint to receive again.
-            self.api.ep_out_prime_receive(endpoint_number)
-
+            logging.trace("  received ACK")
             return
 
-        # pass it to the device's handler
+        # Finally, pass it to the device's handler
         self.connected_device.handle_data_available(endpoint_number, data)
 
-        # Finally, prime endpoint to receive again.
-        self.api.ep_out_prime_receive(endpoint_number)
 
 
     # USB0_SEND_COMPLETE
