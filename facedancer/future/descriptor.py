@@ -124,6 +124,10 @@ class StringDescriptorManager:
     def get_index(self, string):
         """ Returns the index of the given string; creating it if the string isn't already known. """
 
+        # If we already have an index, leave it alone...
+        if isinstance(string, int):
+            return string
+
         # Special case: return 0 for None, allowing null strings to be represented.
         if string is None:
             return 0

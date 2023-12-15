@@ -3,6 +3,7 @@
 #
 """ Functionality for defining USB interfaces. """
 
+import struct
 import logging
 
 from typing       import Dict, Iterable
@@ -48,6 +49,25 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     endpoints              : Dict[int, USBEndpoint] = field(default_factory=dict)
     parent                 : USBDescribable = None
+
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+            Generates an interface object from a descriptor.
+        """
+        interface_number, alternate_setting, num_endpoints, interface_class, \
+                interface_subclass, interface_protocol, interface_string_index \
+                = struct.unpack_from("xxBBBBBBB", data)
+        return cls(
+            name=None,
+            number=interface_number,
+            alternate=alternate_setting,
+            class_number=interface_class,
+            subclass_number=interface_subclass,
+            protocol_number=interface_protocol,
+            interface_string=interface_string_index
+        )
 
 
     def __post_init__(self):

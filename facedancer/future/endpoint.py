@@ -3,6 +3,7 @@
 #
 """ Functionality for describing USB endpoints. """
 
+import struct
 import logging
 
 from typing      import Iterable
@@ -43,6 +44,33 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     interval             : int = 0
 
     parent               : USBDescribable = None
+
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+        Creates an endpoint object from a description of that endpoint.
+        """
+
+        # Parse the core descriptor into its components...
+        address, attributes, max_packet_size, interval = struct.unpack_from("xxBBHB", data)
+
+        # ... and break down the packed fields.
+        number        = address & 0x7F
+        direction     = address >> 7
+        transfer_type = attributes & 0b11
+        sync_type     = attributes >> 2 & 0b1111
+        usage_type    = attributes >> 4 & 0b11
+
+        return cls(
+            number=number,
+            direction=direction,
+            transfer_type=transfer_type,
+            synchronization_type=sync_type,
+            usage_type=usage_type,
+            max_packet_size=max_packet_size,
+            interval=interval
+        )
 
 
     def __post_init__(self):

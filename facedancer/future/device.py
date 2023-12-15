@@ -5,6 +5,7 @@
 
 import sys
 import asyncio
+import struct
 import logging
 import warnings
 
@@ -76,6 +77,50 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     descriptors              : Dict[int, Union[bytes, callable]] = field(default_factory=dict)
     configurations           : Dict[int, USBConfiguration]       = field(default_factory=dict)
     backend                  : FacedancerUSBApp = None
+
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+        Creates a USBBaseDevice object from its descriptor.
+        """
+
+        data = bytes(data)
+
+        # Pad the descriptor out with zeroes to the full length of a configuration descriptor.
+        if len(data) < cls.DESCRIPTOR_LENGTH:
+            padding_necessary = cls.DESCRIPTOR_LENGTH - len(data)
+            data += b"\0" * padding_necessary
+
+        # Parse the core descriptor into its components...
+        spec_version_msb, spec_version_lsb, device_class, device_subclass, device_protocol, \
+                max_packet_size_ep0, vendor_id, product_id, device_rev_msb, device_rev_lsb, \
+                manufacturer_string_index, product_string_index, \
+                serial_number_string_index, num_configurations = struct.unpack_from("<xxBBBBBBHHBBBBBB", data)
+
+        # Generate our BCD arguments.
+        spec_version = (spec_version_msb << 8) | spec_version_lsb
+        device_rev = (device_rev_msb << 8) | device_rev_lsb
+
+        device = cls(
+            device_class=device_class,
+            device_subclass=device_subclass,
+            protocol_revision_number=device_protocol,
+            max_packet_size_ep0=max_packet_size_ep0,
+            vendor_id=vendor_id,
+            product_id=product_id,
+            manufacturer_string=manufacturer_string_index,
+            product_string=product_string_index,
+            serial_number_string=serial_number_string_index,
+            device_revision=device_rev,
+            usb_spec_version=spec_version,
+        )
+
+        # FIXME: generate better placeholder configurations
+        for configuration in range(0, num_configurations):
+            device.add_configuration(USBConfiguration())
+
+        return device
 
 
     def __post_init__(self):
@@ -265,10 +310,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         if self.configuration:
             endpoint = self.configuration.get_endpoint(endpoint_number, direction)
             if endpoint is None:
-                logging.error(f"Requested non-existend endpoint {endpoint_number} for configured device!")
+                logging.error(f"Requested non-existent endpoint EP{endpoint_number}/{direction.name} for configured device!")
             return endpoint
         else:
-            logging.error(f"Requested endpoint for unconfigured device!")
+            logging.error(f"Requested endpoint EP{endpoint_number}/{direction.name} for unconfigured device!")
             return None
 
 

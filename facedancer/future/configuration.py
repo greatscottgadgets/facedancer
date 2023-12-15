@@ -3,6 +3,8 @@
 #
 """ Functionality for describing USB device configurations. """
 
+import struct
+
 from dataclasses  import dataclass, field
 from typing       import Iterable
 
@@ -11,7 +13,7 @@ from .magic       import instantiate_subordinates, AutoInstantiable
 from .request     import USBRequestHandler
 
 from .interface   import USBInterface
-from .descriptor  import USBDescribable
+from .descriptor  import USBDescribable, USBClassDescriptor
 from .endpoint    import USBEndpoint
 
 
@@ -41,6 +43,69 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     parent                 : USBDescribable = None
     interfaces             : USBInterface = field(default_factory=dict)
+
+
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        """
+        Generates a new USBConfiguration object from a configuration descriptor,
+        handling any attached subordinate descriptors.
+
+        data: The raw bytes for the descriptor to be parsed.
+        """
+
+        length = data[0]
+
+        # Unpack the main collection of data into the descriptor itself.
+        descriptor_type, total_length, num_interfaces, index, string_index, \
+            attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
+
+        # Extract the subordinate descriptors, and parse them.
+        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
+
+        # TODO _parse_subordinate_descriptors should handle this
+        interfaces = {interface.number:interface for interface in interfaces}
+
+        return cls(
+            number=index,
+            configuration_string=string_index,
+            max_power=max_power,
+            self_powered=(attributes >> 6) & 1,
+            supports_remote_wakeup=(attributes >> 5) & 1,
+            interfaces=interfaces,
+        )
+
+
+    @classmethod
+    def _parse_subordinate_descriptors(cls, data):
+        """
+        Generates descriptor objects from the list of subordinate descriptors.
+
+        data: The raw bytes for the descriptor to be parsed.
+        """
+
+        # TODO: handle recieving interfaces out of order?
+        interfaces = []
+
+        # Continue parsing until we run out of descriptors.
+        while data:
+
+            # Determine the length and type of the next descriptor.
+            length     = data[0]
+            descriptor = USBDescribable.from_binary_descriptor(data[:length])
+
+            # If we have an interface descriptor, add it to our list of interfaces.
+            if isinstance(descriptor, USBInterface):
+                interfaces.append(descriptor)
+            elif isinstance(descriptor, USBEndpoint):
+                interfaces[-1].add_endpoint(descriptor)
+            elif isinstance(descriptor, USBClassDescriptor):
+                interfaces[-1].set_class(descriptor)
+
+            # Move on to the next descriptor.
+            data = data[length:]
+
+        return interfaces
 
 
     def __post_init__(self):
