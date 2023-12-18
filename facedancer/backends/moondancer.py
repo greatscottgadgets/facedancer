@@ -336,7 +336,7 @@ class MoondancerApp(FacedancerApp):
                 before returning.
         """
 
-        logging.debug(f"moondancer.ack_status_stage({direction}, {endpoint_number}, {blocking})")
+        logging.debug(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
 
         if direction == Direction.HOST_TO_DEVICE: # 0 = HOST_TO_DEVICE (OUT)
             # If this was an OUT request, we'll prime the output buffer to
