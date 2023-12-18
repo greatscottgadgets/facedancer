@@ -1,4 +1,3 @@
-
 import os
 import sys
 import time
@@ -6,8 +5,8 @@ import logging
 
 from ..core import FacedancerApp
 from ..backends.MAXUSBApp import MAXUSBApp
-from ..USB import *
-from ..USBDevice import USBDeviceRequest
+from ..deprecated.USB import *
+from ..deprecated.USBDevice import USBDeviceRequest
 
 
 class GoodfetMaxUSBApp(MAXUSBApp):
@@ -382,4 +381,3 @@ class GoodFETMonitorApp(FacedancerApp):
         cmd = FacedancerCommand(self.app_num, 0xb1, b'')
         self.device.writecmd(cmd)
         resp = self.device.readcmd()
-

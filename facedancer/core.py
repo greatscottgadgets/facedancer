@@ -7,9 +7,9 @@
 import os
 
 from .errors import *
-from .USBDevice import USBDevice
-from .USBConfiguration import USBConfiguration
-from .USBEndpoint import USBEndpoint
+from .deprecated.USBDevice import USBDevice
+from .deprecated.USBConfiguration import USBConfiguration
+from .deprecated.USBEndpoint import USBEndpoint
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -514,5 +514,3 @@ class FacedancerBasicScheduler(object):
         Stop the scheduler on next loop.
         """
         self.do_exit = True
-
-

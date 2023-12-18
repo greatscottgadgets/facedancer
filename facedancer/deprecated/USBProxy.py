@@ -7,12 +7,12 @@
 import errno
 import facedancer
 
-from facedancer.USB import *
-from facedancer.USBDevice import *
-from facedancer.USBConfiguration import *
-from facedancer.USBInterface import *
-from facedancer.USBEndpoint import *
-from facedancer.USBVendor import *
+from facedancer.deprecated.USB import *
+from facedancer.deprecated.USBDevice import *
+from facedancer.deprecated.USBConfiguration import *
+from facedancer.deprecated.USBInterface import *
+from facedancer.deprecated.USBEndpoint import *
+from facedancer.deprecated.USBVendor import *
 from facedancer.constants import DeviceSpeed
 from facedancer.errors import *
 

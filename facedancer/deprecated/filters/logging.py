@@ -3,9 +3,7 @@
 #
 
 import datetime
-import logging
-
-from . import USBProxyFilter
+from ..USBProxy import USBProxyFilter
 
 class USBProxyPrettyPrintFilter(USBProxyFilter):
     """
@@ -27,14 +25,14 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
         """
 
         if self.verbose > 3 and req is None:
-            logging.info("{} {}< --filtered out-- ".format(self.timestamp(), self.decoration))
+            print("{} {}< --filtered out-- ".format(self.timestamp(), self.decoration))
             return req, data, stalled
 
         if self.verbose > 3:
-            logging.info("{} {}{}".format(self.timestamp(), self.decoration, repr(req)))
+            print("{} {}{}".format(self.timestamp(), self.decoration, repr(req)))
 
         if self.verbose > 3 and stalled:
-            logging.info("{} {}< --STALLED-- ".format(self.timestamp(), self.decoration))
+            print("{} {}< --STALLED-- ".format(self.timestamp(), self.decoration))
 
         if self.verbose > 4 and data:
             is_string = (req.request == 6) and (req.value >> 8 == 3)
@@ -51,11 +49,11 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
         # TODO: just call control_in, it's the same:
 
         if self.verbose > 3 and req is None:
-            logging.info("{} {}> --filtered out-- ".format(self.timestamp(), self.decoration))
+            print("{} {}> --filtered out-- ".format(self.timestamp(), self.decoration))
             return req, data
 
         if self.verbose > 3:
-            logging.info("{} {}{}".format(self.timestamp(), self.decoration, repr(req)))
+            print("{} {}{}".format(self.timestamp(), self.decoration, repr(req)))
 
         if self.verbose > 4 and data:
             self._pretty_print_data(data, '>', self.decoration)
@@ -69,9 +67,9 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
         """
         if self.verbose > 3 and req is None:
             if stalled:
-                logging.info("{} {}> --STALLED-- ".format(self.timestamp(), self.decoration))
+                print("{} {}> --STALLED-- ".format(self.timestamp(), self.decoration))
             else:
-                logging.info("{} {}> --STALLED, but unstalled by filter-- ".format(self.timestamp(), self.decoration))
+                print("{} {}> --STALLED, but unstalled by filter-- ".format(self.timestamp(), self.decoration))
 
         return req, data, stalled
 
@@ -111,4 +109,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
     def _pretty_print_data(self, data, direction_marker, decoration='', is_string=False, ep_marker=''):
         data = self._magic_decode(data) if is_string else bytes(data)
-        logging.info("{} {}{}{}: {}".format(self.timestamp(), ep_marker, decoration, direction_marker, data))
+        print("{} {}{}{}: {}".format(self.timestamp(), ep_marker, decoration, direction_marker, data))
+
+
+

@@ -7,8 +7,8 @@ import logging
 import traceback
 
 from ..core import *
-from ..USB import *
-from ..USBEndpoint import USBEndpoint
+from ..deprecated.USB import *
+from ..deprecated.USBEndpoint import USBEndpoint
 
 # FIXME: abstract this to the logging library
 LOGLEVEL_TRACE = 5

@@ -2,15 +2,12 @@
 # Standard filters for USBProxy that should (almost) always be used
 #
 
-from ..USBProxy import USBProxyFilter
+import logging
 
-from ..USB import *
-from ..USBDevice import *
-from ..USBConfiguration import *
-from ..USBInterface import *
-from ..USBEndpoint import *
-from ..USBVendor import *
-from ..errors import *
+from ..future             import *
+from ..future.descriptor  import USBDescribable
+from ..future.proxy       import USBProxyFilter
+from ..errors             import *
 
 
 class USBProxySetupFilters(USBProxyFilter):
@@ -21,7 +18,7 @@ class USBProxySetupFilters(USBProxyFilter):
     RECIPIENT_DEVICE = 0
 
     DESCRIPTOR_DEVICE        = 0x01
-    DESCRIPTOR_CONFIRGUATION = 0x02
+    DESCRIPTOR_CONFIGURATION = 0x02
 
     MAX_PACKET_SIZE_EP0 = 64
 
@@ -47,24 +44,19 @@ class USBProxySetupFilters(USBProxyFilter):
             # If this is a configuration descriptor, store information relevant
             # to the configuration. We'll need this to set up the endpoint
             # hardware on the facedancer device.
-            if descriptor_type == self.DESCRIPTOR_CONFIRGUATION and req.length >= 32:
+            if descriptor_type == self.DESCRIPTOR_CONFIGURATION and req.length >= 32:
                 configuration = USBDescribable.from_binary_descriptor(data)
-                self.configurations[configuration.configuration_index] = configuration
-
-                if self.verbose > 1:
-                    print("-- Storing configuration {} --".format(configuration))
+                self.configurations[configuration.number] = configuration
+                logging.debug("-- Storing configuration {} --".format(configuration))
 
 
             if descriptor_type == self.DESCRIPTOR_DEVICE and req.length >= 7:
-
                 # Patch our data to overwrite the maximum packet size on EP0.
                 # See USBProxy.connect for a rationale on this.
                 device = USBDescribable.from_binary_descriptor(data)
                 device.max_packet_size_ep0 = 64
-                data = bytearray(device.get_descriptor(len(data)))
-
-                if self.verbose > 1:
-                    print("-- Patched device descriptor. --")
+                data = bytearray(device.get_descriptor())[:len(data)]
+                logging.debug("-- Patched device descriptor. --")
 
 
         return req, data, stalled
@@ -89,14 +81,13 @@ class USBProxySetupFilters(USBProxyFilter):
             if configuration_index in self.configurations:
                 configuration = self.configurations[configuration_index]
 
-                if self.verbose > 0:
-                    print("-- Applying configuration {} --".format(configuration))
+                logging.debug("-- Applying configuration {} --".format(configuration))
 
                 self.device.configured(configuration)
 
             # Otherwise, the host has applied a configuration without ever reading
             # its descriptor. This is mighty strange behavior!
-            elif self.verbose > 0:
-                print("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
+            else:
+                logging.warn("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
 
         return req, data
