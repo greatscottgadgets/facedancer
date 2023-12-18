@@ -285,7 +285,7 @@ class USBControlRequest:
         Used to indicate that a given request isn't supported;
         or isn't supported with the provided arguments.
         """
-        self.device.stall()
+        self.device.stall(endpoint_number=0, direction=self.direction)
 
 
     #

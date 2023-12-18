@@ -297,11 +297,11 @@ class GreatDancerApp(FacedancerApp):
         self.api.stall_endpoint(self._endpoint_address(ep_num, direction))
 
 
-    def stall_ep0(self):
+    def stall_ep0(self, direction=0):
         """
         Convenience function that stalls the control endpoint zero.
         """
-        self.stall_endpoint(0)
+        self.stall_endpoint(0, direction)
 
 
     def set_address(self, address, defer=False):
@@ -708,6 +708,10 @@ class GreatDancerApp(FacedancerApp):
         # Iterate over each usable endpoint.
         for interface in self.configuration.get_interfaces():
             for endpoint in interface.get_endpoints():
+
+                # Skip OUT endpoints
+                if endpoint.direction == self.HOST_TO_DEVICE:
+                    continue
 
                 # If the endpoint has NAK'd, issued the relevant callback.
                 if self._has_issued_nak(status, endpoint.number, endpoint.direction):

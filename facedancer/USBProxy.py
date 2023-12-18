@@ -13,6 +13,7 @@ from facedancer.USBConfiguration import *
 from facedancer.USBInterface import *
 from facedancer.USBEndpoint import *
 from facedancer.USBVendor import *
+from facedancer.constants import DeviceSpeed
 from facedancer.errors import *
 
 import usb
@@ -198,6 +199,14 @@ class USBProxyDevice(USBDevice):
         #
         # Since we're working at the transfer levels, the packet sizes will automatically be translated, anyway.
         max_ep0_packet_size = 64
+
+        # Get the speed of the device being emulated and attempt to set it if the backend supports it.
+        device_speed = DeviceSpeed(self.libusb_device.speed)
+        try:
+            self.maxusb_app.set_device_speed(device_speed)
+        except:
+            print(f"-- backend does not support setting device speed: {device_speed.name} --")
+
         self.maxusb_app.connect(self, max_ep0_packet_size)
 
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
@@ -263,7 +272,7 @@ class USBProxyDevice(USBDevice):
 
         # If we stalled immediately, handle the stall and return without proxying.
         if stalled:
-            self.maxusb_app.stall_ep0()
+            self.maxusb_app.stall_ep0(1) # IN=1
             return
 
         # If we filtered out the setup request, NAK.
@@ -284,7 +293,7 @@ class USBProxyDevice(USBDevice):
         #... and proxy it to our victim.
         if stalled:
             # TODO: allow stalling of eps other than 0!
-            self.maxusb_app.stall_ep0()
+            self.maxusb_app.stall_ep0(1) # IN=1
         else:
             self.send_control_message(data)
 
@@ -315,7 +324,7 @@ class USBProxyDevice(USBDevice):
                     req, data, stalled = f.handle_out_request_stall(req, data, stalled)
 
                 if stalled:
-                    self.maxusb_app.stall_ep0()
+                    self.maxusb_app.stall_ep0(0) # OUT=0
 
 
     def handle_data_available(self, ep_num, data):
@@ -339,7 +348,7 @@ class USBProxyDevice(USBDevice):
                     req, data, stalled = f.handle_out_stall(ep_num, data, stalled)
 
                 if stalled:
-                    self.maxusb_app.stall_ep0()
+                    self.maxusb_app.stall_ep0(0) # OUT=0
 
 
 

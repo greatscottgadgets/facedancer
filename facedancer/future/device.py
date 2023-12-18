@@ -263,8 +263,12 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         """
 
         if self.configuration:
-            return self.configuration.get_endpoint(endpoint_number, direction)
+            endpoint = self.configuration.get_endpoint(endpoint_number, direction)
+            if endpoint is None:
+                logging.error(f"Requested non-existend endpoint {endpoint_number} for configured device!")
+            return endpoint
         else:
+            logging.error(f"Requested endpoint for unconfigured device!")
             return None
 
 
