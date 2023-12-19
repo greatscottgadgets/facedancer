@@ -7,7 +7,7 @@ from enum        import IntEnum
 from dataclasses import dataclass
 from typing      import Tuple, Iterable
 
-from ...future.descriptor import USBDescriptor, USBDescriptorTypeNumber
+from ...descriptor import USBDescriptor, USBDescriptorTypeNumber
 
 
 #

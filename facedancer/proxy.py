@@ -4,7 +4,7 @@ import atexit
 import usb1
 import logging
 
-from ..errors import DeviceNotFoundError
+from .errors import DeviceNotFoundError
 
 
 class LibUSB1Proxy:
@@ -244,15 +244,14 @@ from usb1   import USBError, USBErrorTimeout
 from .proxy      import USBProxyFilter
 
 from .           import *
+from .classes    import USBDeviceClass
 from .device     import USBBaseDevice
 from .request    import USBControlRequest
-
-from ..classes   import USBDeviceClass
-from ..constants import DeviceSpeed
+from .constants  import DeviceSpeed
 
 # TODO are we going to deprecate this with other legacy stuff? do we
 # have these somewhere else e.g. python-usb-protocol perhaps?
-from ..deprecated.USB import *
+from .deprecated.USB import *
 
 
 class USBProxyDevice(USBBaseDevice):
@@ -558,9 +557,9 @@ class USBProxyDevice(USBBaseDevice):
 
 
 if __name__ == "__main__":
-    from ..                  import FacedancerUSBApp, LOGLEVEL_TRACE
-    from ..filters.standard  import USBProxySetupFilters
-    from ..filters.logging   import USBProxyPrettyPrintFilter
+    from .                  import FacedancerUSBApp, LOGLEVEL_TRACE
+    from .filters.standard  import USBProxySetupFilters
+    from .filters.logging   import USBProxyPrettyPrintFilter
 
     # akai midimix
     VENDOR_ID  = 0x09e8

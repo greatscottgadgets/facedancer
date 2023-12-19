@@ -4,10 +4,10 @@
 
 import logging
 
-from ..future             import *
-from ..future.descriptor  import USBDescribable
-from ..future.proxy       import USBProxyFilter
-from ..errors             import *
+from ..            import *
+from ..descriptor  import USBDescribable
+from ..proxy       import USBProxyFilter
+from ..errors      import *
 
 
 class USBProxySetupFilters(USBProxyFilter):

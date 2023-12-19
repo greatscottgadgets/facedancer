@@ -5,7 +5,7 @@
 import datetime
 import logging
 
-from ..future.proxy       import USBProxyFilter
+from ..proxy import USBProxyFilter
 
 
 class USBProxyPrettyPrintFilter(USBProxyFilter):

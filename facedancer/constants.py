@@ -1,5 +1,9 @@
 from enum import IntEnum
 
+# Extra log level
+LOGLEVEL_TRACE = 5
+
+
 # Based on libusb's LIBUSB_SPEED_* constants.
 #
 # See: https://github.com/libusb/libusb/blob/master/libusb/libusb.h#L1126

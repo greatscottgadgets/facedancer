@@ -11,7 +11,7 @@ from enum   import IntFlag
 from typing import Union
 
 from .         import default_main
-from ..future  import *
+from ..        import *
 from ..classes import USBDeviceClass
 
 

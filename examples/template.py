@@ -8,7 +8,7 @@
 import logging
 
 from facedancer         import main
-from facedancer.future  import *
+from facedancer         import *
 from facedancer.classes import USBDeviceClass
 
 @use_inner_classes_automatically

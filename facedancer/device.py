@@ -14,7 +14,8 @@ from dataclasses    import dataclass, field
 
 from prompt_toolkit import HTML, print_formatted_text
 
-from ..             import FacedancerUSBApp
+from .core          import FacedancerUSBApp
+from .constants     import LOGLEVEL_TRACE
 from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
 from .types         import USBDirection, USBRequestType, USBRequestRecipient
 
