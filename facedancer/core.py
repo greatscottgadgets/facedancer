@@ -7,9 +7,7 @@
 import os
 
 from .errors import *
-from .deprecated.USBDevice import USBDevice
-from .deprecated.USBConfiguration import USBConfiguration
-from .deprecated.USBEndpoint import USBEndpoint
+
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -392,6 +390,8 @@ class FacedancerUSBHost:
     def get_device_descriptor(self, max_length=18):
         """ Returns the device's device descriptor. """
 
+        from .device import USBDevice
+        
         raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
         return USBDevice.from_binary_descriptor(raw_descriptor)
 
@@ -408,6 +408,8 @@ class FacedancerUSBHost:
         include_subordinate -- if true, subordinate descriptors will also be returned
         """
 
+        from .configuration import USBConfiguration
+        
         # Read just the raw configuration descriptor.
         raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, USBConfiguration.DESCRIPTOR_SIZE_BYTES)
 

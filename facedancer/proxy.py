@@ -5,6 +5,7 @@ import usb1
 import logging
 
 from .errors import DeviceNotFoundError
+from .usb    import USB
 
 
 class LibUSB1Proxy:
@@ -239,19 +240,14 @@ class USBProxyFilter:
 
 # - USBProxyDevice ------------------------------------------------------------
 
-from usb1   import USBError, USBErrorTimeout
-
-from .proxy      import USBProxyFilter
+from usb1        import USBError, USBErrorTimeout
 
 from .           import *
+from .constants  import DeviceSpeed
 from .classes    import USBDeviceClass
 from .device     import USBBaseDevice
 from .request    import USBControlRequest
-from .constants  import DeviceSpeed
-
-# TODO are we going to deprecate this with other legacy stuff? do we
-# have these somewhere else e.g. python-usb-protocol perhaps?
-from .deprecated.USB import *
+from .proxy      import USBProxyFilter
 
 
 class USBProxyDevice(USBBaseDevice):
@@ -325,6 +321,7 @@ class USBProxyDevice(USBBaseDevice):
 
         super().connect()
 
+        # TODO check if we still need this in facedancer v3
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
         self.state = USB.state_powered
 

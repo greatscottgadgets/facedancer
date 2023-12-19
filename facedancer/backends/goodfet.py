@@ -5,8 +5,6 @@ import logging
 
 from ..core import FacedancerApp
 from ..backends.MAXUSBApp import MAXUSBApp
-from ..deprecated.USB import *
-from ..deprecated.USBDevice import USBDeviceRequest
 
 
 class GoodfetMaxUSBApp(MAXUSBApp):
