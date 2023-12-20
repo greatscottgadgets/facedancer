@@ -1,6 +1,6 @@
 # pylint: disable=unused-wildcard-import, wildcard-import
 #
-# This file is part of DaceDancer.
+# This file is part of Facedancer.
 #
 """ Emulation of an FTDI USB-to-serial converter. """
 
