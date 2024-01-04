@@ -5,6 +5,17 @@ the original GoodFET-based FaceDancer, this repository provides a python module
 that provides expanded FaceDancer support-- including support for multiple boards 
 and some pretty significant new features.
 
+## Installation
+Install this package with the following command:
+```
+pip install .
+```
+After that you can import the facedancer package as usual:
+```
+$ python
+>>> import facedancer
+```
+
 ## Where are my scripts?
 
 In preparation for the 3.0 release of FaceDancer, scripts in the "old" style have
