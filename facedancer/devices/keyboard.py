@@ -180,6 +180,8 @@ class USBKeyboardDevice(USBDevice):
         self.key_up(code)
         self.modifier_up(modifiers)
 
+        await asyncio.sleep(duration)
+
 
     async def type_scancodes(self, *codes: Iterable[KeyboardKeys], duration: float = 0.1):
         """ Presses, and then releases, a collection of keys, in order.
