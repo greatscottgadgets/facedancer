@@ -7,6 +7,7 @@ import logging
 import traceback
 
 from ..core import *
+from ..types import *
 
 
 # FIXME: abstract this to the logging library
@@ -619,7 +620,7 @@ class GreatDancerApp(FacedancerApp):
 
                     # If this is an IN endpoint, we're ready to accept data to be
                     # presented on the next IN token.
-                    if endpoint.direction == USBEndpoint.direction_in:
+                    if endpoint.direction == USBDirection.IN:
                         self.connected_device.handle_buffer_available(endpoint.number)
 
                     # If this is an OUT endpoint, we'll need to prime the endpoint to
