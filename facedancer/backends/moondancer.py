@@ -8,8 +8,9 @@ import enum
 import logging
 import traceback
 
-from ..core import *
-from ..constants import DeviceSpeed
+from ..core       import *
+from ..constants  import DeviceSpeed
+from ..types      import USBDirection
 
 # add a TRACE level to logging
 logging.TRACE = 5
