@@ -8,10 +8,9 @@ import enum
 import logging
 import traceback
 
-from ..core import *
-from ..constants import DeviceSpeed
-from ..USB import *
-from ..USBEndpoint import USBEndpoint
+from ..core       import *
+from ..constants  import DeviceSpeed
+from ..types      import USBDirection
 
 # add a TRACE level to logging
 logging.TRACE = 5
@@ -36,12 +35,11 @@ class InterruptEvent(enum.Enum):
     USB_SEND_COMPLETE = 13
 
     def parse(data):
-        if len(data) != 3:
+        if len(data) != 2:
             logging.error(f"Invalid length for InterruptEvent: {len(data)}")
             raise ValueError(f"Invalid length for InterruptEvent: {len(data)}")
         message = InterruptEvent(data[0])
-        message.interface = data[1]
-        message.endpoint_number = data[2]
+        message.endpoint_number = data[1]
         return message
 
 
@@ -274,14 +272,9 @@ class MoondancerApp(FacedancerApp):
         self.configuration = configuration
 
         # If we've just set up endpoints, check to see if any of them
-        # need to be primed, or have NAKs waiting.
-        # TODO do we need: self.handle_transfer_readiness()
-        # TODO do we need: self.handle_nak_events()
-        for k, (endpoint_address, max_packet_size, transfer_type) in self.configured_endpoints.items():
-            is_in = (endpoint_address & 0x80) != 0
-            if is_in:
-                endpoint_number = endpoint_address & 0xf
-                self.connected_device.handle_nak(endpoint_number)
+        # have NAKs waiting.
+        nak_status = self.api.get_nak_status()
+        self.handle_ep_in_nak_status(nak_status)
 
         logging.info("Target host configuration complete.")
 
@@ -364,9 +357,8 @@ class MoondancerApp(FacedancerApp):
         # USBDirection.OUT = 0
         # USBDirection.IN  = 1
 
-        in_vs_out = "IN" if direction else "OUT"
         endpoint_address = (endpoint_number | 0x80) if direction else endpoint_number
-        logging.debug(f"Stalling EP{endpoint_number} 0x{endpoint_address:x} {in_vs_out}")
+        logging.debug(f"Stalling EP{endpoint_number} {USBDirection(direction).name} (0x{endpoint_address:x})")
 
         # Mark endpoint number as stalled.
         self.endpoint_stalled[endpoint_number] = True
@@ -395,27 +387,32 @@ class MoondancerApp(FacedancerApp):
         """
 
         # poll manually until we decide whether to support NAK events for eptri interface
-        for k, (endpoint_address, max_packet_size, transfer_type) in self.configured_endpoints.items():
-            is_in = (endpoint_address & 0x80) != 0
-            if is_in:
-                endpoint_number = endpoint_address & 0xf
-                self.connected_device.handle_nak(endpoint_number)
+        # for k, (endpoint_address, max_packet_size, transfer_type) in self.configured_endpoints.items():
+        #     is_in = (endpoint_address & 0x80) != 0
+        #     if is_in:
+        #         endpoint_number = endpoint_address & 0xf
+        #         self.connected_device.handle_nak(endpoint_number)
+
+        # Check EP_IN NAK status for pending data requests
+        nak_status = self.api.get_nak_status()
+        self.handle_ep_in_nak_status(nak_status)
 
         events = self.api.get_interrupt_events()
         if len(events) == 0:
             return
 
+        # TODO gcp doesn't seem to return a nested tuple if it's only one event
         if isinstance(events[0], int):
-            # TODO gcp doesn't seem to return a nested tuple if it's only one event
-            events = [ InterruptEvent.parse(events) ]
-        else:
-            events = list(map(InterruptEvent.parse, events))
+            events = [ events ]
 
+        events = list(map(InterruptEvent.parse, events))
+
+        # Handle interrupt events.
         for event in events:
             logging.trace(f"MD IRQ => {event}")
             match event:
               case InterruptEvent.USB_BUS_RESET:
-                  self.handle_bus_reset(event.interface)
+                  self.handle_bus_reset()
               case InterruptEvent.USB_RECEIVE_CONTROL:
                   self.handle_receive_control(event.endpoint_number)
               case InterruptEvent.USB_RECEIVE_PACKET:
@@ -429,7 +426,7 @@ class MoondancerApp(FacedancerApp):
     # - Interrupt event handlers ----------------------------------------------
 
     # USB0_BUS_RESET
-    def handle_bus_reset(self, interface):
+    def handle_bus_reset(self):
         """
         Triggers Moondancer to perform its side of a bus reset.
         """
@@ -539,8 +536,15 @@ class MoondancerApp(FacedancerApp):
         self.connected_device.handle_data_available(endpoint_number, data)
 
 
-
     # USB0_SEND_COMPLETE
     def handle_send_complete(self, endpoint_number):
         logging.debug(f"handle_send_complete({endpoint_number})")
         pass
+
+    # Handle pending data requests on EP_IN
+    def handle_ep_in_nak_status(self, nak_status):
+        nakked_endpoints = [epno for epno in range(self.SUPPORTED_ENDPOINTS) if (nak_status >> epno) & 1]
+        for endpoint_number in nakked_endpoints:
+            logging.trace(f"Received IN NAK: {endpoint_number}")
+            if endpoint_number != 0:
+                self.connected_device.handle_nak(endpoint_number)
