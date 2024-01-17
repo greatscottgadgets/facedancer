@@ -35,3 +35,10 @@ async def hello():
     logging.info("Host connected!")
 
 main(device, hello())
+
+
+# Creating a disk image for testing:
+#
+#    dd if=/dev/zero of=disk.img bs=1M count=100
+#    mkfs -t ext4 disk.img
+#    mount -t auto -o loop disk.img /mnt
