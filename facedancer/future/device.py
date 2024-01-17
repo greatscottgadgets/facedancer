@@ -400,7 +400,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         if not handled:
             logging.warning(f"Stalling unhandled {request}.")
             self._add_request_suggestion(request)
-            self.stall()
+            self.stall(direction=USBDirection.IN)
 
         return handled
 
