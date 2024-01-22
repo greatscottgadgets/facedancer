@@ -46,7 +46,8 @@ def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
         # Compute our two conditions...
         field_matches = (getattr(request, field_name) == field_value)
         index_matches = \
-            caller.matches_identifier(request.index & 0xff) if match_index else True
+            caller.matches_identifier(request.index & 0xff) \
+            if hasattr(caller, "matches_identifier") and match_index else True
 
         # ... and call the inner function only if they match.
         if field_matches and index_matches:
