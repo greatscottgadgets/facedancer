@@ -1,4 +1,5 @@
 import os
+import serial
 import sys
 import time
 import logging
@@ -18,13 +19,13 @@ class GoodfetMaxUSBApp(MAXUSBApp):
         Determines if the current environment seems appropriate
         for using the GoodFET::MaxUSB backend.
         """
-        # Check: if we have a backend name other than greatfet,
+        # Check: if we have a backend name other than goodfet,
         # the user is trying to use something else. Abort!
         if backend_name and backend_name != "goodfet":
             return False
 
         # If we're not explicitly trying to use something else,
-        # see if there's a connected GreatFET.
+        # see if there's a connected GoodFET.
         try:
             gf = GoodFETSerialPort()
             gf.close()
@@ -315,8 +316,6 @@ class GoodFETMonitorApp(FacedancerApp):
 
 def GoodFETSerialPort(**kwargs):
     "Return a Serial port using default values possibly overriden by caller"
-
-    import serial
 
     port = os.environ.get('GOODFET') or "/dev/ttyUSB0"
     args = dict(port=port, baudrate=115200,
