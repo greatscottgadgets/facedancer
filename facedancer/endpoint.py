@@ -133,7 +133,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     @to_this_endpoint
     def handle_clear_feature_request(self, request):
         log.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
-            f"with value {req.value}")
+            f"with value {request.value}")
         request.acknowledge()
 
 
