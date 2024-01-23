@@ -19,13 +19,8 @@ from .magic import use_automatically, use_inner_classes_automatically
 
 # Alias objects to make them easier to import.
 from .backends import *
-from .core import FacedancerUSBApp, FacedancerUSBHostApp, FacedancerBasicScheduler
-from .devices import default_main as main
-
-# Set up our extra log levels.
-import logging
-from .constants import LOGLEVEL_TRACE
-logging.addLevelName(LOGLEVEL_TRACE, 'TRACE')
+from .core     import FacedancerUSBApp, FacedancerUSBHostApp, FacedancerBasicScheduler
+from .devices  import default_main as main
 
 # Wildcard import.
 __all__ = [
@@ -35,5 +30,5 @@ __all__ = [
     'to_any_endpoint', 'to_this_interface', 'to_any_interface', 'to_other',
     'USBDirection', 'USBTransferType', 'USBUsageType', 'USBSynchronizationType',
     'USBRequestType', 'USBRequestRecipient', 'USBStandardRequests', 'LanguageIDs',
-    'use_automatically', 'use_inner_classes_automatically', 'LOGLEVEL_TRACE',
+    'use_automatically', 'use_inner_classes_automatically',
 ]

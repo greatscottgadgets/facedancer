@@ -6,10 +6,11 @@ import sys
 import time
 import codecs
 import struct
-import logging
 
 from ..core import *
 from ..types import *
+
+from ..logging import log
 
 
 class GreatDancerHostApp(FacedancerUSBHost):
@@ -102,7 +103,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
             greatfet.GreatFET()
             return True
         except ImportError:
-            logging.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
+            log.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
             return False
         except:
             return False

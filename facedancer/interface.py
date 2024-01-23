@@ -4,7 +4,6 @@
 """ Functionality for defining USB interfaces. """
 
 import struct
-import logging
 
 from typing       import Dict, Iterable
 from dataclasses  import dataclass, field
@@ -17,6 +16,8 @@ from .descriptor  import USBDescribable, USBDescriptor, USBClassDescriptor, USBD
 from .request     import USBControlRequest, USBRequestHandler, get_request_handler_methods
 from .request     import standard_request_handler, to_this_interface
 from .endpoint    import USBEndpoint
+
+from .logging     import log
 
 
 @dataclass
@@ -199,7 +200,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     @to_this_interface
     def handle_get_descriptor_request(self, request):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
-        logging.debug("Handling GET_DESCRIPTOR on endpoint.")
+        log.debug("Handling GET_DESCRIPTOR on endpoint.")
 
         # This is the same as the USBDevice get descriptor request => avoid duplication.
         self.get_device().handle_generic_get_descriptor_request(self, request)

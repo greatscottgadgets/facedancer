@@ -6,7 +6,6 @@
 import sys
 import asyncio
 import struct
-import logging
 import warnings
 
 from typing         import Coroutine, Dict, Iterable, Union
@@ -15,7 +14,6 @@ from dataclasses    import dataclass, field
 from prompt_toolkit import HTML, print_formatted_text
 
 from .core          import FacedancerUSBApp
-from .constants     import LOGLEVEL_TRACE
 from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
 from .types         import USBDirection, USBRequestType, USBRequestRecipient
 
@@ -28,7 +26,7 @@ from .endpoint      import USBEndpoint
 from .request       import USBControlRequest, USBRequestHandler
 from .request       import standard_request_handler, to_device, get_request_handler_methods
 
-LOGLEVEL_TRACE=5
+from .logging       import log
 
 
 @dataclass
@@ -185,7 +183,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # Sanity check to avoid common issues.
         if len(self.configurations) == 0:
-            logging.error("No configurations defined on the emulated device! "
+            log.error("No configurations defined on the emulated device! "
                     "Did you forget @use_inner_classes_automatically?")
 
         if self.backend is None:
@@ -314,10 +312,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         if self.configuration:
             endpoint = self.configuration.get_endpoint(endpoint_number, direction)
             if endpoint is None:
-                logging.error(f"Requested non-existent endpoint EP{endpoint_number}/{direction.name} for configured device!")
+                log.error(f"Requested non-existent endpoint EP{endpoint_number}/{direction.name} for configured device!")
             return endpoint
         else:
-            logging.error(f"Requested endpoint EP{endpoint_number}/{direction.name} for unconfigured device!")
+            log.error(f"Requested endpoint EP{endpoint_number}/{direction.name} for unconfigured device!")
             return None
 
 
@@ -376,7 +374,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     def handle_bus_reset(self):
         """ Event handler for a bus reset. """
-        logging.info("Host issued a bus reset; resetting our connection.")
+        log.info("Host issued a bus reset; resetting our connection.")
 
         # Clear our state back to address zero and no configuration.
         self.configuration = None
@@ -394,7 +392,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         Parameters:
             request -- the USBControlRequest object representing the relevant request
         """
-        logging.debug(f"{self.name} received request: {request}")
+        log.debug(f"{self.name} received request: {request}")
 
         # Call our base USBRequestHandler method.
         handled = super().handle_request(request)
@@ -402,7 +400,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # As the top-most handle_request function, we have an extra responsibility:
         # we'll need to stall the endpoint if no handler was found.
         if not handled:
-            logging.warning(f"Stalling unhandled {request}.")
+            log.warning(f"Stalling unhandled {request}.")
             self._add_request_suggestion(request)
             self.stall(direction=USBDirection.IN)
 
@@ -428,7 +426,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # If we're un-configured, we don't expect to receive
         # anything other than control data; defer to our "unexpected data".
         else:
-            logging.error(f"Received non-control data when unconfigured!"
+            log.error(f"Received non-control data when unconfigured!"
                     "This is invalid host behavior.")
             self.handle_unexpected_data_received(endpoint.number, data)
 
@@ -444,7 +442,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             endpoint_number -- The endpoint number on which the data was received.
             data            -- The raw bytes received on the relevant endpoint.
         """
-        logging.error(f"Received {len(data)} bytes of data on invalid EP{endpoint_number}/OUT.")
+        log.error(f"Received {len(data)} bytes of data on invalid EP{endpoint_number}/OUT.")
 
 
     def handle_data_requested(self, endpoint: USBEndpoint):
@@ -465,7 +463,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # If we're un-configured, we don't expect to receive
         # anything other than control data; defer to our "unexpected data".
         else:
-            logging.error(f"Received non-control data when unconfigured!"
+            log.error(f"Received non-control data when unconfigured!"
                     "This is invalid host behavior.")
             self.handle_unexpected_data_requested(endpoint.number)
 
@@ -480,7 +478,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         Parameters:
             endpoint_number -- The endpoint number the data was received.
         """
-        logging.error(f"Host requested data on invalid EP{endpoint_number}/IN.")
+        log.error(f"Host requested data on invalid EP{endpoint_number}/IN.")
 
 
     def handle_buffer_empty(self, endpoint: USBEndpoint):
@@ -724,7 +722,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             request: USBControlRequest):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
 
-        logging.debug(f"received GET_DESCRIPTOR request {request}")
+        log.debug(f"received GET_DESCRIPTOR request {request}")
 
         # Extract the core parameters from the request.
         descriptor_type  = request.value_high
@@ -743,9 +741,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             response_length = min(request.length, len(response))
             request.reply(response[:response_length])
 
-            logging.log(LOGLEVEL_TRACE, f"sending {response_length} bytes in response")
+            log.trace(f"sending {response_length} bytes in response")
         else:
-            logging.log(LOGLEVEL_TRACE, f"stalling descriptor request")
+            log.trace(f"stalling descriptor request")
             request.stall()
 
 
@@ -782,7 +780,7 @@ class USBDevice(USBBaseDevice):
     def handle_get_status_request(self, request):
         """ Handles GET_STATUS requests; per USB2 [9.4.5]."""
 
-        logging.debug("received GET_STATUS request")
+        log.debug("received GET_STATUS request")
 
         # self-powered and remote-wakeup (USB 2.0 Spec section 9.4.5)
         request.reply(b'\x03\x00')
@@ -792,7 +790,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_clear_feature_request(self, request):
         """ Handle CLEAR_FEATURE requests; per USB2 [9.4.1] """
-        logging.debug(f"Received CLEAR_FEATURE request with type {request.number} and value {request.value}.")
+        log.debug(f"Received CLEAR_FEATURE request with type {request.number} and value {request.value}.")
         request.acknowledge()
 
 
@@ -800,7 +798,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_set_feature_request(self, request):
         """ Handle SET_FEATURE requests; per USB2 [9.4.9] """
-        logging.debug("received SET_FEATURE request")
+        log.debug("received SET_FEATURE request")
         request.stall()
 
 
@@ -826,7 +824,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_set_descriptor_request(self, request):
         """ Handle SET_DESCRIPTOr requests; per USB2 [9.4.8] """
-        logging.debug("received SET_DESCRIPTOR request")
+        log.debug("received SET_DESCRIPTOR request")
         request.stall()
 
 
@@ -834,7 +832,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_get_configuration_request(self, request):
         """ Handle GET_CONFIGURATION requests; per USB2 [9.4.2] """
-        logging.debug(f"received GET_CONFIGURATION request for configuration {request.value}")
+        log.debug(f"received GET_CONFIGURATION request for configuration {request.value}")
 
         # If we haven't yet been configured, send back a zero configuration value.
         if self.configuration is None:
@@ -850,7 +848,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_set_configuration_request(self, request):
         """ Handle SET_CONFIGURATION requests; per USB2 [9.4.7] """
-        logging.debug("received SET_CONFIGURATION request")
+        log.debug("received SET_CONFIGURATION request")
 
         # If the host is requesting configuration zero, they're asking
         # us to drop our configuration.
@@ -875,7 +873,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_get_interface_request(self, request):
         """ Handle GET_INTERFACE requests; per USB2 [9.4.4] """
-        logging.debug("received GET_INTERFACE request")
+        log.debug("received GET_INTERFACE request")
 
         # TODO: support alternate interfaces.
         # Since we don't support alternate interfaces [yet], we'll always
@@ -890,7 +888,7 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_set_interface_request(self, request):
         """ Handle SET_INTERFACE requests; per USB2 [9.4.10] """
-        logging.debug(f"f{self.name} received SET_INTERFACE request")
+        log.debug(f"f{self.name} received SET_INTERFACE request")
 
         # We don't support alternate interfaces; so ACK setting
         # interface zero, and stall all others.
@@ -905,5 +903,5 @@ class USBDevice(USBBaseDevice):
     @to_device
     def handle_synch_frame_request(self, request):
         """ Handle SYNC_FRAME requests; per USB2 [9.4.10] """
-        logging.debug(f"f{self.name} received SYNCH_FRAME request")
+        log.debug(f"f{self.name} received SYNCH_FRAME request")
         request.acknowledge()

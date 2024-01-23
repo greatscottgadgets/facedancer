@@ -10,14 +10,17 @@ import re
 import struct
 import sys
 import time
-import logging
 
 from enum   import IntFlag
 from typing import Union
 
+from ..         import default_main
+
 from ...        import *
 from ...classes import USBDeviceClass
-from ..         import default_main
+
+from ...logging import log
+
 
 ENDPOINT_OUT = 1
 ENDPOINT_IN  = 3
@@ -90,7 +93,7 @@ class USBMassStorageDevice(USBDevice):
             # dispatch received data to our SCSI command handler
             self.scsi_command_handler.handle_data_received(data)
         else:
-            logging.warn(f"Received data on unexpected endpoint: {endpoint}")
+            log.warn(f"Received data on unexpected endpoint: {endpoint}")
 
 
     #

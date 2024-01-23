@@ -2,10 +2,11 @@
 
 import atexit
 import usb1
-import logging
 
-from .errors import DeviceNotFoundError
-from .usb    import USB
+from .errors  import DeviceNotFoundError
+from .usb     import USB
+
+from .logging import log
 
 
 class LibUSB1Proxy:
@@ -282,7 +283,7 @@ class USBProxyDevice(USBBaseDevice):
         # detach it from any kernel-side driver that may prevent us
         # from communicating with it...
         device_handle = self.proxied_device.open(device, detach=True)
-        logging.info(f"Found {self.proxied_device.device_speed().name} speed device to proxy: {device}")
+        log.info(f"Found {self.proxied_device.device_speed().name} speed device to proxy: {device}")
 
 
     def add_filter(self, filter_object, head=False):
@@ -317,7 +318,7 @@ class USBProxyDevice(USBBaseDevice):
             # FIXME self.backend does not yet exist here so this will always fail
             self.backend.set_device_speed(device_speed)
         except Exception as e:
-            logging.warning(f"-- facedancer backend does not support setting device speed: {device_speed.name} --")
+            log.warning(f"-- facedancer backend does not support setting device speed: {device_speed.name} --")
 
         super().connect()
 
@@ -554,7 +555,7 @@ class USBProxyDevice(USBBaseDevice):
 
 
 if __name__ == "__main__":
-    from .                  import FacedancerUSBApp, LOGLEVEL_TRACE
+    from .                  import FacedancerUSBApp
     from .filters.standard  import USBProxySetupFilters
     from .filters.logging   import USBProxyPrettyPrintFilter
 
@@ -576,7 +577,8 @@ if __name__ == "__main__":
     device.add_filter(USBProxyPrettyPrintFilter(verbose=5))
 
     async def configure_logging():
-        logging.getLogger().setLevel(logging.INFO)
+        import logging
+        logging.getLogger("facedancer").setLevel(logging.INFO)
 
     from facedancer import main
     main(device, configure_logging())

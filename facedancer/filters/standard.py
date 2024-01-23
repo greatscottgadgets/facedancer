@@ -2,12 +2,12 @@
 # Standard filters for USBProxy that should (almost) always be used
 #
 
-import logging
-
 from ..            import *
 from ..descriptor  import USBDescribable
 from ..proxy       import USBProxyFilter
 from ..errors      import *
+
+from ..logging     import log
 
 
 class USBProxySetupFilters(USBProxyFilter):
@@ -47,7 +47,7 @@ class USBProxySetupFilters(USBProxyFilter):
             if descriptor_type == self.DESCRIPTOR_CONFIGURATION and req.length >= 32:
                 configuration = USBDescribable.from_binary_descriptor(data)
                 self.configurations[configuration.number] = configuration
-                logging.debug("-- Storing configuration {} --".format(configuration))
+                log.debug("-- Storing configuration {} --".format(configuration))
 
 
             if descriptor_type == self.DESCRIPTOR_DEVICE and req.length >= 7:
@@ -56,7 +56,7 @@ class USBProxySetupFilters(USBProxyFilter):
                 device = USBDescribable.from_binary_descriptor(data)
                 device.max_packet_size_ep0 = 64
                 data = bytearray(device.get_descriptor())[:len(data)]
-                logging.debug("-- Patched device descriptor. --")
+                log.debug("-- Patched device descriptor. --")
 
 
         return req, data, stalled
@@ -81,13 +81,13 @@ class USBProxySetupFilters(USBProxyFilter):
             if configuration_index in self.configurations:
                 configuration = self.configurations[configuration_index]
 
-                logging.debug("-- Applying configuration {} --".format(configuration))
+                log.debug("-- Applying configuration {} --".format(configuration))
 
                 self.device.configured(configuration)
 
             # Otherwise, the host has applied a configuration without ever reading
             # its descriptor. This is mighty strange behavior!
             else:
-                logging.warn("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
+                log.warn("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
 
         return req, data

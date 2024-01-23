@@ -2,10 +2,10 @@ import os
 import serial
 import sys
 import time
-import logging
 
-from ..core import FacedancerApp
+from ..core               import FacedancerApp
 from ..backends.MAXUSBApp import MAXUSBApp
+from ..logging            import log
 
 
 class GoodfetMaxUSBApp(MAXUSBApp):
@@ -31,7 +31,7 @@ class GoodfetMaxUSBApp(MAXUSBApp):
             gf.close()
             return True
         except ImportError:
-            logging.info("Skipping GoodFET-based devices, as pyserial isn't installed.")
+            log.info("Skipping GoodFET-based devices, as pyserial isn't installed.")
             return False
         except:
             return False
