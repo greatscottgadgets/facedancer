@@ -8,6 +8,7 @@ import codecs
 import struct
 
 from ..core import *
+from ..endpoint import USBEndpoint
 from ..types import *
 
 from ..logging import log
