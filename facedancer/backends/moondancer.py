@@ -320,14 +320,14 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
 
         log.debug(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
 
-        if direction == USBDirection.OUT: # 0 = HOST_TO_DEVICE (OUT)
+        if direction == USBDirection.OUT: # HOST_TO_DEVICE
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
             self.api.write_endpoint(endpoint_number, blocking, bytes([]))
 
             log.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, [])")
 
-        else: # 1 = DEVICE_TO_HOST (IN)
+        else: # DEVICE_TO_HOST (IN)
             # If this was an IN request, we'll need to set up a transfer descriptor
             # so the status phase can operate correctly. This effectively reads the
             # zero length packet from the STATUS phase.
@@ -342,9 +342,6 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
 
         endpoint_number: The number of the endpoint to be stalled.
         """
-
-        # USBDirection.OUT = 0
-        # USBDirection.IN  = 1
 
         endpoint_address = (endpoint_number | 0x80) if direction else endpoint_number
         log.debug(f"Stalling EP{endpoint_number} {USBDirection(direction).name} (0x{endpoint_address:x})")
@@ -440,8 +437,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
 
         log.debug(f"  moondancer.api.read_control({endpoint_number}) -> {len(data)} '{request}'")
 
-        # If this is an OUT request, handle the data stage,
-        # and add it to the request.
+        # If this is an OUT request, handle the data stage, and add it to the request.
         is_out   = request.get_direction() == USBDirection.OUT # HOST_TO_DEVICE
         has_data = (request.length > 0)
         log.trace(f"  is_out:{is_out}  has_data:{has_data}")
