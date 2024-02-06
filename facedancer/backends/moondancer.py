@@ -358,16 +358,6 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             log.debug(f"  moondancer.api.stall_endpoint_out({endpoint_number})")
 
 
-    def stall_ep0(self, direction: USBDirection=USBDirection.OUT):
-        """
-        Convenience function that stalls the control endpoint zero.
-
-        TODO deprecate
-        """
-
-        self.stall_endpoint(0, direction)
-
-
     def service_irqs(self):
         """
         Core routine of the Facedancer execution/event loop. Continuously monitors the

@@ -396,7 +396,7 @@ class USBProxyDevice(USBBaseDevice):
                     request, data, stalled = f.handle_out_stall(ep_num, data, stalled)
 
                 if stalled:
-                    self.backend.stall_ep0(0) # OUT=0
+                    self.backend.stall_endpoint(0, USBDirection.OUT)
 
 
     def handle_nak(self, ep_num):
@@ -448,7 +448,7 @@ class USBProxyDevice(USBBaseDevice):
 
         # If we stalled immediately, handle the stall and return without proxying.
         if stalled:
-            self.backend.stall_ep0(1) # IN=1
+            self.backend.stall_endpoint(0, USBDirection.IN)
             return
 
         # If we filtered out the setup request, NAK.
@@ -474,7 +474,7 @@ class USBProxyDevice(USBBaseDevice):
         #... and proxy it to our victim.
         if stalled:
             # TODO: allow stalling of eps other than 0!
-            self.backend.stall_ep0(1) # IN=1
+            self.backend.stall_endpoint(0, USBDirection.IN)
         else:
             # TODO: support control endpoints other than 0
             self.send(0, data)
@@ -511,7 +511,7 @@ class USBProxyDevice(USBBaseDevice):
                     request, data, stalled = f.handle_out_request_stall(request, data, stalled)
 
                 if stalled:
-                    self.backend.stall_ep0(0) # OUT=0
+                    self.backend.stall_endpoint(0, USBDirection.OUT)
 
 
     def _proxy_in_transfer(self, endpoint):

@@ -127,15 +127,6 @@ class FacedancerBackend:
         raise NotImplementedError
 
 
-    def stall_ep0(self, direction: USBDirection=USBDirection.OUT):
-        """
-        Convenience function that stalls the control endpoint zero.
-
-        TODO deprecate
-        """
-        raise NotImplementedError
-
-
     def service_irqs(self):
         """
         Core routine of the Facedancer execution/event loop. Continuously monitors the
