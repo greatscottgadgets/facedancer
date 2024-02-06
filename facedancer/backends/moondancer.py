@@ -6,29 +6,35 @@ import codecs
 import enum
 import traceback
 
-from ..core       import *
-from ..constants  import DeviceSpeed
-from ..types      import USBDirection
+from typing           import List, Tuple
 
-from ..logging    import log
+from ..core           import *
+from ..device         import USBDevice
+from ..configuration  import USBConfiguration
+from ..types          import DeviceSpeed, USBDirection
+
+from ..logging        import log
+
+from .base            import FacedancerBackend
+
 
 # Quirk flags
 class QuirkFlag(enum.IntFlag):
-    MANUAL_SET_ADDRESS = 0x01
+    MANUAL_SET_ADDRESS: int = 0x01
 
-# USB directions
-class Direction(enum.IntFlag):
-    HOST_TO_DEVICE = 0 # TARGET HOST TO DEVICE (OUT)
-    DEVICE_TO_HOST = 1 # DEVICE TO TARGET HOST (IN)
 
 # Cynthion interrupt messages
 class InterruptEvent(enum.Enum):
-    USB_BUS_RESET = 10
-    USB_RECEIVE_CONTROL = 11
-    USB_RECEIVE_PACKET = 12
-    USB_SEND_COMPLETE = 13
+    USB_BUS_RESET:       int = 10
+    USB_RECEIVE_CONTROL: int = 11
+    USB_RECEIVE_PACKET:  int = 12
+    USB_SEND_COMPLETE:   int = 13
 
-    def parse(data):
+    @classmethod
+    def parse(cls, data: Tuple[int, int]):
+        """
+        Parses a tuple of two bytes representing an InterruptEvent into an InterruptEvent.
+        """
         if len(data) != 2:
             log.error(f"Invalid length for InterruptEvent: {len(data)}")
             raise ValueError(f"Invalid length for InterruptEvent: {len(data)}")
@@ -40,19 +46,17 @@ class InterruptEvent(enum.Enum):
 #
 # Moondancer backend implementation
 #
-class MoondancerApp(FacedancerApp):
+class MoondancerApp(FacedancerApp, FacedancerBackend):
     """
     Backend for using Cynthion devices as FaceDancers.
     """
 
     app_name = "Moondancer"
-    app_num = 0x00 # This doesn't have any meaning for us.
 
     # Number of supported USB endpoints.
-    # TODO: bump this up when we develop support using USB0 (cables flipped)
     SUPPORTED_ENDPOINTS = 16
 
-    def __init__(self, device=None, verbose=0, quirks=None):
+    def __init__(self, device: USBDevice=None, verbose: int=0, quirks: List[str]=[]):
         """
         Sets up a new Cynthion-backed Facedancer (Moondancer) application.
 
@@ -114,7 +118,7 @@ class MoondancerApp(FacedancerApp):
     # - Facedancer backend methods --------------------------------------------
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name):
+    def appropriate_for_environment(cls, backend_name: str) -> bool:
         """
         Determines if the current environment seems appropriate
         for using the Moondancer backend.
@@ -138,13 +142,6 @@ class MoondancerApp(FacedancerApp):
             return False
 
 
-    def init_commands(self):
-        """
-        API compatibility function; not necessary for Moondancer.
-        """
-        pass
-
-
     def get_version(self):
         """
         Returns information about the active Moondancer version.
@@ -154,16 +151,16 @@ class MoondancerApp(FacedancerApp):
         raise NotImplementedError()
 
 
-    def set_device_speed(self, device_speed):
+    def set_device_speed(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
         Sets the speed to be used when connecting Cynthion's target port.
 
-        device_speed: a constants.DeviceSpeed value.
+        device_speed: the requested device speed.
         """
         self.device_speed = device_speed
 
 
-    def connect(self, usb_device, max_ep0_packet_size=64):
+    def connect(self, usb_device: USBDevice, max_ep0_packet_size: int=64):
         """
         Prepares Cynthion to connect to the target host and emulate
         a given device.
@@ -214,7 +211,7 @@ class MoondancerApp(FacedancerApp):
         self.api.bus_reset()
 
 
-    def set_address(self, address, defer=False):
+    def set_address(self, address: int, defer: bool=False):
         """
         Sets the device address of Moondancer. Usually only used during
         initial configuration.
@@ -228,7 +225,7 @@ class MoondancerApp(FacedancerApp):
         self.api.set_address(address, 1 if defer else 0)
 
 
-    def configured(self, configuration):
+    def configured(self, configuration: USBConfiguration):
         """
         Callback that's issued when a USBDevice is configured, e.g. by the
         SET_CONFIGURATION request. Allows us to apply the new configuration.
@@ -271,7 +268,7 @@ class MoondancerApp(FacedancerApp):
         log.info("Target host configuration complete.")
 
 
-    def read_from_endpoint(self, endpoint_number):
+    def read_from_endpoint(self, endpoint_number: int) -> bytes:
         """
         Reads a block of data from the given endpoint.
 
@@ -292,7 +289,7 @@ class MoondancerApp(FacedancerApp):
         return data
 
 
-    def send_on_endpoint(self, endpoint_number, data, blocking=True):
+    def send_on_endpoint(self, endpoint_number: int, data: bytes, blocking: bool=True):
         """
         Sends a collection of USB data on a given endpoint.
 
@@ -308,7 +305,7 @@ class MoondancerApp(FacedancerApp):
         log.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
 
 
-    def ack_status_stage(self, direction=Direction.HOST_TO_DEVICE, endpoint_number=0, blocking=False):
+    def ack_status_stage(self, direction: USBDirection=USBDirection.OUT, endpoint_number:int =0, blocking: bool=False):
         """
             Handles the status stage of a correctly completed control request,
             by priming the appropriate endpoint to handle the status phase.
@@ -323,7 +320,7 @@ class MoondancerApp(FacedancerApp):
 
         log.debug(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
 
-        if direction == Direction.HOST_TO_DEVICE: # 0 = HOST_TO_DEVICE (OUT)
+        if direction == USBDirection.OUT: # 0 = HOST_TO_DEVICE (OUT)
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
             self.api.write_endpoint(endpoint_number, blocking, bytes([]))
@@ -339,7 +336,7 @@ class MoondancerApp(FacedancerApp):
             log.trace(f"  moondancer.api.ep_out_prime_receive({endpoint_number})")
 
 
-    def stall_endpoint(self, endpoint_number, direction=0):
+    def stall_endpoint(self, endpoint_number:int, direction: USBDirection=USBDirection.OUT):
         """
         Stalls the provided endpoint, as defined in the USB spec.
 
@@ -364,9 +361,11 @@ class MoondancerApp(FacedancerApp):
             log.debug(f"  moondancer.api.stall_endpoint_out({endpoint_number})")
 
 
-    def stall_ep0(self, direction=0):
+    def stall_ep0(self, direction: USBDirection=USBDirection.OUT):
         """
         Convenience function that stalls the control endpoint zero.
+
+        TODO deprecate
         """
 
         self.stall_endpoint(0, direction)
@@ -378,18 +377,11 @@ class MoondancerApp(FacedancerApp):
         Moondancer's execution status, and reacts as events occur.
         """
 
-        # poll manually until we decide whether to support NAK events for eptri interface
-        # for k, (endpoint_address, max_packet_size, transfer_type) in self.configured_endpoints.items():
-        #     is_in = (endpoint_address & 0x80) != 0
-        #     if is_in:
-        #         endpoint_number = endpoint_address & 0xf
-        #         self.connected_device.handle_nak(endpoint_number)
-
         # Check EP_IN NAK status for pending data requests
         nak_status = self.api.get_nak_status()
         self.handle_ep_in_nak_status(nak_status)
 
-        events = self.api.get_interrupt_events()
+        events: List[Tuple[int, int]] = self.api.get_interrupt_events()
         if len(events) == 0:
             return
 
@@ -397,7 +389,7 @@ class MoondancerApp(FacedancerApp):
         if isinstance(events[0], int):
             events = [ events ]
 
-        events = list(map(InterruptEvent.parse, events))
+        events = [InterruptEvent.parse(event) for event in events]
 
         # Handle interrupt events.
         for event in events:
@@ -429,7 +421,7 @@ class MoondancerApp(FacedancerApp):
 
 
     # USB0_RECEIVE_CONTROL
-    def handle_receive_control(self, endpoint_number):
+    def handle_receive_control(self, endpoint_number: int):
         """
         Handles a known outstanding control event on a given endpoint.
 
@@ -450,7 +442,7 @@ class MoondancerApp(FacedancerApp):
 
         # If this is an OUT request, handle the data stage,
         # and add it to the request.
-        is_out   = request.get_direction() == Direction.HOST_TO_DEVICE
+        is_out   = request.get_direction() == USBDirection.OUT # HOST_TO_DEVICE
         has_data = (request.length > 0)
         log.trace(f"  is_out:{is_out}  has_data:{has_data}")
 
@@ -469,12 +461,12 @@ class MoondancerApp(FacedancerApp):
         self.connected_device.handle_request(request)
 
         if not is_out and not self.endpoint_stalled[endpoint_number]:
-            log.trace(f"  IN packet -> ack_status_stage(DEVICE_TO_HOST) ACK STATUS STAGE")
-            self.ack_status_stage(direction=Direction.DEVICE_TO_HOST)
+            log.trace(f"  IN packet -> ack_status_stage(IN) ACK STATUS STAGE")
+            self.ack_status_stage(direction=USBDirection.IN) # DEVICE_TO_HOST
 
 
     # USB0_RECEIVE_PACKET
-    def handle_receive_packet(self, endpoint_number):
+    def handle_receive_packet(self, endpoint_number: int):
         """
         Handles a known-completed transfer on a given endpoint.
 
@@ -528,12 +520,12 @@ class MoondancerApp(FacedancerApp):
 
 
     # USB0_SEND_COMPLETE
-    def handle_send_complete(self, endpoint_number):
+    def handle_send_complete(self, endpoint_number: int):
         log.debug(f"handle_send_complete({endpoint_number})")
         pass
 
     # Handle pending data requests on EP_IN
-    def handle_ep_in_nak_status(self, nak_status):
+    def handle_ep_in_nak_status(self, nak_status: int):
         nakked_endpoints = [epno for epno in range(self.SUPPORTED_ENDPOINTS) if (nak_status >> epno) & 1]
         for endpoint_number in nakked_endpoints:
             log.trace(f"Received IN NAK: {endpoint_number}")

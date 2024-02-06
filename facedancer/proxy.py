@@ -4,7 +4,7 @@ import atexit
 import usb1
 
 from .errors  import DeviceNotFoundError
-from .usb     import USB
+from .types   import USB
 
 from .logging import log
 
@@ -244,7 +244,6 @@ class USBProxyFilter:
 from usb1        import USBError, USBErrorTimeout
 
 from .           import *
-from .constants  import DeviceSpeed
 from .classes    import USBDeviceClass
 from .device     import USBBaseDevice
 from .request    import USBControlRequest

@@ -13,6 +13,7 @@ from .request       import to_any_endpoint, to_any_interface
 # Raw types.
 from .types         import USBDirection, USBTransferType, USBUsageType, USBSynchronizationType
 from .types         import USBRequestType, USBRequestRecipient, USBStandardRequests, LanguageIDs
+from .types         import DeviceSpeed
 
 # Decorators.
 from .magic import use_automatically, use_inner_classes_automatically
@@ -30,5 +31,5 @@ __all__ = [
     'to_any_endpoint', 'to_this_interface', 'to_any_interface', 'to_other',
     'USBDirection', 'USBTransferType', 'USBUsageType', 'USBSynchronizationType',
     'USBRequestType', 'USBRequestRecipient', 'USBStandardRequests', 'LanguageIDs',
-    'use_automatically', 'use_inner_classes_automatically',
+    'DeviceSpeed', 'use_automatically', 'use_inner_classes_automatically',
 ]
