@@ -76,7 +76,7 @@ class LibUSBHostApp(FacedancerUSBHost):
             pass
 
 
-    def connect(self):
+    def connect(self, device_speed=None):
         """
         Sets up our host to talk to the device, including turning on VBUS.
         """

@@ -32,21 +32,14 @@ class FacedancerBackend:
         raise NotImplementedError
 
 
-    def set_device_speed(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):
-        """
-        Sets the speed to be used when connecting the Facedancer's target port.
-
-        device_speed: the requested device speed.
-        """
-        raise NotImplementedError
-
-
-    def connect(self, usb_device: USBDevice, max_ep0_packet_size: int=64):
+    def connect(self, usb_device: USBDevice, max_packet_size_ep0: int=64, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
         Prepares backend to connect to the target host and emulate
         a given device.
 
         usb_device: The USBDevice object that represents the emulated device.
+        max_packet_size_ep0: Max packet size for control endpoint.
+        device_speed: Requested usb speed for the Facedancer board.
         """
         raise NotImplementedError
 

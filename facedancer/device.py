@@ -16,6 +16,7 @@ from prompt_toolkit import HTML, print_formatted_text
 from .core          import FacedancerUSBApp
 from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
 from .types         import USBDirection, USBRequestType, USBRequestRecipient
+from .types         import DeviceSpeed
 
 from .magic         import instantiate_subordinates
 
@@ -165,12 +166,12 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         configuration.parent = self
 
 
-    def connect(self):
+    def connect(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """ Connects this device to the host; e.g. turning on our presence-detect pull up. """
         if self.backend is None:
             self.backend = FacedancerUSBApp()
 
-        self.backend.connect(self, self.max_packet_size_ep0)
+        self.backend.connect(self, max_packet_size_ep0=self.max_packet_size_ep0, device_speed=device_speed)
 
 
     def disconnect(self):
@@ -182,7 +183,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         """ Runs the actual device emulation. """
 
         # Sanity check to avoid common issues.
-        if len(self.configurations) == 0:
+        from .proxy import USBProxyDevice
+        if len(self.configurations) == 0 and not isinstance(self, USBProxyDevice):
             log.error("No configurations defined on the emulated device! "
                     "Did you forget @use_inner_classes_automatically?")
 

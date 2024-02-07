@@ -98,7 +98,7 @@ class GreatDancerApp(FacedancerApp):
             self.endpoint_stalled[i] = False
 
         # Assume a max packet size of 64 until configured otherwise.
-        self.max_ep0_packet_size = 64
+        self.max_packet_size_ep0 = 64
 
         # Start off by assuming we're not waiting for an OUT control transfer's
         # data stage.  # See _handle_setup_complete_on_endpoint for details.
@@ -182,7 +182,7 @@ class GreatDancerApp(FacedancerApp):
         return arguments
 
 
-    def connect(self, usb_device, max_ep0_packet_size=64):
+    def connect(self, usb_device, max_packet_size_ep0=64, device_speed=DeviceSpeed.FULL):
         """
         Prepares the GreatDancer to connect to the target host and emulate
         a given device.
@@ -191,7 +191,10 @@ class GreatDancerApp(FacedancerApp):
             emulated.
         """
 
-        self.max_ep0_packet_size = max_ep0_packet_size
+        if device_speed != DeviceSpeed.FULL:
+            log.warn(f"GreatFET only supports USB Full Speed. Ignoring requested speed: {device_speed.name}")
+
+        self.max_packet_size_ep0 = max_packet_size_ep0
 
         quirks = 0
 
@@ -201,7 +204,7 @@ class GreatDancerApp(FacedancerApp):
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
-        self.api.connect(self.max_ep0_packet_size, quirks)
+        self.api.connect(self.max_packet_size_ep0, quirks)
         self.connected_device = usb_device
 
         log.info("Connecting to host.")
@@ -545,7 +548,7 @@ class GreatDancerApp(FacedancerApp):
                     self.pending_control_request.data.extend(new_data)
 
                     all_data_received = len(self.pending_control_request.data) == self.pending_control_request.length
-                    is_short_packet   = len(new_data) < self.max_ep0_packet_size
+                    is_short_packet   = len(new_data) < self.max_packet_size_ep0
 
                     if all_data_received or is_short_packet:
 

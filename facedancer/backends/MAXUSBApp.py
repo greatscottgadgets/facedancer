@@ -131,7 +131,7 @@ class MAXUSBApp(FacedancerApp):
         return self.read_register(self.reg_revision)
 
 
-    def connect(self, usb_device, max_ep0_packet_size=64):
+    def connect(self, usb_device, max_packet_size_ep0=64, device_speed=None):
         if self.read_register(self.reg_usb_control) & self.usb_control_connect:
             self.write_register(self.reg_usb_control, self.usb_control_vbgate)
             time.sleep(.1)

@@ -311,15 +311,11 @@ class USBProxyDevice(USBBaseDevice):
         # Since we're working at the transfer levels, the packet sizes will automatically be translated, anyway.
         self.max_packet_size_ep0 = 64
 
-        # Get the speed of the device being proxied and attempt to set it if the backend supports it.
+        # Get the USB device speed of the device being proxied.
         device_speed = self.proxied_device.device_speed()
-        try:
-            # FIXME self.backend does not yet exist here so this will always fail
-            self.backend.set_device_speed(device_speed)
-        except Exception as e:
-            log.warning(f"-- facedancer backend does not support setting device speed: {device_speed.name} --")
 
-        super().connect()
+        # Connect device.
+        super().connect(device_speed=device_speed)
 
         # TODO check if we still need this in facedancer v3
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})

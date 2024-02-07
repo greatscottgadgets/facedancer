@@ -89,7 +89,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             self.endpoint_stalled[i] = False
 
         # Assume a max packet size of 64 until configured otherwise.
-        self.max_ep0_packet_size = 64
+        self.max_packet_size_ep0 = 64
 
         # Start off by assuming we're not waiting for an OUT control transfer's
         # data stage.  # See handle_setup_complete_on_endpoint for details.
@@ -99,9 +99,6 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         # which we'll use to know which endpoints we'll need to check
         # for data transfer readiness.
         self.configuration = None
-
-        # By default, Cynthion's target port operates at High speed.
-        self.device_speed = DeviceSpeed.HIGH
 
         #
         # Store our list of quirks to handle.
@@ -151,16 +148,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         raise NotImplementedError()
 
 
-    def set_device_speed(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):
-        """
-        Sets the speed to be used when connecting Cynthion's target port.
-
-        device_speed: the requested device speed.
-        """
-        self.device_speed = device_speed
-
-
-    def connect(self, usb_device: USBDevice, max_ep0_packet_size: int=64):
+    def connect(self, usb_device: USBDevice, max_packet_size_ep0: int=64, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
         Prepares Cynthion to connect to the target host and emulate
         a given device.
@@ -169,9 +157,12 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
                     emulated.
         """
 
-        log.debug(f"moondancer.connect(max_ep0_packet_size:{max_ep0_packet_size}, device_speed:{self.device_speed}, quirks:{self.quirks})")
+        if device_speed not in [DeviceSpeed.FULL, DeviceSpeed.HIGH]:
+            log.warn(f"Moondancer only supports USB Full and High Speed. Ignoring requested speed: {device_speed.name}")
 
-        self.max_ep0_packet_size = max_ep0_packet_size
+        log.debug(f"moondancer.connect(max_packet_size_ep0:{max_packet_size_ep0}, device_speed:{device_speed}, quirks:{self.quirks})")
+
+        self.max_packet_size_ep0 = max_packet_size_ep0
 
         # compute our quirk flags
         quirks = 0
@@ -180,13 +171,13 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             quirks |= QuirkFlag.MANUAL_SET_ADDRESS
 
         # connect to target host
-        self.api.connect(self.max_ep0_packet_size, self.device_speed, quirks)
+        self.api.connect(self.max_packet_size_ep0, device_speed, quirks)
         self.connected_device = usb_device
 
         # get device name
         device_name = f"{type(self.connected_device).__module__}.{type(self.connected_device).__qualname__}"
 
-        log.info(f"Connected '{device_name}' to target host.")
+        log.info(f"Connected {device_speed.name} speed device '{device_name}' to target host.")
 
 
     def disconnect(self):
@@ -474,7 +465,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             self.pending_control_request.data.extend(new_data)
 
             all_data_received = len(self.pending_control_request.data) == self.pending_control_request.length
-            is_short_packet   = len(new_data) < self.max_ep0_packet_size
+            is_short_packet   = len(new_data) < self.max_packet_size_ep0
 
             if all_data_received or is_short_packet:
                 # Handle the completed setup request...
