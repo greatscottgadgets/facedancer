@@ -14,7 +14,7 @@ description = "Implement your own USB device in Python, supported by a hardware 
 urls = { Source = "https://github.com/greatscottgadgets/facedancer" }
 readme = "README.md"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Natural Language :: English",
     "Environment :: Console",
     "Environment :: Plugins",
