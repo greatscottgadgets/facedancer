@@ -8,9 +8,10 @@ import enum
 import logging
 import traceback
 
-from ..core       import *
-from ..constants  import DeviceSpeed
-from ..types      import USBDirection
+from ..core          import *
+from ..constants     import DeviceSpeed
+from ..future.types  import USBDirection
+
 
 # add a TRACE level to logging
 logging.TRACE = 5
@@ -410,17 +411,16 @@ class MoondancerApp(FacedancerApp):
         # Handle interrupt events.
         for event in events:
             logging.trace(f"MD IRQ => {event}")
-            match event:
-              case InterruptEvent.USB_BUS_RESET:
-                  self.handle_bus_reset()
-              case InterruptEvent.USB_RECEIVE_CONTROL:
-                  self.handle_receive_control(event.endpoint_number)
-              case InterruptEvent.USB_RECEIVE_PACKET:
-                  self.handle_receive_packet(event.endpoint_number)
-              case InterruptEvent.USB_SEND_COMPLETE:
-                  self.handle_send_complete(event.endpoint_number)
-              case _:
-                  logging.error(f"Unhandled interrupt event: {event}")
+            if event == InterruptEvent.USB_BUS_RESET:
+                self.handle_bus_reset()
+            elif event == InterruptEvent.USB_RECEIVE_CONTROL:
+                self.handle_receive_control(event.endpoint_number)
+            elif event == InterruptEvent.USB_RECEIVE_PACKET:
+                self.handle_receive_packet(event.endpoint_number)
+            elif event == InterruptEvent.USB_SEND_COMPLETE:
+                self.handle_send_complete(event.endpoint_number)
+            else:
+                logging.error(f"Unhandled interrupt event: {event}")
 
 
     # - Interrupt event handlers ----------------------------------------------

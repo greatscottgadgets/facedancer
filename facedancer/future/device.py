@@ -14,7 +14,7 @@ from dataclasses    import dataclass, field
 
 from prompt_toolkit import HTML, print_formatted_text
 
-from ..             import FacedancerUSBApp, LOGLEVEL_TRACE
+from ..             import FacedancerUSBApp
 from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
 from .types         import USBDirection, USBRequestType, USBRequestRecipient
 
@@ -25,6 +25,8 @@ from .configuration import USBConfiguration
 from .endpoint      import USBEndpoint
 from .request       import USBControlRequest, USBRequestHandler
 from .request       import standard_request_handler, to_device, get_request_handler_methods
+
+LOGLEVEL_TRACE=5
 
 
 @dataclass
