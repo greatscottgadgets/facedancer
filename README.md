@@ -1,8 +1,8 @@
-# FaceDancer 2.9
+# Facedancer 2.9
 
-This repository houses the next generation of FaceDancer software. Descended from
-the original GoodFET-based FaceDancer, this repository provides a python module 
-that provides expanded FaceDancer support-- including support for multiple boards 
+This repository houses the next generation of Facedancer software. Descended from
+the original GoodFET-based Facedancer, this repository provides a python module
+that provides expanded Facedancer support-- including support for multiple boards
 and some pretty significant new features.
 
 ## Installation
@@ -18,15 +18,12 @@ $ python
 
 ## Where are my scripts?
 
-In preparation for the 3.0 release of FaceDancer, scripts in the "old" style have
+In preparation for the 3.0 release of Facedancer, scripts in the "old" style have
 been moved to `legacy-applets`. Their functionality should be unchanged.
 
-These will continue working even after the 3.0 merge; as `facedancer.compat` will
-continue to support the old scripts and their syntax.
+## What is a Facedancer?
 
-## What is a FaceDancer?
-
-FaceDancer boards are simple hardware devices that act as "remote-controlled" USB
+Facedancer boards are simple hardware devices that act as "remote-controlled" USB
 controllers. With the proper software, you can use these boards to quickly and
 easily emulate USB devices-- and to fuzz USB host controllers!
 
@@ -36,12 +33,12 @@ kinds of USB misbehaviors. :)
 
 For more information, see:
 
- * [Travis Goodspeed's blog post on FaceDancer](http://travisgoodspeed.blogspot.com/2012/07/emulating-usb-devices-with-python.html)
- * [The FaceDancer 21, the original supported board](http://goodfet.sourceforge.net/hardware/facedancer21/)
+ * [Travis Goodspeed's blog post on Facedancer](http://travisgoodspeed.blogspot.com/2012/07/emulating-usb-devices-with-python.html)
+ * [The Facedancer 21, the original supported board](http://goodfet.sourceforge.net/hardware/facedancer21/)
 
 ## USBProxy 'Nouveau' and Protocol Analysis
 
-A major new feature of the newer FaceDancer codebase is the ability to man-in-the
+A major new feature of the newer Facedancer codebase is the ability to man-in-the
 middle USB connections-- replacing one of the authors' original [USBProxy](https://github.com/dominicgs/usbproxy)
 project. This opens up a whole new realm of applications-- including protocol analysis
 and live manipulation of USB packets-- and is especially useful when you don't control
@@ -52,7 +49,7 @@ the software running on the target device (e.g. on embedded systems or games con
 +------------+   |  +--------------------------------+   +---------------------------+   |  +--------------+
 |            |   |  |                                |   |                           |   |  |              |
 |  PROXIED   |   |  |         HOST COMPUTER          |   |    FACEDANCER DEVICE      |   |  |  TARGET USB  |
-|   DEVICE   <------>  running FaceDancer software   <--->  acts as USB-Controlled   <------>     HOST     |
+|   DEVICE   <------>  running Facedancer software   <--->  acts as USB-Controlled   <------>     HOST     |
 |            |   |  |                                |   |      USB Controller       |   |  |              |
 |            |   |  |                                |   |                           |   |  |              |
 +------------+   |  +--------------------------------+   +---------------------------+   |  +--------------+
@@ -68,13 +65,13 @@ This feature is complete, but could use more documentation. Pull requests are we
 ## How do I use this repository?
 
 First, you'll likely want to set the ```BACKEND``` environment variable, which lets
-the software know which type of FaceDancer board you'd like to use. If this variable
+the software know which type of Facedancer board you'd like to use. If this variable
 isn't set, the software will try to guess for you based on what's connected. It doesn't
 always make the best guesses, so you're probably better off setting it yourself.
 
 Next, you'll probably want to check out one of the examples, or one of the pre-made scripts.
-Examples in the new syntax are located under `examples`. The core FaceDancer scripts in the
-"old" syntax are located in `legacy-applets`. 
+Examples in the new syntax are located under `examples`. The core Facedancer scripts in the
+"old" syntax are located in `legacy-applets`.
 
 For example:
 
@@ -85,7 +82,7 @@ export BACKEND=greatfet
 
 ## What boards are currently supported?
 
- * All GoodFET-based FaceDancers, including the common FaceDancer21 (```BACKEND=goodfet```)
+ * All GoodFET-based Facedancers, including the common Facedancer21 (```BACKEND=goodfet```)
  * The [GreatFET One](http://greatscottgadgets.com/greatfet/) (```BACKEND=greatfet```)
  * The NXP LPC4330 Xplorer board. (```BACKEND=greatfet```)
  * The CCCamp 2015 rad1o badge with GreatFET l0adable (```BACKEND=greatfet```)
