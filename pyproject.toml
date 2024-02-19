@@ -1,10 +1,11 @@
 [build-system]
-requires = ["setuptools>=41", "wheel", "setuptools-git-versioning<2"]
+requires = ["setuptools>=64", "wheel", "setuptools-git-versioning<2"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "facedancer"
 dynamic = ["version"]
+requires-python = ">=3.8"
 authors = [
     {name = "Great Scott Gadgets", email = "dev@greatscottgadgets.com"},
 ]
@@ -27,9 +28,8 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "pyusb", "pyserial", "prompt-toolkit",
+    "pyusb", "pyserial", "prompt-toolkit",
 ]
 
 [tool.setuptools-git-versioning]
 enabled = true
-starting_version = "v2.9"
