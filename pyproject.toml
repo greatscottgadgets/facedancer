@@ -10,8 +10,8 @@ authors = [
     {name = "Great Scott Gadgets", email = "dev@greatscottgadgets.com"},
 ]
 license = { text = "BSD" }
-description = "Python library for emulating USB devices"
-urls = { Source = "https://github.com/usb-tools/facedancer" }
+description = "Implement your own USB device in Python, supported by a hardware peripheral such as Cynthion or GreatFET."
+urls = { Source = "https://github.com/greatscottgadgets/facedancer" }
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
