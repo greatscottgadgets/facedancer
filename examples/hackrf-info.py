@@ -4,14 +4,14 @@
 # This file is part of FaceDancer.
 #
 
-from facedancer             import main
-from facedancer.future      import *
+from facedancer import *
+from facedancer import main
 
 
 @use_inner_classes_automatically
 class HackRF(USBDevice):
-    """ Device that emulates a HackRF enough to appear in ``hackrf_info``. 
-    
+    """ Device that emulates a HackRF enough to appear in ``hackrf_info``.
+
     You can try to create this script yourself! It's relatively easy using the
     --suggest option and the ``template.py`` example.
     """
@@ -51,11 +51,11 @@ class HackRF(USBDevice):
     # From here on out, we'll give these requests more descriptive names,
     # rather than using the ones from --suggest. When creating this, we'd
     # theoretically do our reverse engineering, and then rename the request.
-    # 
+    #
     # Because the decorator indicates to the backend that this is a vendor
     # request handler, these names can be whatever we'd like -- and we don't
     # have to update anything when we change them!
-    # 
+    #
     @vendor_request_handler(number=15, direction=USBDirection.IN)
     @to_device
     def handle_get_version_request(self, request):

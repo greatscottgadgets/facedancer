@@ -7,9 +7,7 @@
 import os
 
 from .errors import *
-from .USBDevice import USBDevice
-from .USBConfiguration import USBConfiguration
-from .USBEndpoint import USBEndpoint
+
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -392,6 +390,8 @@ class FacedancerUSBHost:
     def get_device_descriptor(self, max_length=18):
         """ Returns the device's device descriptor. """
 
+        from .device import USBDevice
+
         raw_descriptor = self.get_descriptor(USBDevice.DESCRIPTOR_TYPE_NUMBER, 0, 0, max_length)
         return USBDevice.from_binary_descriptor(raw_descriptor)
 
@@ -408,13 +408,18 @@ class FacedancerUSBHost:
         include_subordinate -- if true, subordinate descriptors will also be returned
         """
 
+        from .configuration import USBConfiguration
+
         # Read just the raw configuration descriptor.
         raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, USBConfiguration.DESCRIPTOR_SIZE_BYTES)
 
         # If we want to include the subordinate descriptors, read-read the configuration descriptor with an updated length.
         if include_subordinates:
-            descriptor = USBConfiguration.from_binary_descriptor(raw_descriptor)
-            raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, descriptor.total_descriptor_lengths)
+
+            from struct import unpack
+
+            total_descriptor_lengths = unpack('<H', raw_descriptor[2:4])[0]
+            raw_descriptor = self.get_descriptor(USBConfiguration.DESCRIPTOR_TYPE_NUMBER, index, 0, total_descriptor_lengths)
 
         return USBConfiguration.from_binary_descriptor(raw_descriptor)
 
@@ -466,10 +471,9 @@ class FacedancerUSBHost:
             self.set_configuration(index)
 
         # Locally, set up our endpoints to handle device communication.
-        for interface in configuration.interfaces:
-            for endpoint in interface.endpoints:
+        for interface in configuration.interfaces.values():
+            for endpoint in interface.endpoints.values():
                 self.set_up_endpoint(endpoint)
-
 
     def handle_events(self):
         self.service_irqs()
@@ -514,5 +518,3 @@ class FacedancerBasicScheduler(object):
         Stop the scheduler on next loop.
         """
         self.do_exit = True
-
-

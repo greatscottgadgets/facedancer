@@ -2,9 +2,11 @@
 
 import atexit
 import usb1
-import logging
 
-from ...errors import DeviceNotFoundError
+from .errors  import DeviceNotFoundError
+from .types   import USB
+
+from .logging import log
 
 
 class LibUSB1Proxy:
@@ -113,23 +115,139 @@ class LibUSB1Proxy:
         return cls.device_handle.bulkWrite(endpoint_number, data, timeout)
 
 
+# - USBProxyFilter ------------------------------------------------------------
+
+class USBProxyFilter:
+    """
+    Base class for filters that modify USB data.
+    """
+
+    def filter_control_in_setup(self, request, stalled):
+        """
+        Filters a SETUP stage for an IN control request. This allows us to modify
+        the SETUP stage before it's proxied to the real device.
+
+        request: The request to be issued.
+        stalled: True iff the packet has been stalled by a previous filter.
+
+        returns: Modified versions of the arguments. If stalled is set to true,
+            the packet will be immediately stalled an not proxied. If stalled is
+            false, but request is returned as None, the packet will be NAK'd instead
+            of proxied.
+        """
+        return request, stalled
+
+
+    def filter_control_in(self, request, data, stalled):
+        """
+        Filters the data response from the proxied device during an IN control
+        request. This allows us to modify the data returned from the proxied
+        device during a setup stage.
+
+        request: The request that was issued to the target host.
+        data: The data being proxied during the data stage.
+        stalled: True if the proxied device (or a previous filter) stalled the
+                request.
+
+        returns: Modified versions of the arguments. Note that modifying request
+            will _only_ modify the request as seen by future filters, as the
+            SETUP stage has already passed and the request has already been
+            sent to the device.
+        """
+        return request, data, stalled
+
+
+    def filter_control_out(self, request, data):
+        """
+        Filters handling of an OUT control request, which contains both a
+        request and (optional) data stage.
+
+        request: The request issued by the target host.
+        data: The data sent by the target host with the request.
+
+        returns: Modified versions of the arguments. Returning a request of
+            None will absorb the packet silently and not proxy it to the
+            device.
+        """
+        return request, data
+
+
+    def handle_out_request_stall(self, request, data, stalled):
+        """
+        Handles an OUT request that was stalled by the proxied device.
+
+        request: The request header for the request that stalled.
+        data: The data stage for the request that stalled, if appropriate.
+        stalled: True iff the request is still considered stalled. This can
+            be overridden by previous filters, so it's possible for this to
+            be false.
+        """
+        return request, data, stalled
+
+
+    def filter_in_token(self, ep_num):
+        """
+        Filters an IN token before it's passed to the proxied device.
+        This allows modification of e.g. the endpoint or absorption of
+        the IN token before it's issued to the real device.
+
+        ep_num: The endpoint number on which the IN token is to be proxied.
+        returns: A modified version of the arguments. If ep_num is set to None,
+            the token will be absorbed and not issued to the target host.
+        """
+        return ep_num
+
+
+    def filter_in(self, ep_num, data):
+        """
+        Filters the response to an IN token (the data packet received in response
+        to the host issuing an IN token).
+
+        ep_num: The endpoint number associated with the data packet.
+        data: The data packet received from the proxied device.
+
+        returns: A modified version of the arguments. If data is set to none,
+            the packet will be absorbed, and a NAK will be issued instead of
+            responding to the IN request with data.
+        """
+        return ep_num, data
+
+
+    def filter_out(self, ep_num, data):
+        """
+        Filters a packet sent from the host via an OUT token.
+
+        ep_num: The endpoint number associated with the data packet.
+        data: The data packet received from host.
+
+        returns: A modified version of the arguments. If data is set to none,
+            the packet will be absorbed,
+        """
+        return ep_num, data
+
+
+    def handle_out_stall(self, ep_num, data, stalled):
+        """
+        Handles an OUT transfer that was stalled by the victim.
+
+        ep_num: The endpoint number for the data that stalled.
+        data: The data for the transfer that stalled, if appropriate.
+        stalled: True iff the transfer is still considered stalled. This can
+            be overridden by previous filters, so it's possible for this to
+            be false.
+        """
+        return ep_num, data, stalled
+
 
 # - USBProxyDevice ------------------------------------------------------------
 
-from usb1   import USBError, USBErrorTimeout
+from usb1        import USBError, USBErrorTimeout
 
-from .filters   import USBProxyFilter
-
-from ..           import *
-from ..device     import USBBaseDevice
-from ..request    import USBControlRequest
-
-from ...classes   import USBDeviceClass
-from ...constants import DeviceSpeed
-
-# TODO are we going to deprecate this with other legacy stuff? do we
-# have these somewhere else e.g. python-usb-protocol perhaps?
-from facedancer.USB import *
+from .           import *
+from .classes    import USBDeviceClass
+from .device     import USBBaseDevice
+from .request    import USBControlRequest
+from .proxy      import USBProxyFilter
 
 
 class USBProxyDevice(USBBaseDevice):
@@ -164,7 +282,7 @@ class USBProxyDevice(USBBaseDevice):
         # detach it from any kernel-side driver that may prevent us
         # from communicating with it...
         device_handle = self.proxied_device.open(device, detach=True)
-        logging.info(f"Found {self.proxied_device.device_speed().name} speed device to proxy: {device}")
+        log.info(f"Found {self.proxied_device.device_speed().name} speed device to proxy: {device}")
 
 
     def add_filter(self, filter_object, head=False):
@@ -193,16 +311,13 @@ class USBProxyDevice(USBBaseDevice):
         # Since we're working at the transfer levels, the packet sizes will automatically be translated, anyway.
         self.max_packet_size_ep0 = 64
 
-        # Get the speed of the device being proxied and attempt to set it if the backend supports it.
+        # Get the USB device speed of the device being proxied.
         device_speed = self.proxied_device.device_speed()
-        try:
-            # FIXME self.backend does not yet exist here so this will always fail
-            self.backend.set_device_speed(device_speed)
-        except Exception as e:
-            logging.warning(f"-- facedancer backend does not support setting device speed: {device_speed.name} --")
 
-        super().connect()
+        # Connect device.
+        super().connect(device_speed=device_speed)
 
+        # TODO check if we still need this in facedancer v3
         # skipping USB.state_attached may not be strictly correct (9.1.1.{1,2})
         self.state = USB.state_powered
 
@@ -277,7 +392,7 @@ class USBProxyDevice(USBBaseDevice):
                     request, data, stalled = f.handle_out_stall(ep_num, data, stalled)
 
                 if stalled:
-                    self.backend.stall_ep0(0) # OUT=0
+                    self.backend.stall_endpoint(0, USBDirection.OUT)
 
 
     def handle_nak(self, ep_num):
@@ -329,7 +444,7 @@ class USBProxyDevice(USBBaseDevice):
 
         # If we stalled immediately, handle the stall and return without proxying.
         if stalled:
-            self.backend.stall_ep0(1) # IN=1
+            self.backend.stall_endpoint(0, USBDirection.IN)
             return
 
         # If we filtered out the setup request, NAK.
@@ -355,7 +470,7 @@ class USBProxyDevice(USBBaseDevice):
         #... and proxy it to our victim.
         if stalled:
             # TODO: allow stalling of eps other than 0!
-            self.backend.stall_ep0(1) # IN=1
+            self.backend.stall_endpoint(0, USBDirection.IN)
         else:
             # TODO: support control endpoints other than 0
             self.send(0, data)
@@ -392,7 +507,7 @@ class USBProxyDevice(USBBaseDevice):
                     request, data, stalled = f.handle_out_request_stall(request, data, stalled)
 
                 if stalled:
-                    self.backend.stall_ep0(0) # OUT=0
+                    self.backend.stall_endpoint(0, USBDirection.OUT)
 
 
     def _proxy_in_transfer(self, endpoint):
@@ -435,7 +550,7 @@ class USBProxyDevice(USBBaseDevice):
 
 
 if __name__ == "__main__":
-    from ...                import FacedancerUSBApp, LOGLEVEL_TRACE
+    from .                  import FacedancerUSBApp
     from .filters.standard  import USBProxySetupFilters
     from .filters.logging   import USBProxyPrettyPrintFilter
 
@@ -457,7 +572,8 @@ if __name__ == "__main__":
     device.add_filter(USBProxyPrettyPrintFilter(verbose=5))
 
     async def configure_logging():
-        logging.getLogger().setLevel(logging.INFO)
+        import logging
+        logging.getLogger("facedancer").setLevel(logging.INFO)
 
     from facedancer import main
     main(device, configure_logging())

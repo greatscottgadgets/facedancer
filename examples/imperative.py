@@ -15,8 +15,8 @@
 
 import logging
 
-from facedancer         import main
-from facedancer.future  import *
+from facedancer import main
+from facedancer import *
 
 
 class ImperativeDevice(USBDevice):

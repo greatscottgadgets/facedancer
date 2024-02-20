@@ -1,13 +1,11 @@
-
 import os
+import serial
 import sys
 import time
-import logging
 
-from ..core import FacedancerApp
+from ..core               import FacedancerApp
 from ..backends.MAXUSBApp import MAXUSBApp
-from ..USB import *
-from ..USBDevice import USBDeviceRequest
+from ..logging            import log
 
 
 class GoodfetMaxUSBApp(MAXUSBApp):
@@ -21,19 +19,19 @@ class GoodfetMaxUSBApp(MAXUSBApp):
         Determines if the current environment seems appropriate
         for using the GoodFET::MaxUSB backend.
         """
-        # Check: if we have a backend name other than greatfet,
+        # Check: if we have a backend name other than goodfet,
         # the user is trying to use something else. Abort!
         if backend_name and backend_name != "goodfet":
             return False
 
         # If we're not explicitly trying to use something else,
-        # see if there's a connected GreatFET.
+        # see if there's a connected GoodFET.
         try:
             gf = GoodFETSerialPort()
             gf.close()
             return True
         except ImportError:
-            logging.info("Skipping GoodFET-based devices, as pyserial isn't installed.")
+            log.info("Skipping GoodFET-based devices, as pyserial isn't installed.")
             return False
         except:
             return False
@@ -319,67 +317,8 @@ class GoodFETMonitorApp(FacedancerApp):
 def GoodFETSerialPort(**kwargs):
     "Return a Serial port using default values possibly overriden by caller"
 
-    import serial
-
     port = os.environ.get('GOODFET') or "/dev/ttyUSB0"
     args = dict(port=port, baudrate=115200,
                 parity=serial.PARITY_NONE, timeout=2)
     args.update(kwargs)
     return serial.Serial(**args)
-
-
-class GoodFETMonitorApp(FacedancerApp):
-    app_name = "GoodFET monitor"
-    app_num = 0x00
-
-    def read_byte(self, addr):
-        d = [ addr & 0xff, addr >> 8 ]
-        cmd = FacedancerCommand(self.app_num, 2, d)
-
-        self.device.writecmd(cmd)
-        resp = self.device.readcmd()
-
-        return resp.data[0]
-
-    def get_infostring(self):
-        return bytes([ self.read_byte(0xff0), self.read_byte(0xff1) ])
-
-    def get_clocking(self):
-        return bytes([ self.read_byte(0x57), self.read_byte(0x56) ])
-
-    def print_info(self):
-        infostring = self.get_infostring()
-        clocking = self.get_clocking()
-
-        print("MCU", bytes_as_hex(infostring, delim=""))
-        print("clocked at", bytes_as_hex(clocking, delim=""))
-
-    def list_apps(self):
-        cmd = FacedancerCommand(self.app_num, 0x82, b'\x01')
-        self.device.writecmd(cmd)
-
-        resp = self.device.readcmd()
-        print("build date:", resp.data.decode("utf-8"))
-
-        print("firmware apps:")
-        while True:
-            resp = self.device.readcmd()
-            if len(resp.data) == 0:
-                break
-            print(resp.data.decode("utf-8"))
-
-    def echo(self, s):
-        b = bytes(s, encoding="utf-8")
-
-        cmd = FacedancerCommand(self.app_num, 0x81, b)
-        self.device.writecmd(cmd)
-
-        resp = self.device.readcmd()
-
-        return resp.data == b
-
-    def announce_connected(self):
-        cmd = FacedancerCommand(self.app_num, 0xb1, b'')
-        self.device.writecmd(cmd)
-        resp = self.device.readcmd()
-
