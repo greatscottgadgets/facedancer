@@ -9,7 +9,7 @@ from typing                   import Iterable
 
 from .                        import default_main
 
-from ..future                 import *
+from ..                       import *
 from ..classes.hid.usage      import *
 from ..classes.hid.descriptor import *
 from ..classes.hid.keyboard   import *

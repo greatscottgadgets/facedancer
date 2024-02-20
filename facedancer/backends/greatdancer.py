@@ -3,15 +3,13 @@
 import sys
 import time
 import codecs
-import logging
 import traceback
 
-from ..core import *
-from ..USB import *
-from ..USBEndpoint import USBEndpoint
+from ..core     import *
+from ..types    import *
 
-# FIXME: abstract this to the logging library
-LOGLEVEL_TRACE = 5
+from ..logging  import log
+
 
 class GreatDancerApp(FacedancerApp):
     """
@@ -63,7 +61,7 @@ class GreatDancerApp(FacedancerApp):
             gf = greatfet.GreatFET()
             return gf.supports_api('greatdancer')
         except ImportError:
-            logging.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
+            log.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
             return False
         except:
             return False
@@ -100,7 +98,7 @@ class GreatDancerApp(FacedancerApp):
             self.endpoint_stalled[i] = False
 
         # Assume a max packet size of 64 until configured otherwise.
-        self.max_ep0_packet_size = 64
+        self.max_packet_size_ep0 = 64
 
         # Start off by assuming we're not waiting for an OUT control transfer's
         # data stage.  # See _handle_setup_complete_on_endpoint for details.
@@ -176,7 +174,7 @@ class GreatDancerApp(FacedancerApp):
 
         for interface in config.get_interfaces():
             for endpoint in interface.get_endpoints():
-                logging.info(f"Configuring {endpoint}.")
+                log.info(f"Configuring {endpoint}.")
 
                 triple = (endpoint.get_address(), endpoint.max_packet_size, endpoint.transfer_type,)
                 arguments.append(triple)
@@ -184,7 +182,7 @@ class GreatDancerApp(FacedancerApp):
         return arguments
 
 
-    def connect(self, usb_device, max_ep0_packet_size=64):
+    def connect(self, usb_device, max_packet_size_ep0=64, device_speed=DeviceSpeed.FULL):
         """
         Prepares the GreatDancer to connect to the target host and emulate
         a given device.
@@ -193,25 +191,28 @@ class GreatDancerApp(FacedancerApp):
             emulated.
         """
 
-        self.max_ep0_packet_size = max_ep0_packet_size
+        if device_speed != DeviceSpeed.FULL:
+            log.warn(f"GreatFET only supports USB Full Speed. Ignoring requested speed: {device_speed.name}")
+
+        self.max_packet_size_ep0 = max_packet_size_ep0
 
         quirks = 0
 
         # Compute our quirk flags.
         if 'manual_set_address' in self.quirks:
-            logging.info("Handling SET_ADDRESS on the host side!")
+            log.info("Handling SET_ADDRESS on the host side!")
 
             quirks |= self.QUIRK_MANUAL_SET_ADDRESS
 
-        self.api.connect(self.max_ep0_packet_size, quirks)
+        self.api.connect(self.max_packet_size_ep0, quirks)
         self.connected_device = usb_device
 
-        logging.info("Connecting to host.")
+        log.info("Connecting to host.")
 
 
     def disconnect(self):
         """ Disconnects the GreatDancer from its target host. """
-        logging.info("Disconnecting from host.")
+        log.info("Disconnecting from host.")
         self.device.comms.release_exclusive_access()
         self.api.disconnect()
 
@@ -240,7 +241,7 @@ class GreatDancerApp(FacedancerApp):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        logging.log(LOGLEVEL_TRACE, f"EP{ep_num}/IN: <- {bytes(data)}")
+        log.trace(f"EP{ep_num}/IN: <- {bytes(data)}")
 
         self._wait_until_ready_to_send(ep_num)
         self.api.send_on_endpoint(ep_num, bytes(data))
@@ -291,7 +292,7 @@ class GreatDancerApp(FacedancerApp):
         """
 
         in_vs_out = "IN" if direction else "OUT"
-        logging.log(LOGLEVEL_TRACE, "Stalling EP{} {}".format(ep_num, in_vs_out))
+        log.trace("Stalling EP{} {}".format(ep_num, in_vs_out))
 
         self.endpoint_stalled[ep_num] = True
         self.api.stall_endpoint(self._endpoint_address(ep_num, direction))
@@ -547,7 +548,7 @@ class GreatDancerApp(FacedancerApp):
                     self.pending_control_request.data.extend(new_data)
 
                     all_data_received = len(self.pending_control_request.data) == self.pending_control_request.length
-                    is_short_packet   = len(new_data) < self.max_ep0_packet_size
+                    is_short_packet   = len(new_data) < self.max_packet_size_ep0
 
                     if all_data_received or is_short_packet:
 
@@ -566,7 +567,7 @@ class GreatDancerApp(FacedancerApp):
             # callback.
             else:
                 data = self._finish_primed_read_on_endpoint(endpoint_number)
-                logging.log(LOGLEVEL_TRACE, f"EP{endpoint_number}/OUT -> {data}")
+                log.trace(f"EP{endpoint_number}/OUT -> {data}")
                 self.connected_device.handle_data_available(endpoint_number, data)
 
 
@@ -620,7 +621,7 @@ class GreatDancerApp(FacedancerApp):
 
                     # If this is an IN endpoint, we're ready to accept data to be
                     # presented on the next IN token.
-                    if endpoint.direction == USBEndpoint.direction_in:
+                    if endpoint.direction == USBDirection.IN:
                         self.connected_device.handle_buffer_available(endpoint.number)
 
                     # If this is an OUT endpoint, we'll need to prime the endpoint to
@@ -675,7 +676,7 @@ class GreatDancerApp(FacedancerApp):
         Triggers the GreatDancer to perform its side of a bus reset.
         """
 
-        logging.debug("Host issued bus reset.")
+        log.debug("Host issued bus reset.")
 
         if self.connected_device:
             self.connected_device.handle_bus_reset()

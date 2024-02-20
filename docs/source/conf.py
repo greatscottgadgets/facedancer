@@ -6,9 +6,9 @@ extensions = [
 
 # -- Project information -----------------------------------------------------
 
-project = 'Project name'
-copyright = '2023, Person writing this'
-author = 'Person writing this'
+project = 'Facedancer'
+copyright = '2023, Great Scott Gadgets'
+author = 'Great Scott Gadget'
 
 version = ''
 release = ''
@@ -24,7 +24,7 @@ templates_path = ['_templates']
 exclude_patterns = ['_build']
 source_suffix = '.rst'
 master_doc = 'index'
-language = None
+language = "en"
 exclude_patterns = []
 pygments_style = None
 

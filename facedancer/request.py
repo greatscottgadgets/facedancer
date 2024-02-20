@@ -4,7 +4,6 @@
 """ Functionality for declaring and working with USB control requests. """
 
 import inspect
-import logging
 import warnings
 import functools
 
@@ -12,11 +11,9 @@ from typing      import List, Iterable
 from dataclasses import dataclass
 from abc         import ABCMeta, abstractmethod
 
-
 from .descriptor import USBDescribable
 from .types      import USBRequestRecipient, USBRequestType, USBDirection, USBStandardRequests
 
-logger = logging.getLogger(__name__)
 
 def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
     """ Internal function; generates a request-refinement decorator.
@@ -46,7 +43,8 @@ def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
         # Compute our two conditions...
         field_matches = (getattr(request, field_name) == field_value)
         index_matches = \
-            caller.matches_identifier(request.index & 0xff) if match_index else True
+            caller.matches_identifier(request.index & 0xff) \
+            if hasattr(caller, "matches_identifier") and match_index else True
 
         # ... and call the inner function only if they match.
         if field_matches and index_matches:
@@ -170,7 +168,7 @@ def to_any_endpoint(func):
 
 def to_this_interface(func):
     """ Decorator; refines a handler so it's only called on requests targeting this interface. """
-    return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.INTERFACE)
+    return _wrap_with_field_matcher(func, 'recipient', USBRequestRecipient.INTERFACE, match_index=True)
 
 def to_any_interface(func):
     """ Decorator; refines a handler so it's only called on requests with an interface recipient. """

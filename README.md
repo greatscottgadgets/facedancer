@@ -1,31 +1,43 @@
-# Facedancer 2.9
+# Facedancer 3.0
 
 This repository houses the next generation of Facedancer software. Descended from
 the original GoodFET-based Facedancer, this repository provides a python module
-that provides expanded Facedancer support-- including support for multiple boards
+that provides expanded Facedancer support -- including support for multiple boards
 and some pretty significant new features.
 
+
 ## Installation
+
 Install this package with the following command:
-```
-pip install .
-```
+
+    pip install .
+
 After that you can import the facedancer package as usual:
-```
-$ python
->>> import facedancer
-```
+
+    $ python
+    >>> import facedancer
+
 
 ## Where are my scripts?
 
-In preparation for the 3.0 release of Facedancer, scripts in the "old" style have
-been moved to `legacy-applets`. Their functionality should be unchanged.
+The Facedancer 3.0 core features a ground-up rewrite of the original
+emulation core which does not support legacy scripts.
+
+If you're using scripts or training materials that depend on features
+or APIs deprecated in `v3.0.x` you can install the latest `v2.9.x`
+release of Facedancer with:
+
+    pip install "facedancer<=3"
+
+Legacy applets and examples can be found in the [`v2.9.x`](https://github.com/greatscottgadgets/facedancer/tree/v2.9.x)
+branch.
+
 
 ## What is a Facedancer?
 
 Facedancer boards are simple hardware devices that act as "remote-controlled" USB
 controllers. With the proper software, you can use these boards to quickly and
-easily emulate USB devices-- and to fuzz USB host controllers!
+easily emulate USB devices -- and to fuzz USB host controllers!
 
 This particular software repository currently allows you to easily create emulations
 of USB devices in Python. Control is fine-grained enough that you can cause all
@@ -39,9 +51,9 @@ For more information, see:
 ## USBProxy 'Nouveau' and Protocol Analysis
 
 A major new feature of the newer Facedancer codebase is the ability to man-in-the
-middle USB connections-- replacing one of the authors' original [USBProxy](https://github.com/dominicgs/usbproxy)
-project. This opens up a whole new realm of applications-- including protocol analysis
-and live manipulation of USB packets-- and is especially useful when you don't control
+middle USB connections -- replacing one of the authors' original [USBProxy](https://github.com/dominicgs/usbproxy)
+project. This opens up a whole new realm of applications -- including protocol analysis
+and live manipulation of USB packets -- and is especially useful when you don't control
 the software running on the target device (e.g. on embedded systems or games consoles).
 
 ```
@@ -82,15 +94,16 @@ export BACKEND=greatfet
 
 ## What boards are currently supported?
 
- * All GoodFET-based Facedancers, including the common Facedancer21 (```BACKEND=goodfet```)
+ * The [Cynthion USB Test Instrument](http://greatscottgadgets.com/cyntion/) (```BACKEND=cynthion```)
  * The [GreatFET One](http://greatscottgadgets.com/greatfet/) (```BACKEND=greatfet```)
  * The NXP LPC4330 Xplorer board. (```BACKEND=greatfet```)
  * The CCCamp 2015 rad1o badge with GreatFET l0adable (```BACKEND=greatfet```)
+ * All GoodFET-based Facedancers, including the common Facedancer21 (```BACKEND=goodfet```)
  * RPi + Max3241 Raspdancer boards (```BACKEND=raspdancer```)
 
 Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulating
-more complex devices-- there's limitation on the number/type of endpoints that can be
-set up. The LPC4330 boards-- such as the GreatFET-- have fewer limitations.
+more complex devices -- there's limitation on the number/type of endpoints that can be
+set up. The LPC4330 boards -- such as the GreatFET -- have fewer limitations.
 
 For a similar reason, the MAX3420/MAX3421 boards (`BACKEND=goodfet` or `BACKEND=raspdancer`)
 currently cannot be used as USBProxy-nv MITM devices. All modern boards (`BACKEND=greatfet`)
@@ -98,17 +111,16 @@ should be fully functional.
 
 ## What boards could be supported soon?
 
- * The [LUNA USB multitool](https://github.com/greatscottgadgets/luna).
  * Any Linux computer with gadgetfs support (e.g. the Pi Zero or Beaglebone Black)
  * Anything supporting USB-over-IP.
 
 ## What features do you plan on adding?
 
-The roadmap is hazy, but in addition to multi-board support, this repository
-eventually will be home to some cool new features, such as:
+The roadmap is under development, but in addition to multi-board support, this repository
+will eventually be home to some cool new features, including:
 
  * High-speed ("USB 2.0") device emulation on devices with USB 2.0 PHYs.
- * On-the-fly
+ * On-the-fly generation of USB device controllers in gateware.
 
 ## Whose fault _is_ this?
 

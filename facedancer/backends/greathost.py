@@ -6,9 +6,13 @@ import sys
 import time
 import codecs
 import struct
-import logging
 
 from ..core import *
+from ..endpoint import USBEndpoint
+from ..types import *
+
+from ..logging import log
+
 
 class GreatDancerHostApp(FacedancerUSBHost):
     """
@@ -100,7 +104,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
             greatfet.GreatFET()
             return True
         except ImportError:
-            logging.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
+            log.info("Skipping GreatFET-based devices, as the greatfet python module isn't installed.")
             return False
         except:
             return False
@@ -128,7 +132,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
             self.connect()
 
 
-    def connect(self):
+    def connect(self, device_speed=None):
         """
         Sets up our host to talk to the device, including turning on VBUS.
         """
@@ -276,7 +280,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
 
             # Figure out the endpoint address from its direction and number.
             endpoint_address = endpoint.number
-            if endpoint.direction == endpoint.direction_in:
+            if endpoint.direction == USBDirection.IN:
                 endpoint_address |= self.DIRECTION_IN
 
             self.set_up_endpoint(endpoint_address, endpoint.transfer_type, endpoint.max_packet_size)
@@ -417,4 +421,3 @@ class GreatDancerHostApp(FacedancerUSBHost):
         data = self.device.comms._vendor_request_in(self.vendor_requests.USBHOST_FINISH_NONBLOCKING_READ,
                                              index=endpoint_number, length=length)
         return data.tobytes()
-

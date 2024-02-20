@@ -4,7 +4,6 @@
 """ Functionality for describing USB endpoints. """
 
 import struct
-import logging
 
 from typing      import Iterable
 from dataclasses import dataclass
@@ -15,6 +14,8 @@ from .request    import USBRequestHandler, get_request_handler_methods
 from .request    import to_this_endpoint, standard_request_handler
 from .types      import USBDirection, USBTransferType, USBSynchronizationType
 from .types      import USBUsageType, USBStandardRequests
+
+from .logging    import log
 
 
 @dataclass
@@ -116,7 +117,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         Parameters:
             data   -- The raw bytes received.
         """
-        logging.info(f"EP{self.number} received {len(data)} bytes of data; "
+        log.info(f"EP{self.number} received {len(data)} bytes of data; "
                 "but has no handler.")
 
 
@@ -131,8 +132,8 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     @standard_request_handler(number=USBStandardRequests.CLEAR_FEATURE)
     @to_this_endpoint
     def handle_clear_feature_request(self, request):
-        logging.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
-            f"with value {req.value}")
+        log.debug(f"received CLEAR_FEATURE request for endpoint {self.number} "
+            f"with value {request.value}")
         request.acknowledge()
 
 
@@ -185,7 +186,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def matches_identifier(self, other:int) -> bool:
         # Use only the MSB and the lower nibble; per the USB specification.
-        masked_other = 0b10001111
+        masked_other = other & 0b10001111
         return self.get_identifier() == masked_other
 
 

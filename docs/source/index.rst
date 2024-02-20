@@ -1,9 +1,21 @@
-======================
-Documentation
-======================
+========================
+Facedancer Documentation
+========================
 
 .. toctree::
   :maxdepth: 2
   :caption: User Documentation
 
-  documentation_intro
+  getting_started
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Library Documentation
+
+  library_overview
+
+.. toctree::
+  :maxdepth: 2
+  :caption: Developer Documentation
+
+  howto_facedancer_backend
