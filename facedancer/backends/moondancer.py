@@ -371,7 +371,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
 
         # Handle interrupt events.
         for event in events:
-            logging.trace(f"MD IRQ => {event}")
+            log.trace(f"MD IRQ => {event}")
             if event == InterruptEvent.USB_BUS_RESET:
                 self.handle_bus_reset()
             elif event == InterruptEvent.USB_RECEIVE_CONTROL:
@@ -381,7 +381,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             elif event == InterruptEvent.USB_SEND_COMPLETE:
                 self.handle_send_complete(event.endpoint_number)
             else:
-                logging.error(f"Unhandled interrupt event: {event}")
+                log.error(f"Unhandled interrupt event: {event}")
 
 
     # - Interrupt event handlers ----------------------------------------------
