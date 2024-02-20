@@ -123,7 +123,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
 
         # Check: if we have a backend name other than moondancer,
         # the user is trying to use something else. Abort!
-        if backend_name and backend_name != "moondancer":
+        if backend_name and backend_name != "cynthion":
             return False
 
         # If we're not explicitly trying to use something else,
