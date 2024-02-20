@@ -20,8 +20,8 @@ After that you can import the facedancer package as usual:
 
 ## Where are my scripts?
 
-The Facedancer 3.0 core features a ground-up rewrite of the original
-emulation core which does not support legacy scripts.
+Facedancer 3.0 is a ground-up rewrite of the original emulation core
+and does not support legacy scripts.
 
 If you're using scripts or training materials that depend on features
 or APIs deprecated in `v3.0.x` you can install the latest `v2.9.x`
@@ -94,7 +94,7 @@ export BACKEND=greatfet
 
 ## What boards are currently supported?
 
- * The [Cynthion USB Test Instrument](http://greatscottgadgets.com/cyntion/) (```BACKEND=cynthion```)
+ * The [Cynthion USB Test Instrument](http://greatscottgadgets.com/cynthion/) (```BACKEND=cynthion```)
  * The [GreatFET One](http://greatscottgadgets.com/greatfet/) (```BACKEND=greatfet```)
  * The NXP LPC4330 Xplorer board. (```BACKEND=greatfet```)
  * The CCCamp 2015 rad1o badge with GreatFET l0adable (```BACKEND=greatfet```)
