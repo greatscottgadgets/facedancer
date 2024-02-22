@@ -7,6 +7,7 @@ Facedancer Documentation
   :caption: User Documentation
 
   getting_started
+  facedancer_examples
 
 .. toctree::
   :maxdepth: 2
