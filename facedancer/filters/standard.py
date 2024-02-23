@@ -1,6 +1,7 @@
 #
-# Standard filters for USBProxy that should (almost) always be used
+# This file is part of FaceDancer.
 #
+""" Standard filters for USBProxy that should (almost) always be used. """
 
 from ..            import *
 from ..descriptor  import USBDescribable
@@ -11,7 +12,6 @@ from ..logging     import log
 
 
 class USBProxySetupFilters(USBProxyFilter):
-
     SET_ADDRESS_REQUEST = 5
     SET_CONFIGURATION_REQUEST = 9
     GET_DESCRIPTOR_REQUEST = 6
@@ -34,7 +34,7 @@ class USBProxySetupFilters(USBProxyFilter):
 
 
         # If this is a read of a valid configuration descriptor (and subordinate
-        # descriptors, parse them and store the results for late).
+        # descriptors, parse them and store the results for later).
         if req.request == self.GET_DESCRIPTOR_REQUEST:
 
             # Get the descriptor type and index.

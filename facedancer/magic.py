@@ -80,8 +80,6 @@ def use_automatically(cls):
 
 
 def _use_inner_classes_automatically(cls):
-    """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
-
     # Iterate over the relevant class...
     for name, member in inspect.getmembers(cls):
 
@@ -98,6 +96,7 @@ def _use_inner_classes_automatically(cls):
 
 
 def use_inner_classes_automatically(cls):
+    """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
     return _use_inner_classes_automatically(dataclass(cls))
 
 

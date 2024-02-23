@@ -25,8 +25,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     Fields:
         number                 -- The configuration's number; one-indexed.
         configuration_string   -- A string describing the configuration; or None if not provided.
-        max_power              -- The maximum power expected to be drawn by the device when using
-                                  this interface, in mA. Typically 500mA, for maximum possible.
+        max_power              -- The maximum power expected to be drawn by the device when using this interface, in mA. Typically 500mA, for maximum possible.
         supports_remote_wakeup -- True iff this device should be able to wake the host from suspend.
     """
 
@@ -51,7 +50,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         Generates a new USBConfiguration object from a configuration descriptor,
         handling any attached subordinate descriptors.
 
-        data: The raw bytes for the descriptor to be parsed.
+        Parameters:
+            data: The raw bytes for the descriptor to be parsed.
         """
 
         length = data[0]
@@ -81,7 +81,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         """
         Generates descriptor objects from the list of subordinate descriptors.
 
-        data: The raw bytes for the descriptor to be parsed.
+        Parameters:
+            data: The raw bytes for the descriptor to be parsed.
         """
 
         # TODO: handle recieving interfaces out of order?

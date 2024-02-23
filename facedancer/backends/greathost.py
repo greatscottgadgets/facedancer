@@ -1,6 +1,7 @@
-# GreatDancerHostApp.py
 #
-# Host support for GreatFET-base devices
+# This file is part of Facedancer.
+#
+""" Host support for GreatFET-base devices. """
 
 import sys
 import time
@@ -255,24 +256,22 @@ class GreatDancerHostApp(FacedancerUSBHost):
         Sets up an endpoint for use. Can be used to initialize an endpoint or to update
         its parameters. Two forms exist:
 
-        endpoint_object -- a USBEndpoint object with the parameters to be populated
+        Parameters:
+            endpoint_object -- a USBEndpoint object with the parameters to be populated
 
         or
 
-        endpoint_address -- the address of the endpoint to be setup; including the direction bit
-        endpoint_type -- one of the ENDPOINT_TYPE constants that specifies the transfer mode on
-            the endpoint_address
-        max_packet_size -- the maximum packet size to be communicated on the given endpoint
-
-        device_address -- the address of the device to be communicated with; if not provided,
-            the last address will be used
-        endpoint_speed -- the speed of the packets to be communicated on the endpoint; should be a
-            DEVICE_SPEED_* constant; if not provided, the last device's speed will be used
-        handle_data_toggle -- true iff the hardware should automatically handle selection of data
-            packet PIDs
-        is_control_endpoint -- true iff the given packet is a for a control endpoint
-
-        TODO: eventually support hubs / more than one device?
+        Parameters:
+            endpoint_address    -- the address of the endpoint to be setup; including the direction bit
+            endpoint_type       -- one of the ENDPOINT_TYPE constants that specifies the transfer mode on
+                                   the endpoint_address
+            max_packet_size     -- the maximum packet size to be communicated on the given endpoint
+            device_address      -- the address of the device to be communicated with; if not provided, the last
+                                   address will be used.
+            endpoint_speed      -- the speed of the packets to be communicated on the endpoint; should be a
+                                   DEVICE_SPEED_* constant; if not provided, the last device's speed will be used.
+            handle_data_toggle  -- true iff the hardware should automatically handle selection of data packet PIDs
+            is_control_endpoint -- true iff the given packet is a for a control endpoint
         """
 
         if isinstance(endpoint_address_or_object, USBEndpoint):
@@ -336,12 +335,13 @@ class GreatDancerHostApp(FacedancerUSBHost):
         """
         Sends a block of data on the provided endpoints.
 
-        endpoint_number -- The endpoint number on which to send.
-        data -- The data to be transmitted.
-        is_setup -- True iff this transfer should begin with a SETUP token.
-        blocking -- True iff this transaction should wait for the transaction to complete.
-        data_packet_pid -- The data packet PID to use (1 or 0). Ignored if the endpoint is set to automatically
-                alternate data PIDs.
+        Parameters:
+            endpoint_number -- The endpoint number on which to send.
+            data            -- The data to be transmitted.
+            is_setup        -- True iff this transfer should begin with a SETUP token.
+            blocking        -- True iff this transaction should wait for the transaction to complete.
+            data_packet_pid -- The data packet PID to use (1 or 0). Ignored if the endpoint is set to automatically
+                    alternate data PIDs.
 
         raises an IOError on a communications error or stall
         """
@@ -378,10 +378,11 @@ class GreatDancerHostApp(FacedancerUSBHost):
         """
         Sends a block of data on the provided endpoints.
 
-        endpoint_number -- The endpoint number on which to send.
-        expected_read_size -- The expected amount of data to be read.
-        data_packet_pid -- The data packet PID to use (1 or 0).
-            Ignored if the endpoint is set to automatically alternate data PIDs.
+        Parameters:
+            endpoint_number    -- The endpoint number on which to send.
+            expected_read_size -- The expected amount of data to be read.
+            data_packet_pid    -- The data packet PID to use (1 or 0).
+                Ignored if the endpoint is set to automatically alternate data PIDs.
 
         raises an IOError on a communications error or stall
         """
