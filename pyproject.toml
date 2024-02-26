@@ -33,3 +33,6 @@ dependencies = [
 
 [tool.setuptools-git-versioning]
 enabled = true
+
+[tool.setuptools.package-dir]
+facedancer = "facedancer"
