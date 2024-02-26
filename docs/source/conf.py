@@ -17,8 +17,13 @@ release = ''
 # -- General configuration ---------------------------------------------------
 
 extensions = [
-  'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.extlinks',
 ]
+extlinks = {
+    'repo':    ('https://github.com/greatscottgadgets/facedancer/blob/main/%s',          '%s'),
+    'example': ('https://github.com/greatscottgadgets/facedancer/blob/main/examples/%s', '%s'),
+}
 
 templates_path = ['_templates']
 exclude_patterns = ['_build']

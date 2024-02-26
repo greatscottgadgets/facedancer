@@ -1,12 +1,12 @@
-================================================
-Facedancer Examples
-================================================
+===================
+Facedancer examples
+===================
 
-There are a number of `Facedancer examples <https://github.com/greatscottgadgets/Facedancer/blob/master/examples/>`__ available that demonstrate emulation of various USB device functions.
+There are a number of :repo:`Facedancer examples<examples/>` available that demonstrate emulation of various USB device functions.
 
 
-`rubber-ducky <https://github.com/greatscottgadgets/Facedancer/blob/master/examples/rubber-ducky.py>`__
--------------------------------------------------------------------------------------------------------
+:example:`rubber-ducky.py`
+--------------------------
 
 The canonical "Hello World" of USB emulation, the rubber ducky implements a minimal subset of the USB HID class specification in order to emulate a USB keyboard.
 
@@ -23,8 +23,8 @@ The canonical "Hello World" of USB emulation, the rubber ducky implements a mini
 
 
 
-`ftdi-echo <https://github.com/greatscottgadgets/Facedancer/blob/master/examples/ftdi-echo.py>`__
--------------------------------------------------------------------------------------------------
+:example:`ftdi-echo.py`
+-----------------------
 
 An emulation of an FTDI USB-to-serial converter, ``ftdi-echo`` converts input received from a connected terminal to uppercase and echoes the result back to the sender.
 
@@ -41,8 +41,8 @@ An emulation of an FTDI USB-to-serial converter, ``ftdi-echo`` converts input re
 
 
 
-`mass-storage <https://github.com/greatscottgadgets/Facedancer/blob/master/examples/mass-storage.py>`__
--------------------------------------------------------------------------------------------------------
+:example:`mass-storage.py`
+--------------------------
 
 An emulation of a USB Mass Storage device, ``mass-storage`` can take a raw disk image file as input and present it to a target host as drive that can be mounted, read and written to.
 
