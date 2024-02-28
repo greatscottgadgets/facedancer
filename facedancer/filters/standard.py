@@ -5,10 +5,10 @@
 
 from ..            import *
 from ..descriptor  import USBDescribable
-from ..proxy       import USBProxyFilter
 from ..errors      import *
-
 from ..logging     import log
+
+from .             import USBProxyFilter
 
 
 class USBProxySetupFilters(USBProxyFilter):
@@ -88,6 +88,6 @@ class USBProxySetupFilters(USBProxyFilter):
             # Otherwise, the host has applied a configuration without ever reading
             # its descriptor. This is mighty strange behavior!
             else:
-                log.warn("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
+                log.warning("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
 
         return req, data
