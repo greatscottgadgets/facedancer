@@ -158,7 +158,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         """
 
         if device_speed not in [DeviceSpeed.FULL, DeviceSpeed.HIGH]:
-            log.warn(f"Moondancer only supports USB Full and High Speed. Ignoring requested speed: {device_speed.name}")
+            log.warning(f"Moondancer only supports USB Full and High Speed. Ignoring requested speed: {device_speed.name}")
 
         log.debug(f"moondancer.connect(max_packet_size_ep0:{max_packet_size_ep0}, device_speed:{device_speed}, quirks:{self.quirks})")
 
@@ -167,7 +167,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         # compute our quirk flags
         quirks = 0
         if 'manual_set_address' in self.quirks:
-            log.warn("Handling SET_ADDRESS on the target host side!")
+            log.warning("Handling SET_ADDRESS on the target host side!")
             quirks |= QuirkFlag.MANUAL_SET_ADDRESS
 
         # connect to target host
@@ -406,7 +406,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         endpoint_number: The endpoint number for which a control event should be serviced.
         """
 
-        log.debug(f"handle_receive_control({endpoint_number})");
+        log.debug(f"handle_receive_control({endpoint_number})")
 
         # HACK: to maintain API compatibility with the existing facedancer API,
         # we need to know if a stall happens at any point during our handler.

@@ -192,7 +192,7 @@ class GreatDancerApp(FacedancerApp):
         """
 
         if device_speed != DeviceSpeed.FULL:
-            log.warn(f"GreatFET only supports USB Full Speed. Ignoring requested speed: {device_speed.name}")
+            log.warning(f"GreatFET only supports USB Full Speed. Ignoring requested speed: {device_speed.name}")
 
         self.max_packet_size_ep0 = max_packet_size_ep0
 

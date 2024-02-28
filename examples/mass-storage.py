@@ -13,8 +13,8 @@ from facedancer.devices.umass import USBMassStorageDevice
 
 # usage instructions
 if len(sys.argv)==1:
-    print("Usage: mass-storage.py disk.img");
-    sys.exit(1);
+    print("Usage: mass-storage.py disk.img")
+    sys.exit(1)
 
 # get disk image filename and clear arguments
 filename = sys.argv[1]
