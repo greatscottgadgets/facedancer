@@ -7,13 +7,16 @@ Facedancer Documentation
   :caption: User Documentation
 
   getting_started
+  library_overview
+  using_facedancer
+  using_usb_proxy
   facedancer_examples
 
 .. toctree::
-  :maxdepth: 2
-  :caption: Library Documentation
+  :maxdepth: 1
+  :caption: API Documentation
 
-  library_overview
+  api_docs/modules
 
 .. toctree::
   :maxdepth: 2
