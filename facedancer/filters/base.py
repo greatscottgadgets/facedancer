@@ -13,9 +13,9 @@ class USBProxyFilter:
         Filters a SETUP stage for an IN control request. This allows us to modify
         the SETUP stage before it's proxied to the real device.
 
-        Parameters:
-            request: The request to be issued.
-            stalled: True iff the packet has been stalled by a previous filter.
+        Args:
+            request : The request to be issued.
+            stalled : True iff the packet has been stalled by a previous filter.
 
         Returns:
             Modified versions of the arguments. If stalled is set to true,
@@ -32,10 +32,10 @@ class USBProxyFilter:
         request. This allows us to modify the data returned from the proxied
         device during a setup stage.
 
-        Parameters:
-            request: The request that was issued to the target host.
-            data: The data being proxied during the data stage.
-            stalled: True if the proxied device (or a previous filter) stalled the request.
+        Args:
+            request : The request that was issued to the target host.
+            data    : The data being proxied during the data stage.
+            stalled : True if the proxied device (or a previous filter) stalled the request.
 
         Returns:
             Modified versions of the arguments. Note that modifying request
@@ -51,9 +51,9 @@ class USBProxyFilter:
         Filters handling of an OUT control request, which contains both a
         request and (optional) data stage.
 
-        Parameters:
-            request: The request issued by the target host.
-            data:    The data sent by the target host with the request.
+        Args:
+            request : The request issued by the target host.
+            data :    The data sent by the target host with the request.
 
         Returns:
             Modified versions of the arguments. Returning a request of
@@ -67,11 +67,11 @@ class USBProxyFilter:
         """
         Handles an OUT request that was stalled by the proxied device.
 
-        Parameters:
-            request: The request header for the request that stalled.
-            data:    The data stage for the request that stalled, if appropriate.
-            stalled: True iff the request is still considered stalled. This can
-                     be overridden by previous filters, so it's possible for this to be false.
+        Args:
+            request : The request header for the request that stalled.
+            data    : The data stage for the request that stalled, if appropriate.
+            stalled : True iff the request is still considered stalled. This can
+                      be overridden by previous filters, so it's possible for this to be false.
         """
         return request, data, stalled
 
@@ -82,8 +82,8 @@ class USBProxyFilter:
         This allows modification of e.g. the endpoint or absorption of
         the IN token before it's issued to the real device.
 
-        Parameters:
-            ep_num: The endpoint number on which the IN token is to be proxied.
+        Args:
+            ep_num : The endpoint number on which the IN token is to be proxied.
 
         Returns:
             A modified version of the arguments. If ep_num is set to None,
@@ -97,9 +97,9 @@ class USBProxyFilter:
         Filters the response to an IN token (the data packet received in response
         to the host issuing an IN token).
 
-        Parameters:
-            ep_num: The endpoint number associated with the data packet.
-            data: The data packet received from the proxied device.
+        Args:
+            ep_num : The endpoint number associated with the data packet.
+            data   : The data packet received from the proxied device.
 
         Returns:
             A modified version of the arguments. If data is set to none,
@@ -113,7 +113,7 @@ class USBProxyFilter:
         """
         Filters a packet sent from the host via an OUT token.
 
-        Parameters:
+        Args:
             ep_num: The endpoint number associated with the data packet.
             data: The data packet received from host.
 
@@ -128,11 +128,11 @@ class USBProxyFilter:
         """
         Handles an OUT transfer that was stalled by the victim.
 
-        Parameters:
-            ep_num: The endpoint number for the data that stalled.
-            data: The data for the transfer that stalled, if appropriate.
-            stalled: True iff the transfer is still considered stalled. This can
-                     be overridden by previous filters, so it's possible for this to
-                     be false.
+        Args:
+            ep_num  : The endpoint number for the data that stalled.
+            data    : The data for the transfer that stalled, if appropriate.
+            stalled : True iff the transfer is still considered stalled. This can
+                      be overridden by previous filters, so it's possible for this to
+                      be false.
         """
         return ep_num, data, stalled

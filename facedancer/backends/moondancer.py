@@ -60,8 +60,9 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         """
         Sets up a new Cynthion-backed Facedancer (Moondancer) application.
 
-        device: The Cynthion device that will act as our Moondancer.
-        verbose: The verbosity level of the given application.
+        Args:
+            device  : The Cynthion device that will act as our Moondancer.
+            verbose : The verbosity level of the given application.
         """
 
         log.info("Using the Moondancer backend.")
@@ -153,8 +154,9 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         Prepares Cynthion to connect to the target host and emulate
         a given device.
 
-        usb_device: The USBDevice object that represents the device to be
-                    emulated.
+        Args:
+            usb_device : The USBDevice object that represents the device to be
+                         emulated.
         """
 
         if device_speed not in [DeviceSpeed.FULL, DeviceSpeed.HIGH]:
@@ -207,8 +209,9 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         Sets the device address of Moondancer. Usually only used during
         initial configuration.
 
-        address: The address that Moondancer should assume.
-        defer: True iff the set_address request should wait for an active transaction to finish.
+        Args:
+            address : The address that Moondancer should assume.
+            defer   : True iff the set_address request should wait for an active transaction to finish.
         """
 
         log.debug(f"moondancer.set_address({address}, {defer})")
@@ -221,7 +224,8 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         Callback that's issued when a USBDevice is configured, e.g. by the
         SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The USBConfiguration object applied by the SET_CONFIG request.
+        Args:
+            configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
 
         log.debug("fmoondancer.configured({configuration})")
@@ -263,7 +267,8 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         """
         Reads a block of data from the given endpoint.
 
-        endpoint_number: The number of the OUT endpoint on which data is to be rx'd.
+        Args:
+            endpoint_number : The number of the OUT endpoint on which data is to be rx'd.
         """
 
         log.debug(f"moondancer.read_from_endpoint({endpoint_number})")
@@ -284,16 +289,16 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         """
         Sends a collection of USB data on a given endpoint.
 
-        endpoint_number: The number of the IN endpoint on which data should be sent.
-        data: The data to be sent.
-        blocking: If true, this function will wait for the transfer to complete.
+        Args:
+            endpoint_number : The number of the IN endpoint on which data should be sent.
+            data     : The data to be sent.
+            blocking : If true, this function will wait for the transfer to complete.
         """
-
-        log.debug(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
 
         self.api.write_endpoint(endpoint_number, blocking, bytes(data))
 
-        log.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
+        log.info(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
+        log.info(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
 
 
     def ack_status_stage(self, direction: USBDirection=USBDirection.OUT, endpoint_number:int =0, blocking: bool=False):
@@ -301,22 +306,24 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             Handles the status stage of a correctly completed control request,
             by priming the appropriate endpoint to handle the status phase.
 
-            direction: Determines if we're ACK'ing an IN or OUT vendor request.
-                (This should match the direction of the DATA stage.)
-            endpoint_number: The endpoint number on which the control request
-                occurred.
-            blocking: True if we should wait for the ACK to be fully issued
-                before returning.
+            Args:
+                direction : Determines if we're ACK'ing an IN or OUT vendor request.
+                            (This should match the direction of the DATA stage.)
+                endpoint_number : The endpoint number on which the control request
+                                  occurred.
+                blocking : True if we should wait for the ACK to be fully issued
+                           before returning.
         """
 
-        log.debug(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
+        log.trace(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
 
         if direction == USBDirection.OUT: # HOST_TO_DEVICE
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
             self.api.write_endpoint(endpoint_number, blocking, bytes([]))
 
-            log.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, [])")
+            log.info(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
+            log.info(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, [])")
 
         else: # DEVICE_TO_HOST (IN)
             # If this was an IN request, we'll need to set up a transfer descriptor
@@ -331,7 +338,8 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         """
         Stalls the provided endpoint, as defined in the USB spec.
 
-        endpoint_number: The number of the endpoint to be stalled.
+        Args:
+            endpoint_number : The number of the endpoint to be stalled.
         """
 
         endpoint_address = (endpoint_number | 0x80) if direction else endpoint_number
@@ -447,7 +455,8 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         """
         Handles a known-completed transfer on a given endpoint.
 
-        endpoint_number: The endpoint number for which the transfer should be serviced.
+        Args:
+            endpoint_number : The endpoint number for which the transfer should be serviced.
         """
 
         log.debug(f"handle_receive_packet({endpoint_number}) pending:{self.pending_control_request}")

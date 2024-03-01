@@ -106,8 +106,9 @@ class MAXUSBApp(FacedancerApp):
         """
         Stalls an arbitrary endpoint.
 
-        ep_number: The endpoint number to be stalled
-        direction: 0 for out, 1 for in
+        Args:
+            ep_number : The endpoint number to be stalled
+            direction : 0 for out, 1 for in
         """
         if self.verbose > 0:
             print(self.app_name, "stalling endpoint {}".format(ep_number))
@@ -210,7 +211,8 @@ class MAXUSBApp(FacedancerApp):
         Sets the device address of the Facedancer. Usually only used during
         initial configuration.
 
-        address: The address that the Facedancer should assume.
+        Args:
+            address : The address that the Facedancer should assume.
         """
 
         # The MAXUSB chip handles this for us, so we don't need to do anything.
@@ -222,7 +224,8 @@ class MAXUSBApp(FacedancerApp):
         Callback that's issued when a USBDevice is configured, e.g. by the
         SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The configuration applied by the SET_CONFIG request.
+        Args:
+            configuration : The configuration applied by the SET_CONFIG request.
         """
 
         # For the MAXUSB case, we don't need to do anything, though it might

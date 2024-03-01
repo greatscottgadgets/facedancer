@@ -70,12 +70,14 @@ class USBProxyDevice(USBBaseDevice):
 
         # Always use a max_packet_size of 64 on EP0.
 
-        # This works around a Linux spec violation in which Linux assumes it can read 64 bytes of control
-        # descriptor no matter the device speed and actual maximum packet size. If this doesn't work, Linux
-        # tries to reset / power-cycle the device, and then recovers with an in-spec read; but this causes a
-        # huge delay and/or breakage, depending on the proxied device.
+        # This works around a Linux spec violation in which Linux assumes it can read 64 bytes of
+        # control descriptor no matter the device speed and actual maximum packet size. If this
+        # doesn't work, Linux tries to reset / power-cycle the device, and then recovers with an
+        # in-spec read; but this causes a huge delay and/or breakage, depending on the proxied
+        # device.
         #
-        # Since we're working at the transfer levels, the packet sizes will automatically be translated, anyway.
+        # Since we're working at the transfer levels, the packet sizes will automatically be
+        # translated, anyway.
         self.max_packet_size_ep0 = 64
 
         # Get the USB device speed of the device being proxied.
@@ -97,7 +99,7 @@ class USBProxyDevice(USBBaseDevice):
         If you're using the standard filters, this will be called automatically;
         if not, you'll have to call it once you know the device has been configured.
 
-        Parameters:
+        Args:
             configuration: The configuration to be applied.
         """
 

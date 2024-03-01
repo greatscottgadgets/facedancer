@@ -25,12 +25,12 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBDevice interface.
 
     Fields:
-        number --
-                The interface's index. Zero indexed.
-        class_number, subclass_number, protocol_number --
-                The USB class adhered to on this interface; usually a USBDeviceClass constant.
-        interface_string --
-                A short, descriptive string used to identify the endpoint; or None if not provided.
+        number :
+            The interface's index. Zero indexed.
+        class_number, subclass_number, protocol_number :
+            The USB class adhered to on this interface; usually a USBDeviceClass constant.
+        interface_string :
+            A short, descriptive string used to identify the endpoint; or None if not provided.
     """
     DESCRIPTOR_TYPE_NUMBER = 0x4
 
@@ -55,7 +55,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     @classmethod
     def from_binary_descriptor(cls, data):
         """
-            Generates an interface object from a descriptor.
+        Generates an interface object from a descriptor.
         """
         interface_number, alternate_setting, num_endpoints, interface_class, \
                 interface_subclass, interface_protocol, interface_string_index \
@@ -108,9 +108,9 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
         """ Attempts to find a subordinate endpoint matching the given number/direction.
 
-        Parameters:
-            endpoint_number -- The endpoint number to search for.
-            direction       -- The endpoint direction to be matched.
+        Args:
+            endpoint_number : The endpoint number to search for.
+            direction       : The endpoint direction to be matched.
 
         Returns:
             The matching endpoint; or None if no matching endpoint existed.
@@ -122,9 +122,9 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     def has_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
         """ Returns true iff we have matching subordinate endpoint.
 
-        Parameters:
-            endpoint_number -- The endpoint number to search for.
-            direction       -- The endpoint direction to be matched.
+        Args:
+            endpoint_number : The endpoint number to search for.
+            direction       : The endpoint direction to be matched.
         """
         return (self.get_endpoint(endpoint_number, direction) is not None)
 
@@ -141,9 +141,9 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
         overriding function will receive all data; and can delegate it by
         calling the `.handle_data_received` method on `self.configuration`.
 
-        Parameters:
-            endpoint_number -- The endpoint number on which the data was received.
-            data            -- The raw bytes received on the relevant endpoint.
+        Args:
+            endpoint_number : The endpoint number on which the data was received.
+            data            : The raw bytes received on the relevant endpoint.
         """
 
         if self.has_endpoint(endpoint.number, endpoint.direction):
@@ -159,8 +159,8 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
         interface+endpoint. If overridden, the overriding function will receive
         all data.
 
-        Parameters:
-            endpoint_number -- The endpoint number on which the host requested data.
+        Args:
+            endpoint_number : The endpoint number on which the host requested data.
         """
 
         if self.has_endpoint(endpoint.number, endpoint.direction):

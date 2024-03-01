@@ -32,7 +32,6 @@ class USBProxySetupFilters(USBProxyFilter):
         if stalled:
             return req, data, stalled
 
-
         # If this is a read of a valid configuration descriptor (and subordinate
         # descriptors, parse them and store the results for later).
         if req.request == self.GET_DESCRIPTOR_REQUEST:
@@ -47,7 +46,8 @@ class USBProxySetupFilters(USBProxyFilter):
             if descriptor_type == self.DESCRIPTOR_CONFIGURATION and req.length >= 32:
                 configuration = USBDescribable.from_binary_descriptor(data)
                 self.configurations[configuration.number] = configuration
-                log.debug("-- Storing configuration {} --".format(configuration))
+                if self.verbose > 0:
+                    log.info("-- Storing configuration {} --".format(configuration))
 
 
             if descriptor_type == self.DESCRIPTOR_DEVICE and req.length >= 7:
@@ -56,8 +56,8 @@ class USBProxySetupFilters(USBProxyFilter):
                 device = USBDescribable.from_binary_descriptor(data)
                 device.max_packet_size_ep0 = 64
                 data = bytearray(device.get_descriptor())[:len(data)]
-                log.debug("-- Patched device descriptor. --")
-
+                if self.verbose > 0:
+                    log.info("-- Patched device descriptor. --")
 
         return req, data, stalled
 
@@ -81,7 +81,8 @@ class USBProxySetupFilters(USBProxyFilter):
             if configuration_index in self.configurations:
                 configuration = self.configurations[configuration_index]
 
-                log.debug("-- Applying configuration {} --".format(configuration))
+                if self.verbose > 0:
+                    log.info("-- Applying configuration {} --".format(configuration))
 
                 self.device.configured(configuration)
 

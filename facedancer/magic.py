@@ -103,9 +103,9 @@ def use_inner_classes_automatically(cls):
 def instantiate_subordinates(obj, expected_type):
     """ Automatically instantiates any inner classes with a matching type.
 
-    This is used by objects that represent USB hardware behaviors (e.g. USBDevice, USBConfiguration,
-    USBInterface, USBEndpoint) in order to automatically create objects of any inner class
-    decorated with ``@use_automatically``.
+    This is used by objects that represent USB hardware behaviors (e.g. USBDevice,
+    USBConfiguration, USBInterface, USBEndpoint) in order to automatically create
+    objects of any inner class decorated with ``@use_automatically``.
     """
 
     instances = {}

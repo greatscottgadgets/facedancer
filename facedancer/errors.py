@@ -3,6 +3,5 @@
 #
 
 class DeviceNotFoundError(IOError):
-    """ Error indicating no GreatFET device was found. """
+    """ Error indicating a device was not found. """
     pass
-

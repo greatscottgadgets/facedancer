@@ -38,18 +38,18 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     whatever standard requests you'd like.
 
     Fields:
-        device_class/device_subclass/protocol_revision_number --
-                The USB descriptor fields that select the class, subclass, and protocol.
-        vendor_id, product_id --
-                The USB vendor and product ID for this device.
-        manufacturer_string, product_string, serial_number_string --
-                Python strings identifying the device to the USB host.
-        supported_languages --
-                A tuple containing all of the language IDs supported by the device.
-        device_revision --
-                Number indicating the hardware revision of this device. Typically BCD.
-        usb_spec_revision --
-                Number indicating the version of the USB specification we adhere to. Typically 0x0200.
+        vendor_id, product_id :
+            The USB vendor and product ID for this device.
+        manufacturer_string, product_string, serial_number_string :
+            Python strings identifying the device to the USB host.
+        device_class, device_subclass, protocol_revision_number :
+            The USB descriptor fields that select the class, subclass, and protocol.
+        supported_languages :
+            A tuple containing all of the language IDs supported by the device.
+        device_revision :
+            Number indicating the hardware revision of this device. Typically BCD.
+        usb_spec_revision :
+            Number indicating the version of the USB specification we adhere to. Typically 0x0200.
     """
 
     DESCRIPTOR_TYPE_NUMBER    = 0x01
@@ -213,8 +213,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         """ Convenience method that runs a full method in a blocking manner.
         Performs connect, run, and then disconnect.
 
-        Parameters:
-            *coroutines -- any asyncio coroutines to be executed concurrently
+        Args:
+            *coroutines : any asyncio coroutines to be executed concurrently
                            with our emulation
         """
 
@@ -239,8 +239,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         request is not supported. For all other endpoints, this indicates
         a persistent 'halt' condition.
 
-        Parameters:
-            endpoint -- The endpoint address; or EP0 if not provided.
+        Args:
+            endpoint : The endpoint address; or EP0 if not provided.
         """
         self.backend.stall_endpoint(endpoint_number, direction)
 
@@ -250,10 +250,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def send(self, endpoint_number: int, data: bytes, *, blocking: bool = False):
         """ Queues sending data on the IN endpoint with the provided number.
 
-        Parameters:
-            endpoint_number -- The endpoint number to send data upon.
-            data            -- The data to send.
-            blocking        -- If provided and true, this function will block
+        Args:
+            endpoint_number : The endpoint number to send data upon.
+            data            : The data to send.
+            blocking        : If provided and true, this function will block
                                until the backend indicates the send is complete.
         """
 
@@ -275,11 +275,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         Sends the relevant data to the backend in chunks of packet_size.
 
-        Parameters:
-            endpoint_number -- The endpoint number to send data upon.
-            data            -- The data to send.
-            packet_size     -- The "chunk" size to send in.
-            blocking        -- If provided and true, this function will block
+        Args:
+            endpoint_number : The endpoint number to send data upon.
+            data            : The data to send.
+            packet_size     : The "chunk" size to send in.
+            blocking        : If provided and true, this function will block
                                until the backend indicates the send is complete.
         """
 
@@ -303,9 +303,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
         """ Attempts to find a subordinate endpoint matching the given number/direction.
 
-        Parameters:
-            endpoint_number -- The endpoint number to search for.
-            direction       -- The endpoint direction to be matched.
+        Args:
+            endpoint_number : The endpoint number to search for.
+            direction       : The endpoint direction to be matched.
 
         Returns:
             The matching endpoint; or None if no matching endpoint existed.
@@ -391,8 +391,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         This function can be overridden by a subclass if desired; but the typical way to
         handle a specific control request is to the the ``@control_request_handler`` decorators.
 
-        Parameters:
-            request -- the USBControlRequest object representing the relevant request
+        Args:
+            request : the USBControlRequest object representing the relevant request
         """
         log.debug(f"{self.name} received request: {request}")
 
@@ -416,9 +416,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         appropriate configuration/interface/endpoint. If overridden, the
         overriding function will receive all data.
 
-        Parameters:
-            endpoint_number -- The endpoint number on which the data was received.
-            data            -- The raw bytes received on the relevant endpoint.
+        Args:
+            endpoint_number : The endpoint number on which the data was received.
+            data            : The raw bytes received on the relevant endpoint.
         """
 
         # If we have a configuration, delegate to it.
@@ -440,9 +440,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         doesn't exist. Note that even if `handle_data_received` is overridden,
         this method can still be called e.g. by configuration.handle_data_received.
 
-        Parameters:
-            endpoint_number -- The endpoint number on which the data was received.
-            data            -- The raw bytes received on the relevant endpoint.
+        Args:
+            endpoint_number : The endpoint number on which the data was received.
+            data            : The raw bytes received on the relevant endpoint.
         """
         log.error(f"Received {len(data)} bytes of data on invalid EP{endpoint_number}/OUT.")
 
@@ -454,8 +454,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         configuration+interface+endpoint. If overridden, the
         overriding function will receive all events.
 
-        Parameters:
-            endpoint_number -- The endpoint number on which the host requested data.
+        Args:
+            endpoint_number : The endpoint number on which the host requested data.
         """
 
         # If we have a configuration, delegate to it.
@@ -466,7 +466,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # anything other than control data; defer to our "unexpected data".
         else:
             log.error(f"Received non-control data when unconfigured!"
-                    "This is invalid host behavior.")
+                      "This is invalid host behavior.")
             self.handle_unexpected_data_requested(endpoint.number)
 
 
@@ -477,8 +477,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         doesn't exist. Note that even if `handle_data_requested` is overridden,
         this method can still be called e.g. by configuration.handle_data_received.
 
-        Parameters:
-            endpoint_number -- The endpoint number the data was received.
+        Args:
+            endpoint_number : The endpoint number on which the data was received.
         """
         log.error(f"Host requested data on invalid EP{endpoint_number}/IN.")
 
@@ -518,8 +518,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def _add_request_suggestion(self, request: USBControlRequest):
         """ Adds a 'suggestion' to the list of requests that may need implementing.
 
-        Parameters:
-            request -- The unhandled request on which the suggestion should be based.
+        Args:
+            request : The unhandled request on which the suggestion should be based.
          """
 
         # Build a tuple of the relevant immutable parts of the request,
@@ -649,12 +649,12 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def set_address(self, address: int, defer: bool = False):
         """ Updates the device's knowledge of its own address.
 
-        Parameters:
-            address -- The address to apply.
-            defer   -- If true, the address change should be deferred
-                       until the next time a control request ends. Should
-                       be set if we're changing the address before we ack
-                       the relevant transaction.
+        Args:
+            address : The address to apply.
+            defer   : If true, the address change should be deferred
+                      until the next time a control request ends. Should
+                      be set if we're changing the address before we ack
+                      the relevant transaction.
         """
         self.address = address
         self.backend.set_address(address, defer)
