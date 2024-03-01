@@ -1,5 +1,5 @@
 ===================
-Facedancer examples
+Facedancer Examples
 ===================
 
 There are a number of :repo:`Facedancer examples<examples/>` available that demonstrate emulation of various USB device functions.
@@ -8,9 +8,9 @@ There are a number of :repo:`Facedancer examples<examples/>` available that demo
 :example:`rubber-ducky.py`
 --------------------------
 
-The canonical "Hello World" of USB emulation, the rubber ducky implements a minimal subset of the USB HID class specification in order to emulate a USB keyboard.
+The canonical "Hello World" of USB emulation, the rubber-ducky example implements a minimal subset of the USB HID class specification in order to emulate a USB keyboard.
 
-.. list-table:: Compatibility
+.. list-table:: Host Compatibility
    :widths: 30 30 30
    :header-rows: 1
 
@@ -26,9 +26,9 @@ The canonical "Hello World" of USB emulation, the rubber ducky implements a mini
 :example:`ftdi-echo.py`
 -----------------------
 
-An emulation of an FTDI USB-to-serial converter, ``ftdi-echo`` converts input received from a connected terminal to uppercase and echoes the result back to the sender.
+An emulation of an FTDI USB-to-serial converter, the ftdi-echo example converts input received from a connected terminal to uppercase and echoes the result back to the sender.
 
-.. list-table:: Compatibility
+.. list-table:: Host Compatibility
    :widths: 30 30 30
    :header-rows: 1
 
@@ -44,7 +44,7 @@ An emulation of an FTDI USB-to-serial converter, ``ftdi-echo`` converts input re
 :example:`mass-storage.py`
 --------------------------
 
-An emulation of a USB Mass Storage device, ``mass-storage`` can take a raw disk image file as input and present it to a target host as drive that can be mounted, read and written to.
+An emulation of a USB Mass Storage device, the mass-storage example can take a raw disk image file as input and present it to a target host as drive that can be mounted, read and written to.
 
 You can create an empty disk image for use with the emulation using:
 
@@ -62,7 +62,7 @@ You can also test or modify the disk image locally by mounting it with:
 Remember to unmount it before using it with the device emulation!
 
 
-.. list-table:: Compatibility
+.. list-table:: Host Compatibility
    :widths: 30 30 30
    :header-rows: 1
 

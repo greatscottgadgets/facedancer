@@ -50,8 +50,7 @@ For more information, see:
 
 ## USBProxy 'Nouveau' and Protocol Analysis
 
-A major new feature of the newer Facedancer codebase is the ability to man-in-the
-middle USB connections -- replacing one of the authors' original [USBProxy](https://github.com/dominicgs/usbproxy)
+A major new feature of the newer Facedancer codebase is the ability to MITM (Meddler-In-The-Middle) USB connections -- replacing one of the authors' original [USBProxy](https://github.com/dominicgs/usbproxy)
 project. This opens up a whole new realm of applications -- including protocol analysis
 and live manipulation of USB packets -- and is especially useful when you don't control
 the software running on the target device (e.g. on embedded systems or games consoles).

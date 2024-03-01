@@ -1,6 +1,6 @@
-================================================
-How to write a new Facedancer backend
-================================================
+=====================================
+How to write a new Facedancer Backend
+=====================================
 
 Facedancer board backends can be found in the :repo:`facedancer/backends/<facedancer/backends/>` directory.
 
