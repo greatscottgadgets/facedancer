@@ -13,7 +13,13 @@ help:
 
 .PHONY: help Makefile
 
+# api docs
+apidocs:
+	rm -rf source/api_docs/
+	sphinx-apidoc -o source/api_docs/ ../facedancer
+
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
