@@ -1,4 +1,5 @@
-import time
+import os, sys, time
+sys.path.insert(0, os.path.abspath("../../"))
 
 import sphinx_rtd_theme
 

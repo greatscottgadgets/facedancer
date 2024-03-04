@@ -2,12 +2,10 @@
 Using Facedancer
 ================================================
 
-Facedancer allows you to
-
 Introduction
 ------------
 
-Facedancer makes it possible to define emulations using a simple declarative DSL that mirrors the hierarchical structure of the abstract USB device model.
+Facedancer allows you to easily define emulations using a simple declarative DSL that mirrors the hierarchical structure of the abstract USB device model.
 
 Let's look at a simple example that defines a USB device with two endpoints and a control interface:
 
