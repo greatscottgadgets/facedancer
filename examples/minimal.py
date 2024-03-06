@@ -9,29 +9,30 @@ import logging
 from facedancer import *
 from facedancer import main
 
-# TODO some way to declare device speed
-
 @use_inner_classes_automatically
 class MyDevice(USBDevice):
     product_string      : str = "Example USB Device"
     manufacturer_string : str = "Facedancer"
     vendor_id           : int = 0x1209
     product_id          : int = 0x0001
+    device_speed        : DeviceSpeed = DeviceSpeed.FULL
 
     class MyConfiguration(USBConfiguration):
 
         class MyInterface(USBInterface):
 
             class MyInEndpoint(USBEndpoint):
-                number    : int          = 1
-                direction : USBDirection = USBDirection.IN
+                number          : int          = 1
+                direction       : USBDirection = USBDirection.IN
+                max_packet_size : int          = 64
 
                 def handle_data_requested(self: USBEndpoint):
-                    self.send(b"device sent response on bulk endpoint", blocking=True)
+                    self.send(b"device sent response on bulk endpoint")
 
             class MyOutEndpoint(USBEndpoint):
-                number    : int          = 1
-                direction : USBDirection = USBDirection.OUT
+                number          : int          = 1
+                direction       : USBDirection = USBDirection.OUT
+                max_packet_size : int          = 64
 
                 def handle_data_received(self: USBEndpoint, data):
                     logging.info(f"device received '{data}' on bulk endpoint")

@@ -50,6 +50,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             Number indicating the hardware revision of this device. Typically BCD.
         usb_spec_revision :
             Number indicating the version of the USB specification we adhere to. Typically 0x0200.
+        device_speed :
+            Specify the device speed for boards that support multiple interface speeds.
     """
 
     DESCRIPTOR_TYPE_NUMBER    = 0x01
@@ -76,6 +78,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     device_revision          : int  = 0
     usb_spec_version         : int  = 0x0002
+
+    device_speed             : DeviceSpeed = None
 
     descriptors              : Dict[int, Union[bytes, callable]] = field(default_factory=dict)
     configurations           : Dict[int, USBConfiguration]       = field(default_factory=dict)
@@ -170,6 +174,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         """ Connects this device to the host; e.g. turning on our presence-detect pull up. """
         if self.backend is None:
             self.backend = FacedancerUSBApp()
+
+        # override any provided speed if the device already defines it
+        if self.device_speed != None:
+            device_speed=self.device_speed
 
         self.backend.connect(self, max_packet_size_ep0=self.max_packet_size_ep0, device_speed=device_speed)
 
