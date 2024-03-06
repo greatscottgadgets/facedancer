@@ -27,6 +27,7 @@ class MyDevice(USBDevice):
                 max_packet_size : int          = 64
 
                 def handle_data_requested(self: USBEndpoint):
+                    logging.info("handle_data_requested")
                     self.send(b"device sent response on bulk endpoint")
 
             class MyOutEndpoint(USBEndpoint):

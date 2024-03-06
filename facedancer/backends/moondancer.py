@@ -297,8 +297,8 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
 
         self.api.write_endpoint(endpoint_number, blocking, bytes(data))
 
-        log.info(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
-        log.info(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
+        log.debug(f"moondancer.send_on_endpoint({endpoint_number}, {len(data)}, {blocking})")
+        log.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, {data})")
 
 
     def ack_status_stage(self, direction: USBDirection=USBDirection.OUT, endpoint_number:int =0, blocking: bool=False):
@@ -315,15 +315,14 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
                            before returning.
         """
 
-        log.trace(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
+        log.debug(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
 
         if direction == USBDirection.OUT: # HOST_TO_DEVICE
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
             self.api.write_endpoint(endpoint_number, blocking, bytes([]))
 
-            log.info(f"moondancer.ack_status_stage({direction.name}, {endpoint_number}, {blocking})")
-            log.info(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, [])")
+            log.trace(f"  moondancer.api.write_endpoint({endpoint_number}, {blocking}, [])")
 
         else: # DEVICE_TO_HOST (IN)
             # If this was an IN request, we'll need to set up a transfer descriptor
@@ -363,34 +362,35 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         Moondancer's execution status, and reacts as events occur.
         """
 
-        # Check EP_IN NAK status for pending data requests
-        nak_status = self.api.get_nak_status()
-        self.handle_ep_in_nak_status(nak_status)
-
+        # Get latest interrupt events
         events: List[Tuple[int, int]] = self.api.get_interrupt_events()
-        if len(events) == 0:
-            return
-
-        # TODO gcp doesn't seem to return a nested tuple if it's only one event
-        if isinstance(events[0], int):
-            events = [ events ]
-
-        events = [InterruptEvent.parse(event) for event in events]
 
         # Handle interrupt events.
-        for event in events:
-            log.trace(f"MD IRQ => {event}")
-            if event == InterruptEvent.USB_BUS_RESET:
-                self.handle_bus_reset()
-            elif event == InterruptEvent.USB_RECEIVE_CONTROL:
-                self.handle_receive_control(event.endpoint_number)
-            elif event == InterruptEvent.USB_RECEIVE_PACKET:
-                self.handle_receive_packet(event.endpoint_number)
-            elif event == InterruptEvent.USB_SEND_COMPLETE:
-                self.handle_send_complete(event.endpoint_number)
-            else:
-                log.error(f"Unhandled interrupt event: {event}")
+        if len(events) > 0:
 
+            # gcp doesn't seem to return a nested tuple if it's only one event
+            if isinstance(events[0], int):
+                events = [ events ]
+
+            events = [InterruptEvent.parse(event) for event in events]
+            for event in events:
+                log.trace(f"MD IRQ => {event}")
+                if event == InterruptEvent.USB_BUS_RESET:
+                    self.handle_bus_reset()
+                elif event == InterruptEvent.USB_RECEIVE_CONTROL:
+                    self.handle_receive_control(event.endpoint_number)
+                elif event == InterruptEvent.USB_RECEIVE_PACKET:
+                    self.handle_receive_packet(event.endpoint_number)
+                elif event == InterruptEvent.USB_SEND_COMPLETE:
+                    self.handle_send_complete(event.endpoint_number)
+                else:
+                    log.error(f"Unhandled interrupt event: {event}")
+
+        # Check EP_IN NAK status for pending data requests
+        else:
+            nak_status = self.api.get_nak_status()
+            if nak_status != 0:
+                self.handle_ep_in_nak_status(nak_status)
 
     # - Interrupt event handlers ----------------------------------------------
 
@@ -459,7 +459,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             endpoint_number : The endpoint number for which the transfer should be serviced.
         """
 
-        log.debug(f"handle_receive_packet({endpoint_number}) pending:{self.pending_control_request}")
+        log.debug(f"moondancer.handle_receive_packet({endpoint_number}) pending:{self.pending_control_request}")
 
         # If we have a pending control request with a data stage...
         # TODO support endpoints other than EP0
@@ -494,7 +494,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         # Prime endpoint to receive again.
         self.api.ep_out_prime_receive(endpoint_number)
 
-        log.debug(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)}")
+        log.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)}")
 
         if len(data) == 0:
             # it's an ack
@@ -514,6 +514,6 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
     def handle_ep_in_nak_status(self, nak_status: int):
         nakked_endpoints = [epno for epno in range(self.SUPPORTED_ENDPOINTS) if (nak_status >> epno) & 1]
         for endpoint_number in nakked_endpoints:
-            log.trace(f"Received IN NAK: {endpoint_number}")
             if endpoint_number != 0:
+                log.debug(f"Received IN NAK: {endpoint_number}")
                 self.connected_device.handle_nak(endpoint_number)
