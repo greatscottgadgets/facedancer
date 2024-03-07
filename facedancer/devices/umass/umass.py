@@ -267,7 +267,18 @@ class ScsiCommandHandler:
         return self.STATUS_OKAY, response
 
 
-    def handle_mode_sense(self, cbw):
+    def handle_mode_sense_6(self, cbw):
+        page = cbw.cb[2] & 0x3f
+
+        response = b'\x03\x00\x00\x1c'
+        if page != 0x3f:
+            print(self.name, "unknown page, returning empty page")
+            response = b'\x03\x00\x00\x00'
+
+        return self.STATUS_OKAY, response
+
+
+    def handle_mode_sense_10(self, cbw):
         page = cbw.cb[2] & 0x3f
 
         response = b'\x07\x00\x00\x00\x00\x00\x00\x1c'
@@ -276,6 +287,16 @@ class ScsiCommandHandler:
             response = b'\x07\x00\x00\x00\x00\x00\x00\x00'
 
         return self.STATUS_OKAY, response
+
+
+    def handle_service_action_in(self, cbw):
+        opcode = cbw.cb[0]
+
+        if opcode == 0x9e:
+            return self.handle_get_read_capacity_16(cbw)
+        else:
+            # Always return success, and no response.
+            return self.STATUS_OKAY, None
 
 
     def handle_get_format_capacity(self, cbw):
@@ -290,8 +311,27 @@ class ScsiCommandHandler:
 
     def handle_get_read_capacity(self, cbw):
         lastlba = self.disk_image.get_sector_count()
+        if lastlba > 0xffffffff:
+            lastlba = 0xffffffff
 
         response = bytes([
+            (lastlba >> 24) & 0xff,
+            (lastlba >> 16) & 0xff,
+            (lastlba >>  8) & 0xff,
+            (lastlba      ) & 0xff,
+            0x00, 0x00, 0x02, 0x00,     # 512-byte blocks
+        ])
+        return self.STATUS_OKAY, response
+
+
+    def handle_get_read_capacity_16(self, cbw):
+        lastlba = self.disk_image.get_sector_count()
+
+        response = bytes([
+            (lastlba >> 56) & 0xff,
+            (lastlba >> 48) & 0xff,
+            (lastlba >> 40) & 0xff,
+            (lastlba >> 32) & 0xff,
             (lastlba >> 24) & 0xff,
             (lastlba >> 16) & 0xff,
             (lastlba >>  8) & 0xff,
@@ -325,6 +365,36 @@ class ScsiCommandHandler:
         return self.STATUS_OKAY, None
 
 
+    def handle_read_16(self, cbw):
+        base_lba = cbw.cb[2] << 56 \
+                 | cbw.cb[3] << 48 \
+                 | cbw.cb[4] << 40 \
+                 | cbw.cb[5] << 32 \
+                 | cbw.cb[6] << 24 \
+                 | cbw.cb[7] << 16 \
+                 | cbw.cb[8] << 8 \
+                 | cbw.cb[9]
+
+        num_blocks = cbw.cb[10] << 24 \
+                   | cbw.cb[11] << 16 \
+                   | cbw.cb[12] << 8  \
+                   | cbw.cb[13]
+
+        if self.verbose > 0:
+            print("<-- performing READ (16), lba", base_lba, "+", num_blocks, "block(s)")
+
+        # Note that here we send the data directly rather than putting
+        # something in 'response' and letting the end of the switch send
+        for block_num in range(num_blocks):
+            data = self.disk_image.get_sector_data(base_lba + block_num)
+            self.ep_to_host.send_packet(data, blocking=True)
+
+        if self.verbose > 3:
+            print("--> responded with {} bytes".format(cbw.data_transfer_length))
+
+        return self.STATUS_OKAY, None
+
+
     def handle_write(self, cbw):
         base_lba = cbw.cb[2] << 24 \
                  | cbw.cb[3] << 16 \
@@ -336,6 +406,35 @@ class ScsiCommandHandler:
 
         if self.verbose > 0:
             print("--> performing WRITE (10), lba", base_lba, "+", num_blocks, "block(s)")
+
+        # save for later
+        self.write_cbw = cbw
+        self.write_base_lba = base_lba
+        self.write_length = num_blocks * self.disk_image.get_sector_size()
+        self.is_write_in_progress = True
+
+        # because we need to snarf up the data from wire before we reply
+        # with the CSW
+        return self.STATUS_INCOMPLETE, None
+
+
+    def handle_write_16(self, cbw):
+        base_lba = cbw.cb[2] << 56 \
+                 | cbw.cb[3] << 48 \
+                 | cbw.cb[4] << 40 \
+                 | cbw.cb[5] << 32 \
+                 | cbw.cb[6] << 24 \
+                 | cbw.cb[7] << 16 \
+                 | cbw.cb[8] << 8 \
+                 | cbw.cb[9]
+
+        num_blocks = cbw.cb[10] << 24 \
+                   | cbw.cb[11] << 16 \
+                   | cbw.cb[12] << 8  \
+                   | cbw.cb[13]
+
+        if self.verbose > 0:
+            print("--> performing WRITE (16), lba", base_lba, "+", num_blocks, "block(s)")
 
         # save for later
         self.write_cbw = cbw
@@ -372,14 +471,17 @@ class ScsiCommandHandler:
         self._register_scsi_command(0x00, "Test Unit Ready", self.handle_ignored_event)
         self._register_scsi_command(0x03, "Request Sense", self.handle_sense)
         self._register_scsi_command(0x12, "Inquiry", self.handle_inquiry)
-        self._register_scsi_command(0x1a, "Mode Sense (6)", self.handle_mode_sense)
-        self._register_scsi_command(0x5a, "Mode Sense (10)", self.handle_mode_sense)
+        self._register_scsi_command(0x1a, "Mode Sense (6)", self.handle_mode_sense_6)
+        self._register_scsi_command(0x5a, "Mode Sense (10)", self.handle_mode_sense_10)
         self._register_scsi_command(0x1e, "Prevent/Allow Removal", self.handle_ignored_event)
         self._register_scsi_command(0x23, "Get Format Capacity", self.handle_get_format_capacity)
         self._register_scsi_command(0x25, "Get Read Capacity", self.handle_get_read_capacity)
         self._register_scsi_command(0x28, "Read", self.handle_read)
+        self._register_scsi_command(0x88, "Read (16)", self.handle_read_16)
         self._register_scsi_command(0x2a, "Write (10)", self.handle_write)
+        self._register_scsi_command(0x8a, "Write (16)", self.handle_write_16)
         self._register_scsi_command(0x36, "Synchronize Cache", self.handle_ignored_event)
+        self._register_scsi_command(0x9e, "Service Action In", self.handle_service_action_in)
 
 
     def _register_scsi_command(self, number, name, handler=None):
