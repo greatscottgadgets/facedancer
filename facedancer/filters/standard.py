@@ -1,17 +1,17 @@
 #
-# Standard filters for USBProxy that should (almost) always be used
+# This file is part of FaceDancer.
 #
+""" Standard filters for USBProxy that should (almost) always be used. """
 
 from ..            import *
 from ..descriptor  import USBDescribable
-from ..proxy       import USBProxyFilter
 from ..errors      import *
-
 from ..logging     import log
+
+from .             import USBProxyFilter
 
 
 class USBProxySetupFilters(USBProxyFilter):
-
     SET_ADDRESS_REQUEST = 5
     SET_CONFIGURATION_REQUEST = 9
     GET_DESCRIPTOR_REQUEST = 6
@@ -32,9 +32,8 @@ class USBProxySetupFilters(USBProxyFilter):
         if stalled:
             return req, data, stalled
 
-
         # If this is a read of a valid configuration descriptor (and subordinate
-        # descriptors, parse them and store the results for late).
+        # descriptors, parse them and store the results for later).
         if req.request == self.GET_DESCRIPTOR_REQUEST:
 
             # Get the descriptor type and index.
@@ -47,7 +46,8 @@ class USBProxySetupFilters(USBProxyFilter):
             if descriptor_type == self.DESCRIPTOR_CONFIGURATION and req.length >= 32:
                 configuration = USBDescribable.from_binary_descriptor(data)
                 self.configurations[configuration.number] = configuration
-                log.debug("-- Storing configuration {} --".format(configuration))
+                if self.verbose > 0:
+                    log.info("-- Storing configuration {} --".format(configuration))
 
 
             if descriptor_type == self.DESCRIPTOR_DEVICE and req.length >= 7:
@@ -56,8 +56,8 @@ class USBProxySetupFilters(USBProxyFilter):
                 device = USBDescribable.from_binary_descriptor(data)
                 device.max_packet_size_ep0 = 64
                 data = bytearray(device.get_descriptor())[:len(data)]
-                log.debug("-- Patched device descriptor. --")
-
+                if self.verbose > 0:
+                    log.info("-- Patched device descriptor. --")
 
         return req, data, stalled
 
@@ -81,13 +81,14 @@ class USBProxySetupFilters(USBProxyFilter):
             if configuration_index in self.configurations:
                 configuration = self.configurations[configuration_index]
 
-                log.debug("-- Applying configuration {} --".format(configuration))
+                if self.verbose > 0:
+                    log.info("-- Applying configuration {} --".format(configuration))
 
                 self.device.configured(configuration)
 
             # Otherwise, the host has applied a configuration without ever reading
             # its descriptor. This is mighty strange behavior!
             else:
-                log.warn("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
+                log.warning("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
 
         return req, data

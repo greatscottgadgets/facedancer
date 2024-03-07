@@ -80,8 +80,6 @@ def use_automatically(cls):
 
 
 def _use_inner_classes_automatically(cls):
-    """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
-
     # Iterate over the relevant class...
     for name, member in inspect.getmembers(cls):
 
@@ -98,15 +96,16 @@ def _use_inner_classes_automatically(cls):
 
 
 def use_inner_classes_automatically(cls):
+    """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
     return _use_inner_classes_automatically(dataclass(cls))
 
 
 def instantiate_subordinates(obj, expected_type):
     """ Automatically instantiates any inner classes with a matching type.
 
-    This is used by objects that represent USB hardware behaviors (e.g. USBDevice, USBConfiguration,
-    USBInterface, USBEndpoint) in order to automatically create objects of any inner class
-    decorated with ``@use_automatically``.
+    This is used by objects that represent USB hardware behaviors (e.g. USBDevice,
+    USBConfiguration, USBInterface, USBEndpoint) in order to automatically create
+    objects of any inner class decorated with ``@use_automatically``.
     """
 
     instances = {}

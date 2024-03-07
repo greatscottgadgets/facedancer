@@ -139,12 +139,13 @@ class GreatDancerApp(FacedancerApp):
             Handles the status stage of a correctly completed control request,
             by priming the appropriate endpoint to handle the status phase.
 
-            direction: Determines if we're ACK'ing an IN or OUT vendor request.
-                (This should match the direction of the DATA stage.)
-            endpoint_number: The endpoint number on which the control request
-                occurred.
-            blocking: True if we should wait for the ACK to be fully issued
-                before returning.
+            Args:
+                direction : Determines if we're ACK'ing an IN or OUT vendor request.
+                            (This should match the direction of the DATA stage.)
+                endpoint_number : The endpoint number on which the control request
+                                  occurred.
+                blocking : True if we should wait for the ACK to be fully issued
+                           before returning.
         """
         if direction == self.HOST_TO_DEVICE:
             # If this was an OUT request, we'll prime the output buffer to
@@ -163,8 +164,9 @@ class GreatDancerApp(FacedancerApp):
         Generates the data content for an Endpoint Configuration command that will
         set up the GreatDancer's endpoints to match the active configuration.
 
-        config: A USBConfiguration object that represents the configuration being
-            applied to the GreatDancer.
+        Args:
+             config : A USBConfiguration object that represents the configuration being
+                      applied to the GreatDancer.
         """
         arguments = []
 
@@ -187,12 +189,13 @@ class GreatDancerApp(FacedancerApp):
         Prepares the GreatDancer to connect to the target host and emulate
         a given device.
 
-        usb_device: The USBDevice object that represents the device to be
-            emulated.
+        Args:
+            usb_device : The USBDevice object that represents the device to be
+                         emulated.
         """
 
         if device_speed != DeviceSpeed.FULL:
-            log.warn(f"GreatFET only supports USB Full Speed. Ignoring requested speed: {device_speed.name}")
+            log.warning(f"GreatFET only supports USB Full Speed. Ignoring requested speed: {device_speed.name}")
 
         self.max_packet_size_ep0 = max_packet_size_ep0
 
@@ -237,9 +240,10 @@ class GreatDancerApp(FacedancerApp):
         """
         Sends a collection of USB data on a given endpoint.
 
-        ep_num: The number of the IN endpoint on which data should be sent.
-        data: The data to be sent.
-        blocking: If true, this function will wait for the transfer to complete.
+        Args:
+            ep_num : The number of the IN endpoint on which data should be sent.
+            data : The data to be sent.
+            blocking : If true, this function will wait for the transfer to complete.
         """
         log.trace(f"EP{ep_num}/IN: <- {bytes(data)}")
 
@@ -258,7 +262,8 @@ class GreatDancerApp(FacedancerApp):
         """
         Reads a block of data from the given endpoint.
 
-        ep_num: The number of the OUT endpoint on which data is to be rx'd.
+        Args:
+            ep_num : The number of the OUT endpoint on which data is to be rx'd.
         """
 
         # Start a nonblocking read from the given endpoint...
@@ -288,7 +293,8 @@ class GreatDancerApp(FacedancerApp):
         """
         Stalls the provided endpoint, as defined in the USB spec.
 
-        ep_num: The number of the endpoint to be stalled.
+        Args:
+            ep_num : The number of the endpoint to be stalled.
         """
 
         in_vs_out = "IN" if direction else "OUT"
@@ -310,8 +316,10 @@ class GreatDancerApp(FacedancerApp):
         Sets the device address of the GreatDancer. Usually only used during
         initial configuration.
 
-        address: The address that the GreatDancer should assume.
-        defer: True iff the set_address request should wait for an active transaction to finish.
+        Args:
+            address : The address that the GreatDancer should assume.
+            defer   : True iff the set_address request should wait for an active
+                      transaction to finish.
         """
 
         self.api.set_address(address, 1 if defer else 0)
@@ -323,8 +331,10 @@ class GreatDancerApp(FacedancerApp):
         Decodes a raw 32-bit register value from a form encoded
         for transit as a USB control request.
 
-        transfer_result: The value returned by the vendor request.
-        returns: The raw integer value of the given register.
+        Args:
+            transfer_result : The value returned by the vendor request.
+
+        Returns: The raw integer value of the given register.
         """
         status_hex = codecs.encode(transfer_result[::-1], 'hex')
         return int(status_hex, 16)
@@ -335,7 +345,7 @@ class GreatDancerApp(FacedancerApp):
         Fetch the USB controller's pending-IRQ bitmask, which indicates
         which interrupts need to be serviced.
 
-        returns: A raw integer bitmap.
+        Returns: A raw integer bitmap.
         """
         return self.api.get_status(self.GET_USBSTS)
 
@@ -345,7 +355,7 @@ class GreatDancerApp(FacedancerApp):
         Fetch the USB controller's "pending setup packet" bitmask, which
         indicates which endpoints have setup packets to be read.
 
-        returns: A raw integer bitmap.
+        Returns: A raw integer bitmap.
         """
         return self.api.get_status(self.GET_ENDPTSETUPSTAT)
 
@@ -373,7 +383,8 @@ class GreatDancerApp(FacedancerApp):
         """
         Handles a known outstanding setup event on a given endpoint.
 
-        endpoint_number: The endpoint number for which a setup event should be serviced.
+        Args:
+            endpoint_number : The endpoint number for which a setup event should be serviced.
         """
 
         # HACK: to maintain API compatibility with the existing facedancer API,
@@ -411,7 +422,7 @@ class GreatDancerApp(FacedancerApp):
         Fetch the USB controller's "completed transfer" bitmask, which
         indicates which endpoints have recently completed transactions.
 
-        returns: A raw integer bitmap.
+        Returns : A raw integer bitmap.
         """
         return self.api.get_status(self.GET_ENDPTCOMPLETE)
 
@@ -421,10 +432,10 @@ class GreatDancerApp(FacedancerApp):
         Returns true iff a given endpoint has just completed a transfer.
         Can be used to check for completion of a non-blocking transfer.
 
-        endpoint_number: The endpoint number to be queried.
-        direction:
-            The direction of the transfer. Should be self.HOST_TO_DEVICE or
-            self.DEVICE_TO_HOST.
+        Args:
+            endpoint_number : The endpoint number to be queried.
+            direction : The direction of the transfer. Should be self.HOST_TO_DEVICE or
+                        self.DEVICE_TO_HOST.
         """
         status = self._fetch_transfer_status()
 
@@ -489,7 +500,8 @@ class GreatDancerApp(FacedancerApp):
         received since the endpoint was primed. See read_from_endpoint for an example
         of proper use.
 
-        endpoint_number: The endpoint to read from.
+        Args:
+            endpoint_number : The endpoint to read from.
         """
 
         return self.api.finish_nonblocking_read(endpoint_number)
@@ -504,9 +516,10 @@ class GreatDancerApp(FacedancerApp):
         There's no harm in calling this if a transaction isn't complete, but it _must_
         be called at least once for each completed transaction.
 
-        endpoint_number: The endpoint number whose transfer descriptors should be cleaned
-            up.
-        direction: The endpoint direction for which TD's should be cleaned.
+        Args:
+            endpoint_number : The endpoint number whose transfer descriptors should be cleaned
+                              up.
+            direction : The endpoint direction for which TD's should be cleaned.
         """
 
         # Ask the device to clean up any transaction descriptors related to the transfer.
@@ -526,7 +539,8 @@ class GreatDancerApp(FacedancerApp):
         """
         Handles a known-completed transfer on a given endpoint.
 
-        endpoint_number: The endpoint number for which a setup event should be serviced.
+        Args:
+            endpoint_number : The endpoint number for which a setup event should be serviced.
         """
 
         # If a transfer has just completed on an OUT endpoint, we've just received data
@@ -591,7 +605,8 @@ class GreatDancerApp(FacedancerApp):
         """
         Primes an out endpoint, allowing it to receive data the next time the host chooses to send it.
 
-        endpoint_number: The endpoint that should be primed.
+        Args:
+            endpoint_number : The endpoint that should be primed.
         """
         self.api.start_nonblocking_read(endpoint_number)
 
@@ -635,8 +650,9 @@ class GreatDancerApp(FacedancerApp):
         """
         Returns true iff the endpoint is ready to be primed.
 
-        ep_num: The endpoint number in question.
-        direction: The endpoint direction in question.
+        Args:
+            ep_num : The endpoint number in question.
+            direction : The endpoint direction in question.
         """
 
         # Fetch the endpoint status.
@@ -657,9 +673,10 @@ class GreatDancerApp(FacedancerApp):
         Interprets an ENDPTNAK status result to determine
         whether a given endpoint has NAK'd.
 
-        ep_nak: The status work read from the ENDPTNAK register
-        ep_num: The endpoint number in question.
-        direction: The endpoint direction in question.
+        Args:
+            ep_nak : The status work read from the ENDPTNAK register
+            ep_num : The endpoint number in question.
+            direction : The endpoint direction in question.
         """
 
         in_nak  = (ep_nak & (1 << (ep_num + 16)))
@@ -724,7 +741,8 @@ class GreatDancerApp(FacedancerApp):
         """
         Configures the GreatDancer's endpoints to match the provided configuration.
 
-        configurate: The USBConfiguration object that describes the endpoints provided.
+        Args:
+            configuration : The USBConfiguration object that describes the endpoints provided.
         """
         endpoint_triplets = self._generate_endpoint_config_arguments(configuration)
 
@@ -740,7 +758,8 @@ class GreatDancerApp(FacedancerApp):
         Callback that's issued when a USBDevice is configured, e.g. by the
         SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The configuration applied by the SET_CONFIG request.
+        Args:
+            configuration: The configuration applied by the SET_CONFIG request.
         """
         self._configure_endpoints(configuration)
         self.configuration = configuration

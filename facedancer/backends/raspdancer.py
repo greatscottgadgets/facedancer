@@ -1,3 +1,5 @@
+# pylint: disable=import-error
+
 #
 # Raspdancer
 #

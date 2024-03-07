@@ -28,8 +28,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "pyusb", "pyserial", "prompt-toolkit",
+    "pyusb", "pyserial", "prompt-toolkit", "libusb1",
 ]
 
 [tool.setuptools-git-versioning]
 enabled = true
+
+[tool.setuptools.package-dir]
+facedancer = "facedancer"

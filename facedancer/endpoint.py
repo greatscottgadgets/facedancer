@@ -23,16 +23,21 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBEndpoint object.
 
     Field:
-        number          -- The endpoint number (without the direction bit) for this endpoint.
-        direction       -- A USBDirection constant indicating this endpoint's direction.
-
-        transfer_type   -- A USBTransferType constant indicating the type of communications used.
-        max_packet_size -- The maximum packet size for this endpoint.
-        interval        -- The polling interval, for an INTERRUPT endpoint.
+        number:
+            The endpoint number (without the direction bit) for this endpoint.
+        direction:
+            A USBDirection constant indicating this endpoint's direction.
+        transfer_type:
+            A USBTransferType constant indicating the type of communications used.
+        max_packet_size:
+            The maximum packet size for this endpoint.
+        interval:
+            The polling interval, for an INTERRUPT endpoint.
     """
     DESCRIPTOR_TYPE_NUMBER      = 0x05
 
     # Core identifiers.
+
     number               : int
     direction            : USBDirection
 
@@ -98,9 +103,9 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     def send(self, data: bytes, *, blocking: bool =False):
         """ Sends data on this endpoint. Valid only for IN endpoints.
 
-        Parameters:
-            data     -- The data to be sent.
-            blocking -- True if we should block until the backend reports
+        Args:
+            data     : The data to be sent.
+            blocking : True if we should block until the backend reports
                         the transmission to be complete.
         """
         self.get_device()._send_in_packets(self.number, data,
@@ -114,8 +119,8 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     def handle_data_received(self, data: bytes):
         """ Handler for receipt of non-control request data.
 
-        Parameters:
-            data   -- The raw bytes received.
+        Args:
+            data   : The raw bytes received.
         """
         log.info(f"EP{self.number} received {len(data)} bytes of data; "
                 "but has no handler.")

@@ -23,11 +23,14 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBDevice's configuration.
 
     Fields:
-        number                 -- The configuration's number; one-indexed.
-        configuration_string   -- A string describing the configuration; or None if not provided.
-        max_power              -- The maximum power expected to be drawn by the device when using
-                                  this interface, in mA. Typically 500mA, for maximum possible.
-        supports_remote_wakeup -- True iff this device should be able to wake the host from suspend.
+        number:
+            The configuration's number; one-indexed.
+        configuration_string
+            A string describing the configuration; or None if not provided.
+        max_power:
+            The maximum power expected to be drawn by the device when using this interface, in mA. Typically 500mA, for maximum possible.
+        supports_remote_wakeup:
+            True iff this device should be able to wake the host from suspend.
     """
 
     DESCRIPTOR_TYPE_NUMBER  = 0x02
@@ -38,11 +41,11 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     max_power              : int            = 500
 
-    self_powered           : bool         = True
-    supports_remote_wakeup : bool         = True
+    self_powered           : bool           = True
+    supports_remote_wakeup : bool           = True
 
     parent                 : USBDescribable = None
-    interfaces             : USBInterface = field(default_factory=dict)
+    interfaces             : USBInterface   = field(default_factory=dict)
 
 
     @classmethod
@@ -51,7 +54,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         Generates a new USBConfiguration object from a configuration descriptor,
         handling any attached subordinate descriptors.
 
-        data: The raw bytes for the descriptor to be parsed.
+        Args:
+            data: The raw bytes for the descriptor to be parsed.
         """
 
         length = data[0]
@@ -81,7 +85,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         """
         Generates descriptor objects from the list of subordinate descriptors.
 
-        data: The raw bytes for the descriptor to be parsed.
+        Args:
+            data: The raw bytes for the descriptor to be parsed.
         """
 
         # TODO: handle recieving interfaces out of order?
@@ -146,9 +151,9 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     def get_endpoint(self, number: int, direction: USBDirection) -> USBEndpoint:
         """ Attempts to find an endpoint with the given number + direction.
 
-        Paramters:
-            number    -- The endpoint number to look for.
-            direction -- Whether to look for an IN or OUT endpoint.
+        Args:
+            number    : The endpoint number to look for.
+            direction : Whether to look for an IN or OUT endpoint.
         """
 
         # Search each of our interfaces for the relevant endpoint.
@@ -174,9 +179,9 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         overriding function will receive all data; and can delegate it by
         calling the `.handle_data_received` method on `self.configuration`.
 
-        Parameters:
-            endpoint -- The endpoint on which the data was received.
-            data     -- The raw bytes received on the relevant endpoint.
+        Args:
+            endpoint : The endpoint on which the data was received.
+            data     : The raw bytes received on the relevant endpoint.
         """
 
         for interface in self.interfaces.values():
@@ -195,8 +200,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         interface+endpoint. If overridden, the overriding function will receive
         all data.
 
-        Parameters:
-            endpoint_number -- The endpoint number on which the host requested data.
+        Args:
+            endpoint : The endpoint on which the host requested data.
         """
 
         for interface in self.interfaces.values():

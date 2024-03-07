@@ -24,12 +24,12 @@ def _wrap_with_field_matcher(func, field_name, field_value, match_index=False):
     As an example, if this is called with `field_name`='index' and 'field_value'=3,
     this modifies `func` so it is only executed for requests with an index of 3.
 
-    Parameters:
-        func        -- The handler function to wrap.
-        field_name  -- The name of the field to check.
-        field_value -- The value the given field must have for the function to execute.
+    Args:
+        func        : The handler function to wrap.
+        field_name  : The name of the field to check.
+        field_value : The value the given field must have for the function to execute.
 
-        match_index -- If true, the matcher is further refined in order to only execute
+        match_index : If true, the matcher is further refined in order to only execute
                        for requests targeting a given e.g. interface or endpoint object.
 
                        In this case, the handler is only executed if the low byte of the
@@ -90,9 +90,9 @@ class ControlRequestHandler:
     def add_field_matcher(self, field_name, field_value):
         """ Refines a control request handler such that it's only called when one of its fields matches a given value.
 
-        Parameters:
-            field_name -- The property of the USBControlRequest object to be checked.
-            field_value -- The value the relevant property must match to be called.
+        Args:
+            field_name : The property of the USBControlRequest object to be checked.
+            field_value : The value the relevant property must match to be called.
         """
         matcher = lambda req : getattr(req, field_name) == field_value
         self.add_condition(matcher)
@@ -109,9 +109,9 @@ def control_request_handler(condition=lambda _ : True, **kwargs):
     Used while defining a USBDevice, USBInterface, USBEndpoint, or
     USBOtherRecipient class to declare handlers for that function.
 
-    Parameters:
-        condition -- A function that, when evaluated on a USBControlRequest, evaluates
-                     true if and only if this function is an appropriate handler.
+    Args:
+        condition : A function that, when evaluated on a USBControlRequest, evaluates
+                    true if and only if this function is an appropriate handler.
     """
 
     def decorator(func):
@@ -222,9 +222,9 @@ class USBControlRequest:
     def from_raw_bytes(cls, raw_bytes: bytes, *, device = None):
         """ Creates a request object from a sequence of raw bytes.
 
-        Parameters:
-            raw_bytes -- The raw bytes to create the object from.
-            device    -- The USBDevice to associate with the given request.
+        Args:
+            raw_bytes : The raw bytes to create the object from.
+            device    : The USBDevice to associate with the given request.
                          Optional, but necessary to use the .reply() / .acknowledge()
                          methods.
         """
@@ -257,9 +257,8 @@ class USBControlRequest:
     def acknowledge(self, *, blocking: bool = False):
         """ Acknowledge the given request without replying.
 
-        Parameters:
-            blocking -- If true, the relevant control request will complete
-                        finish before returning.
+        Args:
+            blocking : If true, the relevant control request will complete before returning.
         """
         self.device.send(endpoint_number=0, data=b"", blocking=blocking)
 
@@ -269,9 +268,8 @@ class USBControlRequest:
 
         Convenience alias for .acknowledge().
 
-        Parameters:
-            blocking -- If true, the relevant control request will complete
-                        finish before returning.
+        Args:
+            blocking : If true, the relevant control request will complete before returning.
 
         """
         self.acknowledge(blocking=blocking)
@@ -405,8 +403,8 @@ class USBRequestHandler(metaclass=ABCMeta):
         This function can be overridden by a subclass if desired; but the typical way to
         handle a specific control request is to the the ``@control_request_handler`` decorators.
 
-        Parameters:
-            request -- the USBControlRequest object representing the relevant request
+        Args:
+            request : the USBControlRequest object representing the relevant request
 
         Returns:
             true iff the request is handled

@@ -7,9 +7,10 @@ class FacedancerBackend:
         """
         Initializes the backend.
 
-        device:  The device that will act as our Facedancer.   (Optional)
-        verbose: The verbosity level of the given application. (Optional)
-        quirks:  List of USB platform quirks.                  (Optional)
+        Args:
+            device  :  The device that will act as our Facedancer.   (Optional)
+            verbose : The verbosity level of the given application. (Optional)
+            quirks  :  List of USB platform quirks.                  (Optional)
         """
         raise NotImplementedError
 
@@ -20,7 +21,8 @@ class FacedancerBackend:
         Determines if the current environment seems appropriate
         for using this backend.
 
-        backend_name: Backend name being requested. (Optional)
+        Args:
+            backend_name : Backend name being requested. (Optional)
         """
         raise NotImplementedError
 
@@ -37,9 +39,10 @@ class FacedancerBackend:
         Prepares backend to connect to the target host and emulate
         a given device.
 
-        usb_device: The USBDevice object that represents the emulated device.
-        max_packet_size_ep0: Max packet size for control endpoint.
-        device_speed: Requested usb speed for the Facedancer board.
+        Args:
+            usb_device : The USBDevice object that represents the emulated device.
+            max_packet_size_ep0 : Max packet size for control endpoint.
+            device_speed : Requested usb speed for the Facedancer board.
         """
         raise NotImplementedError
 
@@ -61,8 +64,10 @@ class FacedancerBackend:
         Sets the device address of the Facedancer. Usually only used during
         initial configuration.
 
-        address: The address the Facedancer should assume.
-        defer:   True iff the set_address request should wait for an active transaction to finish.
+        Args:
+            address : The address the Facedancer should assume.
+            defer   : True iff the set_address request should wait for an active transaction to
+                      finish.
         """
         raise NotImplementedError
 
@@ -72,7 +77,8 @@ class FacedancerBackend:
         Callback that's issued when a USBDevice is configured, e.g. by the
         SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The USBConfiguration object applied by the SET_CONFIG request.
+        Args:
+            configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
         raise NotImplementedError
 
@@ -81,7 +87,8 @@ class FacedancerBackend:
         """
         Reads a block of data from the given endpoint.
 
-        endpoint_number: The number of the OUT endpoint on which data is to be rx'd.
+        Args:
+            endpoint_number : The number of the OUT endpoint on which data is to be rx'd.
         """
         raise NotImplementedError
 
@@ -90,24 +97,26 @@ class FacedancerBackend:
         """
         Sends a collection of USB data on a given endpoint.
 
-        endpoint_number: The number of the IN endpoint on which data should be sent.
-        data: The data to be sent.
-        blocking: If true, this function should wait for the transfer to complete.
+        Args:
+            endpoint_number : The number of the IN endpoint on which data should be sent.
+            data : The data to be sent.
+            blocking : If true, this function should wait for the transfer to complete.
         """
         raise NotImplementedError
 
 
     def ack_status_stage(self, direction: USBDirection=USBDirection.OUT, endpoint_number:int =0, blocking: bool=False):
         """
-            Handles the status stage of a correctly completed control request,
-            by priming the appropriate endpoint to handle the status phase.
+        Handles the status stage of a correctly completed control request,
+        by priming the appropriate endpoint to handle the status phase.
 
-            direction: Determines if we're ACK'ing an IN or OUT vendor request.
-                (This should match the direction of the DATA stage.)
-            endpoint_number: The endpoint number on which the control request
-                occurred.
-            blocking: True if we should wait for the ACK to be fully issued
-                before returning.
+        Args:
+            direction : Determines if we're ACK'ing an IN or OUT vendor request.
+                       (This should match the direction of the DATA stage.)
+            endpoint_number : The endpoint number on which the control request
+                              occurred.
+            blocking : True if we should wait for the ACK to be fully issued
+                       before returning.
         """
 
 
@@ -115,7 +124,8 @@ class FacedancerBackend:
         """
         Stalls the provided endpoint, as defined in the USB spec.
 
-        endpoint_number: The number of the endpoint to be stalled.
+        Args:
+            endpoint_number : The number of the endpoint to be stalled.
         """
         raise NotImplementedError
 

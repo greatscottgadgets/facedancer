@@ -15,8 +15,9 @@ def FacedancerUSBApp(verbose=0, quirks=None):
     based on the BOARD environment variable and some crude internal
     automagic.
 
-    verbose: Sets the verbosity level of the relevant app. Increasing
-        this from zero yields progressively more output.
+    Args:
+        verbose : Sets the verbosity level of the relevant app. Increasing
+                  this from zero yields progressively more output.
     """
     return FacedancerApp.autodetect(verbose, quirks)
 
@@ -32,8 +33,9 @@ class FacedancerApp:
         subclass based on the BOARD environment variable and some crude internal
         automagic.
 
-        verbose: Sets the verbosity level of the relevant app. Increasing
-            this from zero yields progressively more output.
+        Args:
+            verbose: Sets the verbosity level of the relevant app. Increasing
+                     this from zero yields progressively more output.
         """
 
         if 'BACKEND' in os.environ:
@@ -82,9 +84,10 @@ class FacedancerApp:
         class to connect to a facedancer given the board_name and other
         environmental factors.
 
-        board: The name of the backend, as typically retrieved from the BACKEND
-            environment variable, or None to try figuring things out based
-            on other environmental factors.
+        Args:
+            backend_name : The name of the backend, as typically retrieved from the BACKEND
+                           environment variable, or None to try figuring things out based
+                           on other environmental factors.
         """
         return False
 
@@ -162,8 +165,9 @@ class FacedancerUSBHost:
         subclass based on the BOARD environment variable and some crude internal
         automagic.
 
-        verbose: Sets the verbosity level of the relevant app. Increasing
-            this from zero yields progressively more output.
+        Args:
+            verbose: Sets the verbosity level of the relevant app. Increasing
+                     this from zero yields progressively more output.
         """
 
         # TODO: Filter this out into some kind of autodetecting base class...
@@ -216,9 +220,10 @@ class FacedancerUSBHost:
         class to connect to a facedancer given the board_name and other
         environmental factors.
 
-        board: The name of the backend, as typically retrieved from the BACKEND
-            environment variable, or None to try figuring things out based
-            on other environmental factors.
+        Args:
+            backend_name : The name of the backend, as typically retrieved from the BACKEND
+                           environment variable, or None to try figuring things out based
+                           on other environmental factors.
         """
         return False
 
@@ -227,11 +232,12 @@ class FacedancerUSBHost:
     def _build_request_type(cls, is_in, req_type, recipient):
         """ Builds the request type field for a USB request.
 
-        is_in -- True iff this is a DEVICE-to-HOST request.
-        req_type -- The type of request to be used.
-        recipient -- The context in which this request should be interpreted.
+        Args:
+            is_in     : True iff this is a DEVICE-to-HOST request.
+            req_type  : The type of request to be used.
+            recipient : The context in which this request should be interpreted.
 
-        returns -- a request_type byte
+        Returns : a request_type byte
         """
 
         request_type = 0
@@ -271,12 +277,16 @@ class FacedancerUSBHost:
     def control_request_in(self, request_type, recipient, request, value=0, index=0, length=0):
         """ Performs an IN control request.
 
-        request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
-        recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
-        request -- The request number to be performed.
-        value, index -- The standard USB request arguments, to be included in the setup packet. Their meaning varies
-            depending on the request.
-        length -- The maximum length of data expected in response, or 0 if we don't expect any data back.
+        Args:
+            request_type : Determines if this is a standard, class, or vendor request. Accepts
+                           a REQUEST_TYPE_* constant.
+            recipient    : Determines the context in which this command is interpreted. Accepts
+                           a REQUEST_RECIPIENT_* constant.
+            request      : The request number to be performed.
+            value, index : The standard USB request arguments, to be included in the setup
+                           packet. Their meaning varies depending on the request.
+            length       : The maximum length of data expected in response, or 0 if we don't
+                           expect any data back.
         """
 
         # Create the raw setup request, and send it.
@@ -313,12 +323,15 @@ class FacedancerUSBHost:
     def control_request_out(self, request_type, recipient, request, value=0, index=0, data=[]):
         """ Performs an OUT control request.
 
-        request_type -- Determines if this is a standard, class, or vendor request. Accepts a REQUEST_TYPE_* constant.
-        recipient -- Determines the context in which this command is interpreted. Accepts a REQUEST_RECIPIENT_* constant.
-        request -- The request number to be performed.
-        value, index -- The standard USB request arguments, to be included in the setup packet. Their meaning varies
-            depending on the request.
-        data -- The data to be transmitted with this control request.
+        Args:
+            request_type : Determines if this is a standard, class, or vendor request. Accepts
+                           a REQUEST_TYPE_* constant.
+            recipient    : Determines the context in which this command is interpreted. Accepts
+                           a REQUEST_RECIPIENT_* constant.
+            request      : The request number to be performed.
+            value, index : The standard USB request arguments, to be included in the setup
+                           packet. Their meaning varies depending on the request.
+            data         : The data to be transmitted with this control request.
         """
 
         # Create the raw setup request, and send it.
@@ -338,10 +351,11 @@ class FacedancerUSBHost:
         """
         Sets up a connection to a directly-attached USB device.
 
-        apply_configuration -- If non-zero, the configuration with the given
-            index will be applied to the relevant device.
-        assign_address -- If non-zero, the device will be assigned the given
-            address as part of the enumeration/initialization process.
+        Args:
+            apply_configuration : If non-zero, the configuration with the given index will
+                                  be applied to the relevant device.
+            assign_address      : If non-zero, the device will be assigned the given address
+                                  as part of the enumeration/initialization process.
         """
 
         # TODO: support timeouts in waiting for a connection
@@ -405,7 +419,8 @@ class FacedancerUSBHost:
     def get_configuration_descriptor(self, index=0, include_subordinates=True):
         """ Returns the device's configuration descriptor.
 
-        include_subordinate -- if true, subordinate descriptors will also be returned
+        Args:
+            include_subordinate : if true, subordinate descriptors will also be returned
         """
 
         from .configuration import USBConfiguration
@@ -430,7 +445,8 @@ class FacedancerUSBHost:
         Note that all endpoints must be set up again after issuing the new address;
         the easiest way to do this is to call apply_configuration().
 
-        device_address -- the address to apply to the given device
+        Args:
+            device_address : the address to apply to the given device
         """
         self.control_request_out(
                 self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
@@ -444,7 +460,8 @@ class FacedancerUSBHost:
         Note that this does not configure the host for the given configuration.
         Most of the time, you probably want apply_configuration, which does.
 
-        index -- the index of the configuration to apply
+        Args:
+            index : the index of the configuration to apply
         """
         self.control_request_out(
                 self.REQUEST_TYPE_STANDARD, self.REQUEST_RECIPIENT_DEVICE,
@@ -455,11 +472,12 @@ class FacedancerUSBHost:
         """ Applies a device's configuration. Necessary to use endpoints other
             than the control endpoint.
 
-        index -- The configuration index to apply.
-        set_configuration -- If true, also informs the device of the change.
-            Setting this to false can allow the host to update its view of all
-            endpoints without communicating with the device -- e.g. to update the
-            device's address.
+        Args:
+             index             : The configuration index to apply.
+             set_configuration : If true, also informs the device of the change.
+                 Setting this to false can allow the host to update its view of all
+                 endpoints without communicating with the device -- e.g. to update the
+                 device's address.
         """
 
         # Read the full set of descriptors for the given configuration...

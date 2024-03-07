@@ -4,9 +4,9 @@
 
 import datetime
 
-from ..proxy   import USBProxyFilter
-
 from ..logging import log
+
+from .         import USBProxyFilter
 
 
 class USBProxyPrettyPrintFilter(USBProxyFilter):
@@ -14,7 +14,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
     Filter that pretty prints USB transactions according to log levels.
     """
 
-    def __init__(self, verbose, decoration=''):
+    def __init__(self, verbose=4, decoration=''):
         """
         Sets up a new USBProxy pretty printing filter.
         """

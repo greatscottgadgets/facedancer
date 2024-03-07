@@ -93,7 +93,7 @@ class USBMassStorageDevice(USBDevice):
             # dispatch received data to our SCSI command handler
             self.scsi_command_handler.handle_data_received(data)
         else:
-            log.warn(f"Received data on unexpected endpoint: {endpoint}")
+            log.warning(f"Received data on unexpected endpoint: {endpoint}")
 
 
     #

@@ -1,261 +1,28 @@
-# - TODO Move this into backends/ ---------------------------------------------
+#
+# This file is part of FaceDancer.
+#
+""" USB Proxy implementation. """
 
 import atexit
 import usb1
 
-from .errors  import DeviceNotFoundError
-from .types   import USB
-
-from .logging import log
-
-
-class LibUSB1Proxy:
-    """ Class variable that stores our global libusb library context. """
-    context = None
-
-    """ Class variable that stores our device handle. """
-    device_handle = None
-
-    @classmethod
-    def _get_libusb_context(cls):
-        """ Retrieves the libusb context we'll use to fetch libusb device instances. """
-
-        # If we don't have a libusb context, create one.
-        if cls.context is None:
-            cls.context = usb1.USBContext().__enter__()
-            atexit.register(cls._destroy_libusb_context)
-
-        return cls.context
-
-
-    @classmethod
-    def _destroy_libusb_context(cls):
-        """ Destroys our libusb context on closing our python instance. """
-        if cls.device_handle is not None:
-            device = cls.device_handle.getDevice()
-            number = cls.device_handle.getConfiguration()
-            active_configuration = next(filter(lambda c: c.getConfigurationValue() == number, device), None)
-            if active_configuration:
-                for interface in active_configuration:
-                    number = interface[0].getNumber()
-                    cls.device_handle.attachKernelDriver(number)
-                    cls.device_handle.releaseInterface(number)
-
-            cls.device_handle.close()
-            cls.device_handle = None
-
-        if cls.context is not None:
-            cls.context.close()
-            cls.context = None
-
-
-    @classmethod
-    def open(cls, device, detach=True):
-        cls.device_handle = device.open()
-
-        if detach:
-            number = cls.device_handle.getConfiguration()
-            active_configuration = next(filter(lambda c: c.getConfigurationValue() == number, device), None)
-            if active_configuration:
-                for interface in active_configuration:
-                    number = interface[0].getNumber()
-                    cls.device_handle.detachKernelDriver(number)
-                    cls.device_handle.claimInterface(number)
-
-        return cls.device_handle
-
-
-    # TODO adapt logic from pygreat usb1.py
-    @classmethod
-    def find(cls, idVendor, idProduct, find_all=True):
-        """ Finds a USB device by its identifiers. """
-
-        matching_devices = []
-        context = cls._get_libusb_context()
-
-        for device in context.getDeviceList():
-            if device.getVendorID() == idVendor and device.getProductID() == idProduct:
-                matching_devices.append(device)
-
-        if find_all:
-            return matching_devices
-        elif matching_devices:
-            return matching_devices
-        else:
-            return None
-
-
-    @classmethod
-    def device_speed(cls):
-        return DeviceSpeed(cls.device_handle.getDevice().getDeviceSpeed())
-
-
-    @classmethod
-    def controlRead(cls, request_type, request, value, index, length, timeout=1000):
-        return cls.device_handle.controlRead(request_type, request, value, index, length, timeout)
-
-
-    @classmethod
-    def controlWrite(cls, request_type, request, value, index, data, timeout=1000):
-        return cls.device_handle.controlWrite(request_type, request, value, index, data, timeout)
-
-
-    @classmethod
-    def read(cls, endpoint_number, length, timeout=1000):
-        # Avoid accidental uses of endpoint address
-        endpoint_number = endpoint_number & 0x7f
-
-        # TODO support interrupt endpoints
-        return cls.device_handle.bulkRead(endpoint_number, length, timeout)
-
-
-    @classmethod
-    def write(cls, endpoint_number, data, timeout=1000):
-        # TODO support interrupt endpoints
-        return cls.device_handle.bulkWrite(endpoint_number, data, timeout)
-
-
-# - USBProxyFilter ------------------------------------------------------------
-
-class USBProxyFilter:
-    """
-    Base class for filters that modify USB data.
-    """
-
-    def filter_control_in_setup(self, request, stalled):
-        """
-        Filters a SETUP stage for an IN control request. This allows us to modify
-        the SETUP stage before it's proxied to the real device.
-
-        request: The request to be issued.
-        stalled: True iff the packet has been stalled by a previous filter.
-
-        returns: Modified versions of the arguments. If stalled is set to true,
-            the packet will be immediately stalled an not proxied. If stalled is
-            false, but request is returned as None, the packet will be NAK'd instead
-            of proxied.
-        """
-        return request, stalled
-
-
-    def filter_control_in(self, request, data, stalled):
-        """
-        Filters the data response from the proxied device during an IN control
-        request. This allows us to modify the data returned from the proxied
-        device during a setup stage.
-
-        request: The request that was issued to the target host.
-        data: The data being proxied during the data stage.
-        stalled: True if the proxied device (or a previous filter) stalled the
-                request.
-
-        returns: Modified versions of the arguments. Note that modifying request
-            will _only_ modify the request as seen by future filters, as the
-            SETUP stage has already passed and the request has already been
-            sent to the device.
-        """
-        return request, data, stalled
-
-
-    def filter_control_out(self, request, data):
-        """
-        Filters handling of an OUT control request, which contains both a
-        request and (optional) data stage.
-
-        request: The request issued by the target host.
-        data: The data sent by the target host with the request.
-
-        returns: Modified versions of the arguments. Returning a request of
-            None will absorb the packet silently and not proxy it to the
-            device.
-        """
-        return request, data
-
-
-    def handle_out_request_stall(self, request, data, stalled):
-        """
-        Handles an OUT request that was stalled by the proxied device.
-
-        request: The request header for the request that stalled.
-        data: The data stage for the request that stalled, if appropriate.
-        stalled: True iff the request is still considered stalled. This can
-            be overridden by previous filters, so it's possible for this to
-            be false.
-        """
-        return request, data, stalled
-
-
-    def filter_in_token(self, ep_num):
-        """
-        Filters an IN token before it's passed to the proxied device.
-        This allows modification of e.g. the endpoint or absorption of
-        the IN token before it's issued to the real device.
-
-        ep_num: The endpoint number on which the IN token is to be proxied.
-        returns: A modified version of the arguments. If ep_num is set to None,
-            the token will be absorbed and not issued to the target host.
-        """
-        return ep_num
-
-
-    def filter_in(self, ep_num, data):
-        """
-        Filters the response to an IN token (the data packet received in response
-        to the host issuing an IN token).
-
-        ep_num: The endpoint number associated with the data packet.
-        data: The data packet received from the proxied device.
-
-        returns: A modified version of the arguments. If data is set to none,
-            the packet will be absorbed, and a NAK will be issued instead of
-            responding to the IN request with data.
-        """
-        return ep_num, data
-
-
-    def filter_out(self, ep_num, data):
-        """
-        Filters a packet sent from the host via an OUT token.
-
-        ep_num: The endpoint number associated with the data packet.
-        data: The data packet received from host.
-
-        returns: A modified version of the arguments. If data is set to none,
-            the packet will be absorbed,
-        """
-        return ep_num, data
-
-
-    def handle_out_stall(self, ep_num, data, stalled):
-        """
-        Handles an OUT transfer that was stalled by the victim.
-
-        ep_num: The endpoint number for the data that stalled.
-        data: The data for the transfer that stalled, if appropriate.
-        stalled: True iff the transfer is still considered stalled. This can
-            be overridden by previous filters, so it's possible for this to
-            be false.
-        """
-        return ep_num, data, stalled
-
-
-# - USBProxyDevice ------------------------------------------------------------
-
 from usb1        import USBError, USBErrorTimeout
 
-from .           import *
-from .classes    import USBDeviceClass
+from .           import DeviceSpeed, USBConfiguration, USBDirection
 from .device     import USBBaseDevice
+from .errors     import DeviceNotFoundError
+from .logging    import log
 from .request    import USBControlRequest
-from .proxy      import USBProxyFilter
+from .types      import USB
 
 
 class USBProxyDevice(USBBaseDevice):
+    """ USB Proxy Device """
+
     name = "USB Proxy Device"
 
     filter_list = []
 
-    # TODO we can probably lose facedancer_usb_app, verbose, quirks and scheduler?
     def __init__(self, index=0, quirks=[], scheduler=None, **kwargs):
         """
         Sets up a new USBProxy instance.
@@ -267,7 +34,7 @@ class USBProxyDevice(USBBaseDevice):
         super().__init__()
 
         # We have only one proxy backend in existence at this time.
-        self.proxied_device = LibUSB1Proxy
+        self.proxied_device = LibUSB1Device
 
         # Maintain a list of the current configuration's endpoints.
         self.endpoints = {}
@@ -303,12 +70,14 @@ class USBProxyDevice(USBBaseDevice):
 
         # Always use a max_packet_size of 64 on EP0.
 
-        # This works around a Linux spec violation in which Linux assumes it can read 64 bytes of control
-        # descriptor no matter the device speed and actual maximum packet size. If this doesn't work, Linux
-        # tries to reset / power-cycle the device, and then recovers with an in-spec read; but this causes a
-        # huge delay and/or breakage, depending on the proxied device.
+        # This works around a Linux spec violation in which Linux assumes it can read 64 bytes of
+        # control descriptor no matter the device speed and actual maximum packet size. If this
+        # doesn't work, Linux tries to reset / power-cycle the device, and then recovers with an
+        # in-spec read; but this causes a huge delay and/or breakage, depending on the proxied
+        # device.
         #
-        # Since we're working at the transfer levels, the packet sizes will automatically be translated, anyway.
+        # Since we're working at the transfer levels, the packet sizes will automatically be
+        # translated, anyway.
         self.max_packet_size_ep0 = 64
 
         # Get the USB device speed of the device being proxied.
@@ -330,7 +99,8 @@ class USBProxyDevice(USBBaseDevice):
         If you're using the standard filters, this will be called automatically;
         if not, you'll have to call it once you know the device has been configured.
 
-        configuration: The configuration to be applied.
+        Args:
+            configuration: The configuration to be applied.
         """
 
         # Clear endpoint list.
@@ -549,6 +319,118 @@ class USBProxyDevice(USBBaseDevice):
             endpoint.send(data)
 
 
+
+class LibUSB1Device:
+    """ A wrapper around the proxied device based on libusb1. """
+
+
+    """ Class variable that stores our global libusb library context. """
+    context = None
+
+    """ Class variable that stores our device handle. """
+    device_handle = None
+
+
+    @classmethod
+    def _get_libusb_context(cls):
+        """ Retrieves the libusb context we'll use to fetch libusb device instances. """
+
+        # If we don't have a libusb context, create one.
+        if cls.context is None:
+            cls.context = usb1.USBContext().__enter__()
+            atexit.register(cls._destroy_libusb_context)
+
+        return cls.context
+
+
+    @classmethod
+    def _destroy_libusb_context(cls):
+        """ Destroys our libusb context on closing our python instance. """
+        if cls.device_handle is not None:
+            device = cls.device_handle.getDevice()
+            number = cls.device_handle.getConfiguration()
+            active_configuration = next(filter(lambda c: c.getConfigurationValue() == number, device), None)
+            if active_configuration:
+                for interface in active_configuration:
+                    number = interface[0].getNumber()
+                    cls.device_handle.attachKernelDriver(number)
+                    cls.device_handle.releaseInterface(number)
+
+            cls.device_handle.close()
+            cls.device_handle = None
+
+        if cls.context is not None:
+            cls.context.close()
+            cls.context = None
+
+
+    @classmethod
+    def open(cls, device, detach=True):
+        cls.device_handle = device.open()
+
+        if detach:
+            number = cls.device_handle.getConfiguration()
+            active_configuration = next(filter(lambda c: c.getConfigurationValue() == number, device), None)
+            if active_configuration:
+                for interface in active_configuration:
+                    number = interface[0].getNumber()
+                    cls.device_handle.detachKernelDriver(number)
+                    cls.device_handle.claimInterface(number)
+
+        return cls.device_handle
+
+
+    # TODO adapt logic from pygreat usb1.py
+    @classmethod
+    def find(cls, idVendor, idProduct, find_all=True):
+        """ Finds a USB device by its identifiers. """
+
+        matching_devices = []
+        context = cls._get_libusb_context()
+
+        for device in context.getDeviceList():
+            if device.getVendorID() == idVendor and device.getProductID() == idProduct:
+                matching_devices.append(device)
+
+        if find_all:
+            return matching_devices
+        elif matching_devices:
+            return matching_devices
+        else:
+            return None
+
+
+    @classmethod
+    def device_speed(cls):
+        return DeviceSpeed(cls.device_handle.getDevice().getDeviceSpeed())
+
+
+    @classmethod
+    def controlRead(cls, request_type, request, value, index, length, timeout=1000):
+        return cls.device_handle.controlRead(request_type, request, value, index, length, timeout)
+
+
+    @classmethod
+    def controlWrite(cls, request_type, request, value, index, data, timeout=1000):
+        return cls.device_handle.controlWrite(request_type, request, value, index, data, timeout)
+
+
+    @classmethod
+    def read(cls, endpoint_number, length, timeout=1000):
+        # Avoid accidental uses of endpoint address
+        endpoint_number = endpoint_number & 0x7f
+
+        # TODO support interrupt endpoints
+        return cls.device_handle.bulkRead(endpoint_number, length, timeout)
+
+
+    @classmethod
+    def write(cls, endpoint_number, data, timeout=1000):
+        # TODO support interrupt endpoints
+        return cls.device_handle.bulkWrite(endpoint_number, data, timeout)
+
+
+
 if __name__ == "__main__":
     from .                  import FacedancerUSBApp
     from .filters.standard  import USBProxySetupFilters
@@ -561,10 +443,6 @@ if __name__ == "__main__":
     # xbox controller
     #VENDOR_ID  = 0x045e
     #PRODUCT_ID = 0x02d1
-
-    #we should try proxying ourself sometime...
-    #VENDOR_ID  = 0x1d50
-    #PRODUCT_ID = 0x615b
 
     device = USBProxyDevice(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
 

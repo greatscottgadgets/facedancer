@@ -1,8 +1,8 @@
-================================================
-How to write a new Facedancer backend
-================================================
+=====================================
+How to write a new Facedancer Backend
+=====================================
 
-Facedancer board backends can be found in the `facedancer/backends/ <https://github.com/greatscottgadgets/Facedancer/tree/master/facedancer/backends/>`__ directory.
+Facedancer board backends can be found in the :repo:`facedancer/backends/<facedancer/backends/>` directory.
 
 To create a new backend, follow these steps:
 
