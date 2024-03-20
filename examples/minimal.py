@@ -28,7 +28,7 @@ class MyDevice(USBDevice):
 
                 def handle_data_requested(self: USBEndpoint):
                     logging.info("handle_data_requested")
-                    self.send(b"device sent response on bulk endpoint")
+                    self.send(b"device on bulk endpoint")
 
             class MyOutEndpoint(USBEndpoint):
                 number          : int          = 1
@@ -36,17 +36,18 @@ class MyDevice(USBDevice):
                 max_packet_size : int          = 64
 
                 def handle_data_received(self: USBEndpoint, data):
-                    logging.info(f"device received '{data}' on bulk endpoint")
+                    logging.info(f"device received {data} on bulk endpoint")
 
     @vendor_request_handler(number=1, direction=USBDirection.IN)
     @to_device
-    def my_vendor_request_handler(self: USBDevice, request: USBControlRequest):
-        request.reply(b"device sent response on control endpoint")
+    def my_in_vendor_request_handler(self: USBDevice, request: USBControlRequest):
+        logging.info("my_in_vendor_request_handler")
+        request.reply(b"device on control endpoint")
 
     @vendor_request_handler(number=2, direction=USBDirection.OUT)
     @to_device
-    def my_other_vendor_request_handler(self: USBDevice, request: USBControlRequest):
-        logging.info(f"device received '{request.index}' '{request.value}' '{request.data}' on control endpoint")
+    def my_out_vendor_request_handler(self: USBDevice, request: USBControlRequest):
+        logging.info(f"device received {request.index} {request.value} {bytes(request.data)} on control endpoint")
         request.ack()
 
 
