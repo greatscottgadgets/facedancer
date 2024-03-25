@@ -555,5 +555,5 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         nakked_endpoints = [epno for epno in range(self.SUPPORTED_ENDPOINTS) if (nak_status >> epno) & 1]
         for endpoint_number in nakked_endpoints:
             if endpoint_number != 0:
-                log.debug(f"Received IN NAK on ep{endpoint_number}")
+                log.trace(f"Received IN NAK on ep{endpoint_number}")
                 self.connected_device.handle_nak(endpoint_number)

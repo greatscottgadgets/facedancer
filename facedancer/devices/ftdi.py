@@ -217,7 +217,7 @@ class FTDIDevice(USBDevice):
 
     def handle_data_received(self, endpoint, data):
         """ Called back whenever data is received. """
-        print(f"handle_data_received {endpoint} {len(data)} bytes")
+        log.debug(f"received {len(data)} bytes on {endpoint}")
         self.handle_serial_data_received(data[1:])
 
 
