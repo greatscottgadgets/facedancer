@@ -470,7 +470,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         # complete, triggering a corresponding code path in
         # in handle_transfer_complete_on_endpoint.
         if is_out and has_data:
-            log.info(f"  setup packet has data - queueing read")
+            log.debug(f"  setup packet has data - queueing read")
             self.pending_control_request = request
             self.api.ep_out_prime_receive(endpoint_number)
             return
