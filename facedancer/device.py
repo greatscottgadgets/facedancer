@@ -898,9 +898,9 @@ class USBDevice(USBBaseDevice):
         """ Handle SET_INTERFACE requests; per USB2 [9.4.10] """
         log.debug(f"f{self.name} received SET_INTERFACE request")
 
-        # We don't support alternate interfaces; so ACK setting
-        # interface zero, and stall all others.
-        if request.index_low == 0:
+        # We don't support alternate interface settings; so ACK
+        # alternate setting zero, and stall all others.
+        if request.value == 0:
             request.acknowledge()
         else:
             request.stall()
