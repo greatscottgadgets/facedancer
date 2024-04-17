@@ -230,8 +230,6 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         try:
             self.run_with(*coroutines)
-        except KeyboardInterrupt:
-            pass
         finally:
             self.disconnect()
 
