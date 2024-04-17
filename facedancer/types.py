@@ -210,7 +210,7 @@ class USBRequestRecipient(IntEnum):
         """ Special factory that correctly handles reserved values. """
 
         # If we have one of the reserved values; indicate so.
-        if 4 <= value < 16:
+        if 4 <= value < 32:
             return cls.RESERVED
 
         # Otherwise, translate the raw value.
