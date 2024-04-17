@@ -365,8 +365,12 @@ class HydradancerBoard():
     configured = False
 
     # 0x00ff (IN status mask, 1 = emulated ep ready for priming), 0xff00 (OUT mask, data received on emulated ep)
-    ep_status = 0x0000
-    new_ep_status = array('b', [0, 0])
+    _hydradancer_status_bytes = array('B', [0] * 4)
+    hydradancer_status = {}
+    hydradancer_status["ep_in_status"] = 0x00
+    hydradancer_status["ep_out_status"] = 0x00
+    hydradancer_status["ep_in_nak"] = 0x00
+    hydradancer_status["other_events"] = 0x00
 
     timeout_ms_poll = 1
 
@@ -593,8 +597,9 @@ class HydradancerBoard():
         Prime target endpoint ep_num. If blocking=True, it will wait for the endpoint's buffer to be empty.
         """
         try:
-            self.ep_out[self.endpoints_mapping[ep_num]].write(data)
-            self.ep_status &= ~(0x01 << ep_num)
+            sent = self.ep_out[self.endpoints_mapping[ep_num]].write(
+                data)
+            self.hydradancer_status["ep_in_status"] &= ~(0x01 << ep_num)
             if blocking:
                 while not self.IN_buffer_empty(ep_num):
                     self.fetch_events()
@@ -615,7 +620,7 @@ class HydradancerBoard():
                     self.MAX_PACKET_SIZE)
                 logging.debug(
                     f"EP{ep_num}/OUT: <- size {len(read)} {bytes(read)}")
-                self.ep_status &= ~((0x01 << ep_num) << 8)
+                self.hydradancer_status["ep_out_status"] &= ~(0x01 << ep_num)
                 return read
             return None
         except (usb.core.USBTimeoutError, usb.core.USBError):
@@ -644,16 +649,21 @@ class HydradancerBoard():
 
             if not self.configured:
                 read = self.device.ctrl_transfer(
-                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_IN, self.GET_EP_STATUS,
-                    data_or_wLength=self.new_ep_status, timeout=self.timeout_ms_poll)
+                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_IN, self.GET_EP_STATUS, data_or_wLength=self._hydradancer_status_bytes, timeout=self.timeout_ms_poll)
             else:
                 read = self.ep_poll.read(
-                    self.new_ep_status, timeout=self.timeout_ms_poll)
+                    self._hydradancer_status_bytes, timeout=self.timeout_ms_poll)
 
             if read > 0:
-                self.ep_status |= (self.new_ep_status[0] & 0x00ff) | (
-                    self.new_ep_status[1] << 8)
-                logging.debug(f"EP status {bin(self.ep_status)}")
+                (new_ep_in_status, new_ep_out_status, new_ep_in_nak,
+                 new_other_events) = self._hydradancer_status_bytes
+
+                self.hydradancer_status["ep_in_status"] |= new_ep_in_status
+                self.hydradancer_status["ep_out_status"] |= new_ep_out_status
+                self.hydradancer_status["ep_in_nak"] |= new_ep_in_nak
+                self.hydradancer_status["other_events"] |= new_other_events
+
+                logging.debug(f"Hydradancer status {self.hydradancer_status}")
                 return True
             return False
         except usb.core.USBTimeoutError:
@@ -666,17 +676,17 @@ class HydradancerBoard():
         """
         Returns True if the IN buffer for target endpoint ep_num is ready for priming
         """
-        return self.ep_status & (0x1 << ep_num)
+        return self.hydradancer_status["ep_in_status"] & (0x1 << ep_num)
 
     def OUT_buffer_available(self, ep_num):
         """
         Returns True if the OUT buffer for target endpoint ep_num is full
         """
-        return (self.ep_status >> 8) & (0x1 << ep_num)
+        return self.hydradancer_status["ep_out_status"] & (0x1 << ep_num)
 
     def CONTROL_buffer_available(self):
         """
         Returns True if the IN buffer for the control endpoint is ready for priming. 
         Note that currently all control requests (whatever the endpoint num it arrived with) will end up here.
         """
-        return (self.ep_status >> 8) & (0x1 << 0)
+        return self.IN_buffer_empty(0)
