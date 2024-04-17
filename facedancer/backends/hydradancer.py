@@ -744,10 +744,9 @@ class HydradancerBoard():
 
     def CONTROL_buffer_available(self):
         """
-        Returns True if the IN buffer for the control endpoint is ready for priming. 
-        Note that currently all control requests (whatever the endpoint num it arrived with) will end up here.
+        Returns True if the control buffer is available. Since this buffer is shared between EP0 IN/EP0 OUT, only the OUT status is used for both.
         """
-        return self.IN_buffer_empty(0)
+        return self.OUT_buffer_available(0)
 
     def bus_reset_pending(self):
         """
