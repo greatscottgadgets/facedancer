@@ -305,6 +305,7 @@ class HydradancerHostApp(FacedancerApp):
                 self.connected_device.handle_request(
                     self.pending_control_out_request)
                 self.pending_control_out_request = None
+                # self.ack_status_stage(direction=self.HOST_TO_DEVICE) Not handling ZLP because right now, parts of Facedancer are handling it (SET_INTERFACE for instance)
         elif len(data) > 0:
             request = self.connected_device.create_request(data)
             is_out = request.get_direction() == self.HOST_TO_DEVICE
