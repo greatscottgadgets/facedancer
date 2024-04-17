@@ -369,8 +369,9 @@ class HydradancerBoard():
     endpoints_mapping = {}  # emulated endpoint -> control board endpoint
     reverse_endpoints_mapping = {}  # control_board_endpoint -> emulated_endpoint
 
-    EP_POLL_NUMBER = 6
-    EP_LOG_NUMBER = 7
+    EP_POLL_NUMBER = 1
+
+    SUPPORTED_EP_NUM = [0, 1, 2, 3, 4, 5, 6, 7]
 
     # True when SET_CONFIGURATION has been received and the Hydradancer boards are configured
     configured = False
@@ -423,8 +424,7 @@ class HydradancerBoard():
             custom_match=lambda e:
             usb.util.endpoint_direction(e.bEndpointAddress) ==
             usb.util.ENDPOINT_IN and usb.util.endpoint_address(e.bEndpointAddress) !=
-            self.EP_POLL_NUMBER and usb.util.endpoint_address(e.bEndpointAddress) !=
-            self.EP_LOG_NUMBER))
+            self.EP_POLL_NUMBER))
 
         self.ep_in = {usb.util.endpoint_address(
             e.bEndpointAddress): e for e in self.ep_in}
@@ -435,8 +435,7 @@ class HydradancerBoard():
             custom_match=lambda e:
             usb.util.endpoint_direction(e.bEndpointAddress) ==
             usb.util.ENDPOINT_OUT and usb.util.endpoint_address(e.bEndpointAddress) !=
-            self.EP_POLL_NUMBER and usb.util.endpoint_address(e.bEndpointAddress) !=
-            self.EP_LOG_NUMBER))
+            self.EP_POLL_NUMBER))
 
         self.ep_out = {usb.util.endpoint_address(
             ep.bEndpointAddress): ep for ep in self.ep_out}
@@ -546,6 +545,9 @@ class HydradancerBoard():
         """
         Maps emulated endpoints (endpoints facing the target) to Facedancer's host endpoints (control board endpoints)
         """
+        if ep_num not in self.SUPPORTED_EP_NUM:
+            raise HydradancerBoardFatalError(
+                f"Endpoint number {ep_num} not supported, supported numbers : {self.SUPPORTED_EP_NUM}")
         self.endpoints_mapping[ep_num] = self.endpoints_pool.pop()
         self.reverse_endpoints_mapping[self.endpoints_mapping[ep_num]] = ep_num
         try:
