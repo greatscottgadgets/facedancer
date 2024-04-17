@@ -346,7 +346,7 @@ class USBControlRequest:
 
         direction = USBDirection(self.direction).name
         type_name = USBRequestType(self.type).name
-        recipient = USBRequestRecipient(self.recipient).name
+        recipient = USBRequestRecipient.from_integer(self.recipient).name
         name      = f"0x{self.number:02x}"
 
         # If this is a standard request, try to convert it to a name.
