@@ -115,6 +115,7 @@ class HydradancerHostApp(FacedancerApp):
     def disconnect(self):
         """ Disconnects the Hydradancer from its target host. """
         logging.info("disconnect")
+        self.configuration = None
         self.api.disconnect()
 
     def send_on_endpoint(self, ep_num, data, blocking=False):
@@ -198,7 +199,12 @@ class HydradancerHostApp(FacedancerApp):
 
         configuration: The configuration applied by the SET_CONFIG request.
         """
-        logging.info("configured")
+
+        if configuration is None:
+            self.configuration = None
+            self.api.configured = False
+            logging.debug("unconfigured")
+            return
 
         self.api.reinit(keep_ep0=True)
         endpoint_numbers = []
@@ -217,6 +223,7 @@ class HydradancerHostApp(FacedancerApp):
 
         self.api.configure(endpoint_numbers)
         self.configuration = configuration
+        logging.debug("configured")
 
     def ack_status_stage(self, direction=HOST_TO_DEVICE, endpoint_number=0, blocking=False):
         """
