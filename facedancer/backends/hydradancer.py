@@ -134,7 +134,9 @@ class HydradancerHostApp(FacedancerApp):
         else:
             max_packet_size = self.ep_in[ep_num].max_packet_size
 
-        # legacy applets misuse send_packet in USBEndpoint, so this is needed. send already slice data.
+        if len(data) > max_packet_size:
+            blocking = True
+
         while data:
             packet = data[0:max_packet_size]
             data = data[max_packet_size:]
@@ -291,7 +293,7 @@ class HydradancerHostApp(FacedancerApp):
             is_short_packet = len(data) < self.max_ep0_packet_size
 
             if all_data_received or is_short_packet:
-                self.connected_device.handle_request(request)
+                self.connected_device.handle_request(self.pending_control_out_request)
                 self.pending_control_out_request = None
         elif len(data) > 0:
             request = self.connected_device.create_request(data)
@@ -494,6 +496,16 @@ class HydradancerBoard():
             self.device.ctrl_transfer(
                 CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.DISABLE_USB)
             usb.util.dispose_resources(self.device)
+
+            # Reset state just in case
+            self.endpoints_pool = list(self.ep_in.keys())
+            self.hydradancer_status["ep_in_status"] = 0x00
+            self.hydradancer_status["ep_out_status"] = 0x00
+            self.hydradancer_status["ep_in_nak"] = 0x00
+            self.hydradancer_status["other_events"] = 0x00
+            self.endpoints_mapping = {}  # emulated endpoint -> control board endpoint
+            self.reverse_endpoints_mapping = {}  # control_board_endpoint -> emulated_endpoint
+
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to disconnect")
@@ -548,6 +560,10 @@ class HydradancerBoard():
         if ep_num not in self.SUPPORTED_EP_NUM:
             raise HydradancerBoardFatalError(
                 f"Endpoint number {ep_num} not supported, supported numbers : {self.SUPPORTED_EP_NUM}")
+        if not self.endpoints_pool:
+            raise HydradancerBoardFatalError(
+                f"All endpoints are already in use")
+            
         self.endpoints_mapping[ep_num] = self.endpoints_pool.pop()
         self.reverse_endpoints_mapping[self.endpoints_mapping[ep_num]] = ep_num
         try:
