@@ -240,24 +240,16 @@ class HydradancerHostApp(FacedancerApp):
 
         # process ep OUT firsts, transfer is dictated by the host, if there is data available on an ep OUT,
         # it should be processed before setting new IN data
-        for endp in self.configuration.interfaces[0].endpoints:
-            ep_dir_in = usb.util.endpoint_direction(endp) == ENDPOINT_IN
-            ep_num = usb.util.endpoint_address(endp)
-
-            if not ep_dir_in and self.api.OUT_buffer_available(ep_num):
+        for ep_num, ep in self.ep_out.items():
+            if self.api.OUT_buffer_available(ep_num):
                 data = self.api.read(ep_num)
                 if data is not None:
                     self.connected_device.handle_data_available(
                         ep_num, data.tobytes())
 
-        for endp in self.configuration.interfaces[0].endpoints:
-            ep_dir_in = usb.util.endpoint_direction(endp) == ENDPOINT_IN
-            ep_num = usb.util.endpoint_address(endp)
-
-            if ep_dir_in and self.api.IN_buffer_empty(ep_num):
-                ep = self.configuration.get_endpoint(ep_num, ep_dir_in)
-                if ep is not None:
-                    self.connected_device.handle_data_requested(ep)
+        for ep_num, ep in self.ep_in.items():
+            if self.api.IN_buffer_empty(ep_num):
+                self.connected_device.handle_data_requested(ep)
 
     def handle_data_endpoints_legacy(self):
         """
@@ -265,21 +257,16 @@ class HydradancerHostApp(FacedancerApp):
         """
         # process ep OUT firsts, transfer is dictated by the host, if there is data available on an ep OUT,
         # it should be processed before setting new IN data
-        for endp in self.configuration.get_interfaces()[0].endpoints:
-            ep_dir_in = endp.direction == 1
-            ep_num = endp.number
-
-            if not ep_dir_in and self.api.OUT_buffer_available(ep_num):
+        for ep_num, ep in self.ep_out.items():
+            if self.api.OUT_buffer_available(ep_num):
                 data = self.api.read(ep_num)
                 if data is not None:
                     self.connected_device.handle_data_available(
                         ep_num, data.tobytes())
 
-        for endp in self.configuration.get_interfaces()[0].endpoints:
-            ep_dir_in = endp.direction == 1
-            ep_num = endp.number
-            if ep_dir_in and self.api.IN_buffer_empty(ep_num):
-                self.connected_device.handle_buffer_available(ep_num)
+        for ep_num, ep in self.ep_in.items():
+            if self.api.IN_buffer_empty(ep_num):
+                self.connected_device.handle_buffer_available(ep)
 
     def handle_control_request(self):
         if not self.api.CONTROL_buffer_available():
