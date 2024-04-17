@@ -471,7 +471,7 @@ class HydradancerBoard():
             raise HydradancerBoardFatalError(
                 f"Could not get handle on Hydradancer events endpoint (EP {self.EP_POLL_NUMBER})")
 
-        self.endpoints_pool = list(self.ep_in.keys())
+        self.endpoints_pool = set(self.ep_in.keys())
 
         # wait until the board is ready, for instance if a disconnect was previously issued
         self.wait_board_ready()
@@ -498,7 +498,6 @@ class HydradancerBoard():
             usb.util.dispose_resources(self.device)
 
             # Reset state just in case
-            self.endpoints_pool = list(self.ep_in.keys())
             self.hydradancer_status["ep_in_status"] = 0x00
             self.hydradancer_status["ep_out_status"] = 0x00
             self.hydradancer_status["ep_in_nak"] = 0x00
@@ -564,7 +563,7 @@ class HydradancerBoard():
             raise HydradancerBoardFatalError(
                 f"All endpoints are already in use")
             
-        self.endpoints_mapping[ep_num] = self.endpoints_pool.pop()
+        self.endpoints_mapping[ep_num] = list(self.endpoints_pool - set(self.endpoints_mapping.values()))[0]
         self.reverse_endpoints_mapping[self.endpoints_mapping[ep_num]] = ep_num
         try:
             self.device.ctrl_transfer(CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT,
