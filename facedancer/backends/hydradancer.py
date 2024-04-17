@@ -181,8 +181,12 @@ class HydradancerHostApp(FacedancerApp):
     def reset(self):
         """
         Triggers the Hydradancer to handle its side of a bus reset.
+        The USB2 PHY has already been reset on the boards, this is called only to reset Facedancer and Hydradancer state.
+
+        TODO : what if a USB request happens after the USB2 PHY has been reset but before Hydradancer has been reset as well ?
         """
-        logging.warning("reset, not implemented")
+        logging.info("bus reset")
+        self.api.do_bus_reset()
 
     def configured(self, configuration):
         """
@@ -313,6 +317,9 @@ class HydradancerHostApp(FacedancerApp):
 
         self.api.fetch_events()
 
+        if self.api.bus_reset_pending():
+            self.reset()
+
         self.handle_control_request()
 
         if self.configuration is not None:
@@ -342,6 +349,10 @@ class HydradancerBoard():
     SET_SPEED = 55
     SET_EP_RESPONSE = 56
     CHECK_HYDRADANCER_READY = 57
+    DO_BUS_RESET = 58
+
+    #  events offsets
+    HYDRADANCER_STATUS_BUS_RESET = 0x1
 
     # USB speeds
     USB2_LS = 0
@@ -558,6 +569,19 @@ class HydradancerBoard():
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to set speed")
 
+    def do_bus_reset(self):
+        """
+        Set the speed of the USB2 device. Speed is physically determined by the host,
+        so the emulation board must be configured.
+        """
+        try:
+            self.device.ctrl_transfer(
+                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.DO_BUS_RESET)
+            self.hydradancer_status["other_events"] &= ~self.HYDRADANCER_STATUS_BUS_RESET
+        except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
+            logging.error(exception)
+            raise HydradancerBoardFatalError("Error, unable to do bus reset")
+
     def set_address(self, address, defer=False):
         """
         Set the USB address on the emulation board
@@ -693,3 +717,10 @@ class HydradancerBoard():
         Note that currently all control requests (whatever the endpoint num it arrived with) will end up here.
         """
         return self.IN_buffer_empty(0)
+
+    def bus_reset_pending(self):
+        """
+        Returns True if the IN buffer for the control endpoint is ready for priming. 
+        Note that currently all control requests (whatever the endpoint num it arrived with) will end up here.
+        """
+        return self.hydradancer_status["other_events"] & self.HYDRADANCER_STATUS_BUS_RESET
