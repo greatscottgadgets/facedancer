@@ -321,7 +321,7 @@ class HydradancerHostApp(FacedancerApp):
 
         # handle status stage of IN transfer
         elif len(data) == 0:
-            logging.debug("Received ACK for IN Ctrl req")
+            logging.debug("Received ACK for IN Ctrl req")            
 
     def service_irqs(self):
         """
@@ -678,7 +678,7 @@ class HydradancerBoard():
                 self.hydradancer_status["ep_out_status"] &= ~(0x01 << ep_num)
                 return read
             return None
-        except (usb.core.USBTimeoutError, usb.core.USBError):
+        except (usb.core.USBTimeoutError, usb.core.USBError) as e:
             logging.error(f"could not read data from ep {ep_num}")
             return None
 
@@ -750,7 +750,9 @@ class HydradancerBoard():
 
     def bus_reset_pending(self):
         """
-        Returns True if the IN buffer for the control endpoint is ready for priming. 
-        Note that currently all control requests (whatever the endpoint num it arrived with) will end up here.
+        Returns True if a bus reset should be performed.
+        1. Bus reset is received on the board : the addresss is set to 0.
+        2. The bit in other_events is set, so that the Facedancer backend can perform its reset.
+        3. The Facedancer backend sends a control message to the board so that it finishes the bus reset.
         """
         return self.hydradancer_status["other_events"] & self.HYDRADANCER_STATUS_BUS_RESET
