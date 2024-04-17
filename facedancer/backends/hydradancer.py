@@ -266,7 +266,7 @@ class HydradancerHostApp(FacedancerApp):
 
         for ep_num, ep in self.ep_in.items():
             if self.api.IN_buffer_empty(ep_num):
-                self.connected_device.handle_buffer_available(ep)
+                self.connected_device.handle_nak(ep)
 
     def handle_control_request(self):
         if not self.api.CONTROL_buffer_available():
@@ -597,7 +597,7 @@ class HydradancerBoard():
         Prime target endpoint ep_num. If blocking=True, it will wait for the endpoint's buffer to be empty.
         """
         try:
-            sent = self.ep_out[self.endpoints_mapping[ep_num]].write(
+            self.ep_out[self.endpoints_mapping[ep_num]].write(
                 data)
             self.hydradancer_status["ep_in_status"] &= ~(0x01 << ep_num)
             if blocking:
@@ -628,6 +628,9 @@ class HydradancerBoard():
             return None
 
     def configure(self, endpoint_numbers):
+        if len(endpoint_numbers) > len(self.endpoints_pool):
+            raise HydradancerBoardFatalError(
+                f"Hydradancer cannot handle {len(endpoint_numbers)} endpoints, only {len(self.endpoints_pool)}")
         for number in endpoint_numbers:
             self.set_endpoint_mapping(number)
         logging.info(f"Endpoints mapping {self.endpoints_mapping}")
