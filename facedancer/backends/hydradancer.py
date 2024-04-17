@@ -35,18 +35,6 @@ class HydradancerHostApp(FacedancerApp):
     USB2_FS = 1  # full-speed
     USB2_HS = 2  # high-speed
 
-    usb2_speed = USB2_FS  # default to full-speed
-
-    configuration = None
-    pending_control_out_request = None
-    connected_device = None
-    max_ep0_packet_size = None
-
-    ep_in = {}
-    ep_out = {}
-
-    legacy_mode = False  # legacy_mode is used for legacy_applets
-
     @classmethod
     def appropriate_for_environment(cls, backend_name):
         """
@@ -67,11 +55,21 @@ class HydradancerHostApp(FacedancerApp):
         """
         Creates a new hydradancer backend for communicating with a target device.
         """
-
         super().__init__(self)
+        self.usb2_speed = self.USB2_FS  # default to full-speed
+
+        self.configuration = None
+        self.pending_control_out_request = None
+        self.connected_device = None
+        self.max_ep0_packet_size = None
+
+        self.ep_in = {}
+        self.ep_out = {}
+
+        self.legacy_mode = False  # legacy_mode is used for legacy_applets
+
         self.api = HydradancerBoard()
         self.verbose = verbose
-        self.api.init()
         self.api.wait_board_ready()
 
     def init_commands(self):
@@ -191,6 +189,7 @@ class HydradancerHostApp(FacedancerApp):
         """
         logging.info("bus reset")
         self.api.do_bus_reset()
+        self.api.set_endpoint_mapping(0)
 
     def configured(self, configuration):
         """
@@ -201,6 +200,7 @@ class HydradancerHostApp(FacedancerApp):
         """
         logging.info("configured")
 
+        self.api.reinit(keep_ep0=True)
         endpoint_numbers = []
 
         for interface in configuration.get_interfaces():
@@ -303,6 +303,7 @@ class HydradancerHostApp(FacedancerApp):
             is_out = request.get_direction() == self.HOST_TO_DEVICE
             has_data = (request.length > 0)
 
+
             if is_out and has_data:
                 logging.debug("queuing Control OUT req, waiting for more data")
                 self.pending_control_out_request = request
@@ -342,7 +343,6 @@ class HydradancerBoard():
     """
     Handles the communication with the Hydradancer control board and manages the events it sends.
     """
-
     MAX_PACKET_SIZE = 512
 
     # USB Vendor Requests codes
@@ -369,36 +369,41 @@ class HydradancerBoard():
     ENDP_STATE_NAK = 0x02
     ENDP_STATE_STALL = 0x03
 
-    # Endpoints available on the control board for mapping (to the emulated device endpoints)
-    endpoints_pool = None
-    endpoints_mapping = {}  # emulated endpoint -> control board endpoint
-    reverse_endpoints_mapping = {}  # control_board_endpoint -> emulated_endpoint
-
-    EP_POLL_NUMBER = 1
-
-    SUPPORTED_EP_NUM = [0, 1, 2, 3, 4, 5, 6, 7]
-
-    # True when SET_CONFIGURATION has been received and the Hydradancer boards are configured
-    configured = False
-
-    # 0x00ff (IN status mask, 1 = emulated ep ready for priming), 0xff00 (OUT mask, data received on emulated ep)
-    _hydradancer_status_bytes = array('B', [0] * 4)
-    hydradancer_status = {}
-    hydradancer_status["ep_in_status"] = 0x00
-    hydradancer_status["ep_out_status"] = 0x00
-    hydradancer_status["ep_in_nak"] = 0x00
-    hydradancer_status["other_events"] = 0x00
-
-    timeout_ms_poll = 1
-
     # USB endpoints direction
     HOST_TO_DEVICE = 0
     DEVICE_TO_HOST = 1
 
-    def init(self):
+    EP_POLL_NUMBER = 1
+    SUPPORTED_EP_NUM = [0, 1, 2, 3, 4, 5, 6, 7]
+
+    timeout_ms_poll = 1
+
+    def reinit(self, keep_ep0:bool = False):
+        if keep_ep0 and 0 in self.endpoints_mapping.keys():
+            old_control_ep = self.endpoints_mapping[0]
+            self.endpoints_mapping = {0: self.endpoints_mapping[0]}
+            self.reverse_endpoints_mapping = {old_control_ep:0}
+        else:
+            self.endpoints_mapping = {}  # emulated endpoint -> control board endpoint
+            self.reverse_endpoints_mapping = {}  # control_board_endpoint -> emulated_endpoint
+
+        # True when SET_CONFIGURATION has been received and the Hydradancer boards are configured
+        self.configured = False
+
+        # 0x00ff (IN status mask, 1 = emulated ep ready for priming), 0xff00 (OUT mask, data received on emulated ep)
+        self._hydradancer_status_bytes = array('B', [0] * 4)
+        self.hydradancer_status = {}
+        self.hydradancer_status["ep_in_status"] = 0x00
+        self.hydradancer_status["ep_out_status"] = 0x00
+        self.hydradancer_status["ep_in_nak"] = 0x00
+        self.hydradancer_status["other_events"] = 0x00
+
+    def __init__(self):
         """
         Get handles on the USB control board, and wait for Hydradancer to be ready
         """
+
+        self.reinit()
 
         # Open a connection to the target device...
         self.device = usb.core.find(idVendor=0x16c0, idProduct=0x27d8)
@@ -500,15 +505,6 @@ class HydradancerBoard():
                 CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.DISABLE_USB)
             usb.util.dispose_resources(self.device)
 
-            # Reset state just in case
-            self.hydradancer_status["ep_in_status"] = 0x00
-            self.hydradancer_status["ep_out_status"] = 0x00
-            self.hydradancer_status["ep_in_nak"] = 0x00
-            self.hydradancer_status["other_events"] = 0x00
-            self.endpoints_mapping = {}  # emulated endpoint -> control board endpoint
-            # control_board_endpoint -> emulated_endpoint
-            self.reverse_endpoints_mapping = {}
-
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to disconnect")
@@ -563,13 +559,16 @@ class HydradancerBoard():
         if ep_num not in self.SUPPORTED_EP_NUM:
             raise HydradancerBoardFatalError(
                 f"Endpoint number {ep_num} not supported, supported numbers : {self.SUPPORTED_EP_NUM}")
-        if not self.endpoints_pool:
-            raise HydradancerBoardFatalError(
-                f"All endpoints are already in use")
 
-        self.endpoints_mapping[ep_num] = list(
-            self.endpoints_pool - set(self.endpoints_mapping.values()))[0]
-        self.reverse_endpoints_mapping[self.endpoints_mapping[ep_num]] = ep_num
+        if len(self.endpoints_mapping.values()) >= len(self.endpoints_pool):
+            raise HydradancerBoardFatalError(
+                f"All {len(self.endpoints_pool)} endpoints are already in use (for EP0 included)")
+
+        if ep_num not in self.endpoints_mapping.keys():
+            self.endpoints_mapping[ep_num] = list(
+                self.endpoints_pool - set(self.endpoints_mapping.values()))[0]
+            self.reverse_endpoints_mapping[self.endpoints_mapping[ep_num]] = ep_num
+
         try:
             self.device.ctrl_transfer(CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT,
                                       self.SET_ENDPOINT_MAPPING, wValue=(
@@ -597,6 +596,8 @@ class HydradancerBoard():
         so the emulation board must be configured.
         """
         try:
+            self.reinit(keep_ep0=True)
+
             self.device.ctrl_transfer(
                 CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.DO_BUS_RESET)
             self.hydradancer_status["other_events"] &= ~self.HYDRADANCER_STATUS_BUS_RESET
