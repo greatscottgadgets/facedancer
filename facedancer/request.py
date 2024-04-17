@@ -353,7 +353,7 @@ class USBControlRequest:
         if self.type == USBRequestType.STANDARD:
             try:
                 name = f"{USBStandardRequests(self.number).name} (0x{self.number:02x})"
-            except KeyError:
+            except ValueError:
                 pass
 
         return f"{direction} {type_name} request {name} to {recipient} " \
