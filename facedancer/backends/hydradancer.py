@@ -24,6 +24,8 @@ class HydradancerHostApp(FacedancerApp):
     """
     app_name = "Hydradancer Host"
 
+    MANUFACTURER_STRING = "Quarkslab https://www.quarkslab.com/ & HydraBus https://hydrabus.com/"
+
     # USB directions
     HOST_TO_DEVICE = 0
     DEVICE_TO_HOST = 1
@@ -56,7 +58,7 @@ class HydradancerHostApp(FacedancerApp):
         # Open a connection to the target device...
         device = usb.core.find(idVendor=0x16c0, idProduct=0x27d8)
 
-        if device is not None and backend_name == "hydradancer":
+        if device is not None and device.manufacturer == cls.MANUFACTURER_STRING and backend_name == "hydradancer":
             return True
 
         return False
@@ -293,7 +295,8 @@ class HydradancerHostApp(FacedancerApp):
             is_short_packet = len(data) < self.max_ep0_packet_size
 
             if all_data_received or is_short_packet:
-                self.connected_device.handle_request(self.pending_control_out_request)
+                self.connected_device.handle_request(
+                    self.pending_control_out_request)
                 self.pending_control_out_request = None
         elif len(data) > 0:
             request = self.connected_device.create_request(data)
@@ -503,7 +506,8 @@ class HydradancerBoard():
             self.hydradancer_status["ep_in_nak"] = 0x00
             self.hydradancer_status["other_events"] = 0x00
             self.endpoints_mapping = {}  # emulated endpoint -> control board endpoint
-            self.reverse_endpoints_mapping = {}  # control_board_endpoint -> emulated_endpoint
+            # control_board_endpoint -> emulated_endpoint
+            self.reverse_endpoints_mapping = {}
 
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
@@ -562,8 +566,9 @@ class HydradancerBoard():
         if not self.endpoints_pool:
             raise HydradancerBoardFatalError(
                 f"All endpoints are already in use")
-            
-        self.endpoints_mapping[ep_num] = list(self.endpoints_pool - set(self.endpoints_mapping.values()))[0]
+
+        self.endpoints_mapping[ep_num] = list(
+            self.endpoints_pool - set(self.endpoints_mapping.values()))[0]
         self.reverse_endpoints_mapping[self.endpoints_mapping[ep_num]] = ep_num
         try:
             self.device.ctrl_transfer(CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT,
