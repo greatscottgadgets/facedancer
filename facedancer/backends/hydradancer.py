@@ -40,6 +40,9 @@ class HydradancerHostApp(FacedancerApp):
     connected_device = None
     max_ep0_packet_size = None
 
+    ep_in = {}
+    ep_out = {}
+
     legacy_mode = False  # legacy_mode is used for legacy_applets
 
     @classmethod
@@ -122,8 +125,20 @@ class HydradancerHostApp(FacedancerApp):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        logging.debug(f"EP{ep_num}/IN: -> size {len(data)} {bytes(data)}")
-        self.api.send(ep_num, data, blocking)
+        # handle ZLP
+        if not data:
+            self.api.send(ep_num, data, blocking)
+
+        if ep_num == 0:
+            max_packet_size = self.max_ep0_packet_size
+        else:
+            max_packet_size = self.ep_in[ep_num].max_packet_size
+
+        # legacy applets misuse send_packet in USBEndpoint, so this is needed. send already slice data.
+        while data:
+            packet = data[0:max_packet_size]
+            data = data[max_packet_size:]
+            self.api.send(ep_num, packet, blocking)
 
     def read_from_endpoint(self, ep_num):
         """
@@ -180,17 +195,17 @@ class HydradancerHostApp(FacedancerApp):
 
         endpoint_numbers = []
 
-        if not self.legacy_mode:
-            for endpoint in configuration.interfaces[0].endpoints:
-                ep_num = usb.util.endpoint_address(endpoint)
+        for interface in configuration.get_interfaces():
+            for endpoint in interface.get_endpoints():
+                ep_num = endpoint.number
+                is_ep_in = endpoint.direction == 1
                 if ep_num not in endpoint_numbers:
                     endpoint_numbers.append(ep_num)
 
-        else:
-            for endpoint in configuration.get_interfaces()[0].endpoints:
-                ep_num = endpoint.number
-                if ep_num not in endpoint_numbers:
-                    endpoint_numbers.append(ep_num)
+                if is_ep_in:
+                    self.ep_in[ep_num] = endpoint
+                else:
+                    self.ep_out[ep_num] = endpoint
 
         self.api.configure(endpoint_numbers)
         self.configuration = configuration
@@ -571,15 +586,17 @@ class HydradancerBoard():
         Currently stalls both directions, because ep0 was STALLED only in one direction
         (TODO maybe separate ep0 from the rest, and double-check).
         """
-        # Stall EP IN and OUT, then set them to ACK again
-        # direction does not seem to be used (at least for EP0), so stalling would only happen for direction = 0 (OUT)
+        # Stall EP
+
         try:
-            self.device.ctrl_transfer(
-                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_EP_RESPONSE, wValue=(ep_num | 0 << 7) |
-                (self.ENDP_STATE_STALL << 8) & 0xff00)
-            self.device.ctrl_transfer(
-                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_EP_RESPONSE, wValue=(ep_num | 1 << 7) |
-                (self.ENDP_STATE_STALL << 8) & 0xff00)
+            if ep_num == 0:
+                self.device.ctrl_transfer(
+                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_EP_RESPONSE, wValue=(ep_num | 0 << 7) | (self.ENDP_STATE_STALL << 8) & 0xff00)
+                self.device.ctrl_transfer(
+                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_EP_RESPONSE, wValue=(ep_num | 1 << 7) | (self.ENDP_STATE_STALL << 8) & 0xff00)
+            else:
+                self.device.ctrl_transfer(
+                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_EP_RESPONSE, wValue=(ep_num | direction << 7) | (self.ENDP_STATE_STALL << 8) & 0xff00)
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError(f"Could not stall ep {ep_num}")
