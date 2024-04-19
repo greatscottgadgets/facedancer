@@ -600,8 +600,9 @@ class HydradancerBoard():
 
     def do_bus_reset(self):
         """
-        Set the speed of the USB2 device. Speed is physically determined by the host,
-        so the emulation board must be configured.
+        At this point, the USB2 controller has already set its address to 0 and reset its endpoints.
+        Facedancer has then been warned about the reset to handle its side of the reset.
+        Finally, we tell the boards to reset their internal state to complete the reset.
         """
         try:
             self.reinit(keep_ep0=True)
