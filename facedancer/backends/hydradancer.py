@@ -8,19 +8,24 @@ import sys
 import logging
 import usb
 from usb.util import CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE, CTRL_IN, CTRL_OUT, ENDPOINT_IN
-import time
 from array import array
 
-from ..core import FacedancerApp
-from ..USBDevice import USBDevice
+from typing           import List, Tuple
+
+from ..core           import *
+from ..device         import USBDevice
+from ..configuration  import USBConfiguration
+from ..types          import DeviceSpeed, USBDirection
+
+from ..logging        import log
+
+from .base            import FacedancerBackend
+# from ..USBDevice import USBDevice
 
 
-class HydradancerHostApp(FacedancerApp):
+class HydradancerHostApp(FacedancerApp, FacedancerBackend):
     """
     Backend for the HydraUSB3 boards.
-
-    It supports USB2 High-speed, the speed can be set with the attribute "usb2_speed" of the device class.
-    If this attribute is not present, it will default to full-speed (the speed currently assumed by the examples).
     """
     app_name = "Hydradancer Host"
 
@@ -29,11 +34,6 @@ class HydradancerHostApp(FacedancerApp):
     # USB directions
     HOST_TO_DEVICE = 0
     DEVICE_TO_HOST = 1
-
-    # USB speeds
-    USB2_LS = 0  # low-speed
-    USB2_FS = 1  # full-speed
-    USB2_HS = 2  # high-speed
 
     @classmethod
     def appropriate_for_environment(cls, backend_name):
@@ -56,7 +56,6 @@ class HydradancerHostApp(FacedancerApp):
         Creates a new hydradancer backend for communicating with a target device.
         """
         super().__init__(self)
-        self.usb2_speed = self.USB2_FS  # default to full-speed
 
         self.configuration = None
         self.pending_control_out_request = None
@@ -80,7 +79,7 @@ class HydradancerHostApp(FacedancerApp):
     def get_version(self):
         raise NotImplementedError()
 
-    def connect(self, usb_device, max_ep0_packet_size=64):
+    def connect(self, usb_device: USBDevice, max_packet_size_ep0: int=64, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
         Prepares Hydradancer to connect to the target host and emulate
         a given device.
@@ -90,27 +89,18 @@ class HydradancerHostApp(FacedancerApp):
         """
         self.api.set_endpoint_mapping(0)
 
-        if hasattr(usb_device, 'usb2_speed'):
-            self.usb2_speed = usb_device.usb2_speed
+        if device_speed not in [DeviceSpeed.LOW, DeviceSpeed.FULL, DeviceSpeed.HIGH]:
+            log.warning(f"Hydradancer only supports USB Low, Full and High Speed. Ignoring requested speed: {device_speed.name}")
 
-        if self.usb2_speed == self.USB2_LS:
-            logging.info("Setting speed to low-speed")
-        elif self.usb2_speed == self.USB2_FS:
-            logging.info("Setting speed to full-speed")
-        elif self.usb2_speed == self.USB2_HS:
-            logging.info("Setting speed to high-speed")
-        else:
-            logging.info("Setting speed to full-speed")
-
-        self.api.set_usb2_speed(self.usb2_speed)
+        self.api.set_usb2_speed(device_speed)
         logging.info("connect ...")
 
         self.api.connect()
 
         self.connected_device = usb_device
 
-        self.legacy_mode = isinstance(self.connected_device, USBDevice)
-        self.max_ep0_packet_size = max_ep0_packet_size
+        # self.legacy_mode = isinstance(self.connected_device, USBDevice) # How can we detect this ? there are still a lot of legacy apps
+        self.max_ep0_packet_size = max_packet_size_ep0
 
     def disconnect(self):
         """ Disconnects the Hydradancer from its target host. """
@@ -266,22 +256,22 @@ class HydradancerHostApp(FacedancerApp):
             if self.api.IN_buffer_empty(ep_num):
                 self.connected_device.handle_data_requested(ep)
 
-    def handle_data_endpoints_legacy(self):
-        """
-        Handle IN or OUT requests on non-control endpoints for the legacy_applets
-        """
-        # process ep OUT firsts, transfer is dictated by the host, if there is data available on an ep OUT,
-        # it should be processed before setting new IN data
-        for ep_num, ep in self.ep_out.items():
-            if self.api.OUT_buffer_available(ep_num):
-                data = self.api.read(ep_num)
-                if data is not None:
-                    self.connected_device.handle_data_available(
-                        ep_num, data.tobytes())
+    # def handle_data_endpoints_legacy(self):
+    #     """
+    #     Handle IN or OUT requests on non-control endpoints for the legacy_applets
+    #     """
+    #     # process ep OUT firsts, transfer is dictated by the host, if there is data available on an ep OUT,
+    #     # it should be processed before setting new IN data
+    #     for ep_num, ep in self.ep_out.items():
+    #         if self.api.OUT_buffer_available(ep_num):
+    #             data = self.api.read(ep_num)
+    #             if data is not None:
+    #                 self.connected_device.handle_data_available(
+    #                     ep_num, data.tobytes())
 
-        for ep_num, ep in self.ep_in.items():
-            if self.api.IN_buffer_empty(ep_num):
-                self.connected_device.handle_nak(ep)
+    #     for ep_num, ep in self.ep_in.items():
+    #         if self.api.IN_buffer_empty(ep_num):
+    #             self.connected_device.handle_nak(ep)
 
     def handle_control_request(self):
         if not self.api.CONTROL_buffer_available():
@@ -339,8 +329,8 @@ class HydradancerHostApp(FacedancerApp):
         if self.configuration is not None:
             if not self.legacy_mode:
                 self.handle_data_endpoints()
-            else:  # support for old USBDevice
-                self.handle_data_endpoints_legacy()
+            # else:  # support for old USBDevice
+            #     self.handle_data_endpoints_legacy()
 
 
 class HydradancerBoardFatalError(Exception):
@@ -367,10 +357,12 @@ class HydradancerBoard():
     #  events offsets
     HYDRADANCER_STATUS_BUS_RESET = 0x1
 
-    # USB speeds
-    USB2_LS = 0
-    USB2_FS = 1
-    USB2_HS = 2
+    # Facedancer USB2 speed to Hydradancer USB2 speed
+    facedancer_to_hydradancer_speed = {
+        DeviceSpeed.LOW : 0,
+        DeviceSpeed.FULL : 1,
+        DeviceSpeed.HIGH : 2
+    }
 
     # Endpoint states on the emulation board
     ENDP_STATE_ACK = 0x00
@@ -586,14 +578,14 @@ class HydradancerBoard():
             raise HydradancerBoardFatalError(
                 f"Could not set mapping for ep {ep_num}")
 
-    def set_usb2_speed(self, usb2_speed):
+    def set_usb2_speed(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
         Set the speed of the USB2 device. Speed is physically determined by the host,
         so the emulation board must be configured.
         """
         try:
             self.device.ctrl_transfer(
-                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_SPEED, wValue=usb2_speed & 0x00ff)
+                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_SPEED, wValue=self.facedancer_to_hydradancer_speed[device_speed] & 0x00ff)
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to set speed")
