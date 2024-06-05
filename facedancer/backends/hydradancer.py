@@ -9,6 +9,7 @@ import logging
 import usb
 from usb.util import CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE, CTRL_IN, CTRL_OUT, ENDPOINT_IN
 from array import array
+from time import time_ns
 
 from typing           import List, Tuple
 
@@ -20,7 +21,6 @@ from ..types          import DeviceSpeed, USBDirection
 from ..logging        import log
 
 from .base            import FacedancerBackend
-# from ..USBDevice import USBDevice
 from dataclasses import dataclass
 
 @dataclass
@@ -53,6 +53,8 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
     # USB directions
     HOST_TO_DEVICE = 0
     DEVICE_TO_HOST = 1
+
+    current_setup_req = None
 
     @classmethod
     def appropriate_for_environment(cls, backend_name):
@@ -135,14 +137,17 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        # handle ZLP
-        if not data:
-            self.api.send(ep_num, data, blocking)
+        backup_len = len(data)
 
         if ep_num == 0:
             max_packet_size = self.max_ep0_packet_size
+            blocking = False
         else:
             max_packet_size = self.ep_in[ep_num].max_packet_size
+            blocking = True
+
+        if not data:
+            self.api.send(ep_num, data, blocking)
 
         if len(data) > max_packet_size:
             blocking = True
@@ -150,7 +155,18 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         while data:
             packet = data[0:max_packet_size]
             data = data[max_packet_size:]
+            logging.debug(f"Sending {len(packet)} on ep {ep_num} blocking {blocking}")
             self.api.send(ep_num, packet, blocking)
+
+        # Many things to take into account here ...
+        # first, if the len we are sending is a multiple of the max_packet_size, the host will request a ZLP (otherwise, it can't know when the transfer ends)
+        # however, if the endpoint is endpoint 0, the host knows the size of the transfer in advance so it might not request the ZLP
+        # this could be solved by using NAKs for EP0 as well (answering by a ZLP if a NAK is received but we already sent everything)
+        # however, this could add too much latency and make enumeration fail
+        if ep_num == 0 and (backup_len % max_packet_size) == 0 and backup_len > 0 and backup_len != self.current_setup_req.length:
+            logging.debug(f"Sending ZLP")
+            self.api.send(ep_num, b"", blocking) # Sending ZLP
+
 
     def read_from_endpoint(self, ep_num):
         """
@@ -310,12 +326,12 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
                 self.connected_device.handle_request(
                     self.pending_control_out_request)
                 self.pending_control_out_request = None
-                # self.ack_status_stage(direction=self.HOST_TO_DEVICE) Not handling ZLP because right now, parts of Facedancer are handling it (SET_INTERFACE for instance)
         elif len(data) > 0:
             request = self.connected_device.create_request(data)
             is_out = request.get_direction() == self.HOST_TO_DEVICE
             has_data = (request.length > 0)
 
+            self.current_setup_req = request
 
             if is_out and has_data:
                 logging.debug("queuing Control OUT req, waiting for more data")
@@ -381,7 +397,7 @@ class HydradancerBoard():
         DeviceSpeed.HIGH : 2
     }
 
-    EVENT_QUEUE_SIZE = 32
+    EVENT_QUEUE_SIZE = 100
 
     # Endpoint states on the emulation board
     ENDP_STATE_ACK = 0x00
@@ -648,13 +664,19 @@ class HydradancerBoard():
         Prime target endpoint ep_num. If blocking=True, it will wait for the endpoint's buffer to be empty.
         """
         try:
-            if blocking:
-                while not self.IN_buffer_empty(ep_num) and not self.NAK_on_endpoint(ep_num):
-                    events = self.fetch_events()
-                    if events is not None:
-                        for event in events:
-                            if event is not None and event.event_type == HydradancerEvent.EVENT_BUS_RESET:
-                                self.reset()
+            count = 0
+            start_time = time_ns()
+            MAX_TIME_NS = 1e-3 * 1e9 
+            while not (self.IN_buffer_empty(ep_num) and (ep_num == 0)) and not (ep_num != 0 and self.NAK_on_endpoint(ep_num) and self.IN_buffer_empty(ep_num)):
+                events = self.fetch_events()
+                if events is not None:
+                    for event in events:
+                        if event is not None and event.event_type == HydradancerEvent.EVENT_BUS_RESET:
+                            self.reset()
+                if (time_ns() - start_time) > MAX_TIME_NS:
+                    logging.debug("Stop waiting to unlock situation")
+                    break
+            logging.debug(f"Sending len {len(data)} {data}")
             self.ep_out[self.endpoints_mapping[ep_num]].write(
                 data)
             self.hydradancer_status["ep_in_status"] &= ~(0x01 << ep_num)
