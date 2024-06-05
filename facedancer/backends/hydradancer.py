@@ -10,13 +10,13 @@ import time
 from array import array
 from time import time_ns
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict, Any
 
 import usb
 from usb.util import CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE, CTRL_IN, CTRL_OUT
 
 from ..core           import *
-from ..device         import USBDevice, USBConfiguration, USBDirection
+from ..device         import USBDevice, USBConfiguration, USBDirection, USBEndpoint
 from ..types          import DeviceSpeed
 from ..logging        import log
 from .base            import FacedancerBackend
@@ -73,10 +73,10 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.connected_device = None
         self.max_ep0_packet_size = None
 
-        self.ep_transfer_queue = [[]] * self.USB2_MAX_EP_IN
+        self.ep_transfer_queue : List[List[Any]] = [[]] * self.USB2_MAX_EP_IN
 
-        self.ep_in = {}
-        self.ep_out = {}
+        self.ep_in : Dict[int, USBEndpoint] = {}
+        self.ep_out : Dict[int, USBEndpoint] = {}
 
         self.api = HydradancerBoard()
         self.verbose = verbose
@@ -137,7 +137,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.configuration = None
         self.pending_control_out_request = None
         self.connected_device = None
-        self.max_ep0_packet_size = None
+        self.max_ep0_packet_size = 0
         self.ep_transfer_queue = [[]] * self.USB2_MAX_EP_IN
         self.api.disconnect()
 
@@ -436,7 +436,7 @@ class HydradancerBoard():
         Get handles on the USB control board, and wait for Hydradancer to be ready
         """
         self.configured = False
-        self.endpoints_mapping = {}
+        self.endpoints_mapping : Dict[int,int] = {}
 
         self.reinit()
 
