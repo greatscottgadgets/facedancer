@@ -21,6 +21,25 @@ from ..logging        import log
 
 from .base            import FacedancerBackend
 # from ..USBDevice import USBDevice
+from dataclasses import dataclass
+
+@dataclass
+class HydradancerEvent:
+    # Events
+    EVENT_BUS_RESET = 0x0
+    EVENT_IN_BUFFER_AVAILABLE = 0x1
+    EVENT_OUT_BUFFER_AVAILABLE = 0x2
+    EVENT_NAK = 0x3
+
+    event_type : int = -1
+    value : int = -1
+
+    @staticmethod
+    def from_bytes(data : bytes):
+        return HydradancerEvent(event_type = data[0], value = data[1])
+
+    def __repr__(self):
+        return f"event_type {self.event_type} value {self.value}"
 
 
 class HydradancerHostApp(FacedancerApp, FacedancerBackend):
@@ -174,13 +193,9 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
     def reset(self):
         """
         Triggers the Hydradancer to handle its side of a bus reset.
-        The USB2 PHY has already been reset on the boards, this is called only to reset Facedancer and Hydradancer state.
-
-        TODO : what if a USB request happens after the USB2 PHY has been reset but before Hydradancer has been reset as well ?
         """
         logging.info("bus reset")
-        self.api.do_bus_reset()
-        self.api.set_endpoint_mapping(0)
+
 
     def configured(self, configuration):
         """
@@ -253,7 +268,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
                         ep_num, data.tobytes())
 
         for ep_num, ep in self.ep_in.items():
-            if self.api.IN_buffer_empty(ep_num):
+            if self.api.IN_buffer_empty(ep_num) and self.api.NAK_on_endpoint(ep_num):
                 self.connected_device.handle_data_requested(ep)
 
     # def handle_data_endpoints_legacy(self):
@@ -318,11 +333,12 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         Core routine of the Facedancer execution/event loop. Continuously monitors the
         Hydradancers's execution status, and reacts as events occur.
         """
+        events = self.api.fetch_events()
 
-        self.api.fetch_events()
-
-        if self.api.bus_reset_pending():
-            self.reset()
+        if events is not None:
+            for event in events:
+                if event is not None and event.event_type == HydradancerEvent.EVENT_BUS_RESET:
+                    self.reset()
 
         self.handle_control_request()
 
@@ -346,13 +362,14 @@ class HydradancerBoard():
     # USB Vendor Requests codes
     ENABLE_USB_CONNECTION_REQUEST_CODE = 50
     SET_ADDRESS_REQUEST_CODE = 51
-    GET_EP_STATUS = 52
+    GET_EVENT = 52
     SET_ENDPOINT_MAPPING = 53
     DISABLE_USB = 54
     SET_SPEED = 55
     SET_EP_RESPONSE = 56
     CHECK_HYDRADANCER_READY = 57
     DO_BUS_RESET = 58
+    CONFIGURED = 59
 
     #  events offsets
     HYDRADANCER_STATUS_BUS_RESET = 0x1
@@ -363,6 +380,8 @@ class HydradancerBoard():
         DeviceSpeed.FULL : 1,
         DeviceSpeed.HIGH : 2
     }
+
+    EVENT_QUEUE_SIZE = 32
 
     # Endpoint states on the emulation board
     ENDP_STATE_ACK = 0x00
@@ -387,16 +406,16 @@ class HydradancerBoard():
             self.endpoints_mapping = {}  # emulated endpoint -> control board endpoint
             self.reverse_endpoints_mapping = {}  # control_board_endpoint -> emulated_endpoint
 
+        self.events = array('B', [0] * 2 * self.EVENT_QUEUE_SIZE)
         # True when SET_CONFIGURATION has been received and the Hydradancer boards are configured
         self.configured = False
-
         # 0x00ff (IN status mask, 1 = emulated ep ready for priming), 0xff00 (OUT mask, data received on emulated ep)
         self._hydradancer_status_bytes = array('B', [0] * 4)
         self.hydradancer_status = {}
-        self.hydradancer_status["ep_in_status"] = 0x00
+        self.hydradancer_status["ep_in_status"] = (1 << 0) & 0xff
         self.hydradancer_status["ep_out_status"] = 0x00
         self.hydradancer_status["ep_in_nak"] = 0x00
-        self.hydradancer_status["other_events"] = 0x00
+        
 
     def __init__(self):
         """
@@ -590,22 +609,6 @@ class HydradancerBoard():
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to set speed")
 
-    def do_bus_reset(self):
-        """
-        At this point, the USB2 controller has already set its address to 0 and reset its endpoints.
-        Facedancer has then been warned about the reset to handle its side of the reset.
-        Finally, we tell the boards to reset their internal state to complete the reset.
-        """
-        try:
-            self.reinit(keep_ep0=True)
-
-            self.device.ctrl_transfer(
-                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.DO_BUS_RESET)
-            self.hydradancer_status["other_events"] &= ~self.HYDRADANCER_STATUS_BUS_RESET
-        except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
-            logging.error(exception)
-            raise HydradancerBoardFatalError("Error, unable to do bus reset")
-
     def set_address(self, address, defer=False):
         """
         Set the USB address on the emulation board
@@ -645,12 +648,17 @@ class HydradancerBoard():
         Prime target endpoint ep_num. If blocking=True, it will wait for the endpoint's buffer to be empty.
         """
         try:
+            if blocking:
+                while not self.IN_buffer_empty(ep_num) and not self.NAK_on_endpoint(ep_num):
+                    events = self.fetch_events()
+                    if events is not None:
+                        for event in events:
+                            if event is not None and event.event_type == HydradancerEvent.EVENT_BUS_RESET:
+                                self.reset()
             self.ep_out[self.endpoints_mapping[ep_num]].write(
                 data)
             self.hydradancer_status["ep_in_status"] &= ~(0x01 << ep_num)
-            if blocking:
-                while not self.IN_buffer_empty(ep_num):
-                    self.fetch_events()
+            self.hydradancer_status["ep_in_nak"] &= ~(0x01 << ep_num)
         except (usb.core.USBTimeoutError, usb.core.USBError):
             logging.error(f"could not send data on ep {ep_num}")
 
@@ -681,6 +689,14 @@ class HydradancerBoard():
                 f"Hydradancer cannot handle {len(endpoint_numbers)} endpoints, only {len(self.endpoints_pool)}")
         for number in endpoint_numbers:
             self.set_endpoint_mapping(number)
+        try:
+            self.device.ctrl_transfer(CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT,
+                                    self.CONFIGURED)
+        except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
+            logging.error(exception)
+            raise HydradancerBoardFatalError(
+                f"Could not pass configured step on board")
+                
         logging.info(f"Endpoints mapping {self.endpoints_mapping}")
         self.configured = True
 
@@ -700,25 +716,27 @@ class HydradancerBoard():
 
             if not self.configured:
                 read = self.device.ctrl_transfer(
-                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_IN, self.GET_EP_STATUS, data_or_wLength=self._hydradancer_status_bytes, timeout=self.timeout_ms_poll)
+                    CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_IN, self.GET_EVENT, data_or_wLength=self.events, timeout=self.timeout_ms_poll)
             else:
                 read = self.ep_poll.read(
-                    self._hydradancer_status_bytes, timeout=self.timeout_ms_poll)
-
-            if read > 0:
-                (new_ep_in_status, new_ep_out_status, new_ep_in_nak,
-                 new_other_events) = self._hydradancer_status_bytes
-
-                self.hydradancer_status["ep_in_status"] |= new_ep_in_status
-                self.hydradancer_status["ep_out_status"] |= new_ep_out_status
-                self.hydradancer_status["ep_in_nak"] |= new_ep_in_nak
-                self.hydradancer_status["other_events"] |= new_other_events
-
+                    self.events, timeout=self.timeout_ms_poll*10)
+            if read >= 2:
+                events = []
+                for i in range(0, read, 2):
+                    event = HydradancerEvent.from_bytes(self.events[i:i+2])
+                    events.append(event)
+                    logging.debug(event)
+                    if event.event_type == HydradancerEvent.EVENT_IN_BUFFER_AVAILABLE:
+                        self.hydradancer_status["ep_in_status"] |= (0x1 << event.value) & 0xff
+                    elif event.event_type == HydradancerEvent.EVENT_OUT_BUFFER_AVAILABLE:
+                        self.hydradancer_status["ep_out_status"] |= (0x1 << event.value) & 0xff
+                    elif event.event_type == HydradancerEvent.EVENT_NAK:
+                        self.hydradancer_status["ep_in_nak"] |= (0x1 << event.value) & 0xff
                 logging.debug(f"Hydradancer status {self.hydradancer_status}")
-                return True
-            return False
+                return events
+            return None
         except usb.core.USBTimeoutError:
-            return False
+            return None
         except usb.core.USBError as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError("USB Error while fetching events")
@@ -728,6 +746,12 @@ class HydradancerBoard():
         Returns True if the IN buffer for target endpoint ep_num is ready for priming
         """
         return self.hydradancer_status["ep_in_status"] & (0x1 << ep_num)
+
+    def NAK_on_endpoint(self, ep_num):
+        """
+        Returns True if the IN Endpoint has sent a NAK (meaning a host has sent an IN request)
+        """
+        return self.hydradancer_status["ep_in_nak"] & (0x1 << ep_num)
 
     def OUT_buffer_available(self, ep_num):
         """
@@ -740,12 +764,3 @@ class HydradancerBoard():
         Returns True if the control buffer is available. Since this buffer is shared between EP0 IN/EP0 OUT, only the OUT status is used for both.
         """
         return self.OUT_buffer_available(0)
-
-    def bus_reset_pending(self):
-        """
-        Returns True if a bus reset should be performed.
-        1. Bus reset is received on the board : the addresss is set to 0.
-        2. The bit in other_events is set, so that the Facedancer backend can perform its reset.
-        3. The Facedancer backend sends a control message to the board so that it finishes the bus reset.
-        """
-        return self.hydradancer_status["other_events"] & self.HYDRADANCER_STATUS_BUS_RESET
