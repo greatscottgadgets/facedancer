@@ -90,8 +90,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.ep_in = {}
         self.ep_out = {}
 
-        self.legacy_mode = False  # legacy_mode is used for legacy_applets
-
         self.api = HydradancerBoard()
         self.verbose = verbose
         self.api.wait_board_ready()
@@ -124,7 +122,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         self.connected_device = usb_device
 
-        # self.legacy_mode = isinstance(self.connected_device, USBDevice) # How can we detect this ? there are still a lot of legacy apps
         self.max_ep0_packet_size = max_packet_size_ep0
 
     def disconnect(self):
@@ -300,23 +297,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
                 else:
                     self.connected_device.handle_nak(ep_num)
 
-    # def handle_data_endpoints_legacy(self):
-    #     """
-    #     Handle IN or OUT requests on non-control endpoints for the legacy_applets
-    #     """
-    #     # process ep OUT firsts, transfer is dictated by the host, if there is data available on an ep OUT,
-    #     # it should be processed before setting new IN data
-    #     for ep_num, ep in self.ep_out.items():
-    #         if self.api.OUT_buffer_available(ep_num):
-    #             data = self.api.read(ep_num)
-    #             if data is not None:
-    #                 self.connected_device.handle_data_available(
-    #                     ep_num, data.tobytes())
-
-    #     for ep_num, ep in self.ep_in.items():
-    #         if self.api.IN_buffer_empty(ep_num):
-    #             self.connected_device.handle_nak(ep)
-
     def handle_control_request(self):
         if not self.api.CONTROL_buffer_available():
             return
@@ -366,10 +346,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         self.handle_control_request()
 
-        if not self.legacy_mode:
-            self.handle_data_endpoints()
-            # else:  # support for old USBDevice
-            #     self.handle_data_endpoints_legacy()
+        self.handle_data_endpoints()
 
         if events is not None:
             for event in events:
