@@ -54,6 +54,8 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
     HOST_TO_DEVICE = 0
     DEVICE_TO_HOST = 1
 
+    USB2_MAX_EP_IN = 16
+
     current_setup_req = None
 
     @classmethod
@@ -82,6 +84,8 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.pending_control_out_request = None
         self.connected_device = None
         self.max_ep0_packet_size = None
+
+        self.ep_transfer_queue = [[]] * self.USB2_MAX_EP_IN
 
         self.ep_in = {}
         self.ep_out = {}
@@ -127,6 +131,10 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         """ Disconnects the Hydradancer from its target host. """
         logging.info("disconnect")
         self.configuration = None
+        self.pending_control_out_request = None
+        self.connected_device = None
+        self.max_ep0_packet_size = None
+        self.ep_transfer_queue = [[]] * self.USB2_MAX_EP_IN
         self.api.disconnect()
 
     def send_on_endpoint(self, ep_num, data, blocking=False):
@@ -137,24 +145,20 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         data: The data to be sent.
         blocking: If true, this function will wait for the transfer to complete.
         """
-        backup_len = len(data)
+        if ep_num != 0 and not blocking:
+            logging.debug(f"Storing {len(data)} on ep {ep_num} for later")
+            self.ep_transfer_queue[ep_num].append([data, len(data)])
+            return
 
-        if ep_num == 0:
-            max_packet_size = self.max_ep0_packet_size
-            blocking = False
-        else:
-            max_packet_size = self.ep_in[ep_num].max_packet_size
-            blocking = True
+        backup_len = len(data)
+        max_packet_size = self.max_ep0_packet_size if ep_num == 0 else self.ep_in[ep_num].max_packet_size
 
         if not data:
             self.api.send(ep_num, data, blocking)
 
-        if len(data) > max_packet_size:
-            blocking = True
-
         while data:
             packet = data[0:max_packet_size]
-            data = data[max_packet_size:]
+            data = data[len(packet):]
             logging.debug(f"Sending {len(packet)} on ep {ep_num} blocking {blocking}")
             self.api.send(ep_num, packet, blocking)
 
@@ -166,8 +170,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         if ep_num == 0 and (backup_len % max_packet_size) == 0 and backup_len > 0 and backup_len != self.current_setup_req.length:
             logging.debug(f"Sending ZLP")
             self.api.send(ep_num, b"", blocking) # Sending ZLP
-
-
+    
     def read_from_endpoint(self, ep_num):
         """
         Reads a block of data from the given endpoint.
@@ -285,7 +288,17 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         for ep_num, ep in self.ep_in.items():
             if self.api.IN_buffer_empty(ep_num) and self.api.NAK_on_endpoint(ep_num):
-                self.connected_device.handle_data_requested(ep)
+                if len(self.ep_transfer_queue[ep_num]) > 0:
+                    max_packet_size = self.ep_in[ep_num].max_packet_size
+                    packet = self.ep_transfer_queue[ep_num][0][0][0:max_packet_size]
+                    self.ep_transfer_queue[ep_num][0][0] = self.ep_transfer_queue[ep_num][0][0][len(packet):]
+
+                    self.api.send(ep_num, packet, blocking = True)
+
+                    if len(self.ep_transfer_queue[ep_num][0][0]) == 0:
+                        self.ep_transfer_queue[ep_num].pop(0)
+                else:
+                    self.connected_device.handle_data_requested(ep)
 
     # def handle_data_endpoints_legacy(self):
     #     """
@@ -351,18 +364,20 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         """
         events = self.api.fetch_events()
 
-        if events is not None:
-            for event in events:
-                if event is not None and event.event_type == HydradancerEvent.EVENT_BUS_RESET:
-                    self.reset()
-
         self.handle_control_request()
 
-        if self.configuration is not None:
-            if not self.legacy_mode:
-                self.handle_data_endpoints()
+        if not self.legacy_mode:
+            self.handle_data_endpoints()
             # else:  # support for old USBDevice
             #     self.handle_data_endpoints_legacy()
+
+        if events is not None:
+            for event in events:
+                if event is None:
+                    continue
+                if event.event_type == HydradancerEvent.EVENT_BUS_RESET:
+                    self.reset()
+
 
 
 class HydradancerBoardFatalError(Exception):
