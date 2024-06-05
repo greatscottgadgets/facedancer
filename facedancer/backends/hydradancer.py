@@ -290,7 +290,16 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
                 if event is None:
                     continue
                 if event.event_type == HydradancerEvent.EVENT_BUS_RESET:
-                    self.reset()
+                    self.handle_bus_reset()
+
+    def handle_bus_reset(self):
+        """
+        Triggers Hydradancer to perform its side of a bus reset.
+        """
+        if self.connected_device:
+            self.connected_device.handle_bus_reset()
+        else:
+            self.reset()
 
     def handle_data_endpoints(self):
         """
