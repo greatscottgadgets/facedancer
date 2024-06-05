@@ -317,7 +317,11 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         for ep_num, ep in self.ep_in.items():
             if self.api.in_buffer_empty(ep_num) and self.api.nak_on_endpoint(ep_num):
-                if len(self.ep_transfer_queue[ep_num]) > 0:
+                if len(self.ep_transfer_queue[ep_num]) == 0:
+                    self.connected_device.handle_nak(ep_num)
+                
+                # The queue might not be empty anymore, check immediately
+                if len(self.ep_transfer_queue[ep_num]) != 0:
                     max_packet_size = ep.max_packet_size
                     packet = self.ep_transfer_queue[ep_num][0][0:max_packet_size]
                     self.ep_transfer_queue[ep_num][0] = self.ep_transfer_queue[ep_num][0][len(packet):]
@@ -326,8 +330,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
                     if len(self.ep_transfer_queue[ep_num][0]) == 0:
                         self.ep_transfer_queue[ep_num].pop(0)
-                else:
-                    self.connected_device.handle_nak(ep_num)
 
     def handle_control_request(self):
         if not self.api.control_buffer_available():
