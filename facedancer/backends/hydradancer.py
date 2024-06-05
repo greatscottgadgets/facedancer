@@ -298,7 +298,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
                     if len(self.ep_transfer_queue[ep_num][0][0]) == 0:
                         self.ep_transfer_queue[ep_num].pop(0)
                 else:
-                    self.connected_device.handle_data_requested(ep)
+                    self.connected_device.handle_nak(ep_num)
 
     # def handle_data_endpoints_legacy(self):
     #     """
