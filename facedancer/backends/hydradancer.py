@@ -10,12 +10,13 @@ import time
 from array import array
 from time import time_ns
 from dataclasses import dataclass
+from typing import List
 
 import usb
 from usb.util import CTRL_TYPE_VENDOR, CTRL_RECIPIENT_DEVICE, CTRL_IN, CTRL_OUT
 
 from ..core           import *
-from ..device         import USBDevice
+from ..device         import USBDevice, USBConfiguration, USBDirection
 from ..types          import DeviceSpeed
 from ..logging        import log
 from .base            import FacedancerBackend
@@ -56,25 +57,14 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
     current_setup_req = None
 
-    @classmethod
-    def appropriate_for_environment(cls, backend_name=None):
+    def __init__(self, device: USBDevice=None, verbose: int=0, quirks: List[str]=[]):
         """
-        Determines if the current environment seems appropriate
-        for using the libusb backend.
-        """
+        Initializes the backend.
 
-        logging.info("this is hydradancer hi")
-        # Open a connection to the target device...
-        device = usb.core.find(idVendor=0x16c0, idProduct=0x27d8)
-
-        if device is not None and device.manufacturer == cls.MANUFACTURER_STRING and backend_name == "hydradancer":
-            return True
-
-        return False
-
-    def __init__(self, verbose=0, index=0, **kwargs):
-        """
-        Creates a new hydradancer backend for communicating with a target device.
+        Args:
+            device  :  The device that will act as our Facedancer.   (Optional)
+            verbose : The verbosity level of the given application. (Optional)
+            quirks  :  List of USB platform quirks.                  (Optional)
         """
         super().__init__(self)
 
@@ -92,21 +82,40 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.verbose = verbose
         self.api.wait_board_ready()
 
-    def init_commands(self):
+    @classmethod
+    def appropriate_for_environment(cls, backend_name: str) -> bool:
         """
-        API compatibility function;
+        Determines if the current environment seems appropriate
+        for using this backend.
+
+        Args:
+            backend_name : Backend name being requested. (Optional)
         """
 
+        logging.info("this is hydradancer hi")
+        # Open a connection to the target device...
+        device = usb.core.find(idVendor=0x16c0, idProduct=0x27d8)
+
+        if device is not None and device.manufacturer == cls.MANUFACTURER_STRING and backend_name == "hydradancer":
+            return True
+
+        return False
+
     def get_version(self):
-        raise NotImplementedError()
+        """
+        Returns information about the active Facedancer version.
+        """
+        raise NotImplementedError
 
     def connect(self, usb_device: USBDevice, max_packet_size_ep0: int=64, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
-        Prepares Hydradancer to connect to the target host and emulate
+        Prepares backend to connect to the target host and emulate
         a given device.
 
-        usb_device: The USBDevice object that represents the device to be
-            emulated.
+        Args:
+            usb_device : The USBDevice object that represents the emulated device.
+            max_packet_size_ep0 : Max packet size for control endpoint.
+            device_speed : Requested usb speed for the Facedancer board.
         """
         self.api.set_endpoint_mapping(0)
 
@@ -123,7 +132,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.max_ep0_packet_size = max_packet_size_ep0
 
     def disconnect(self):
-        """ Disconnects the Hydradancer from its target host. """
+        """ Disconnects Facedancer from the target host. """
         logging.info("disconnect")
         self.configuration = None
         self.pending_control_out_request = None
@@ -132,91 +141,32 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.ep_transfer_queue = [[]] * self.USB2_MAX_EP_IN
         self.api.disconnect()
 
-    def send_on_endpoint(self, endpoint_number, data, blocking=False):
+    def reset(self):
         """
-        Sends a collection of USB data on a given endpoint.
-
-        endpoint_number: The number of the IN endpoint on which data should be sent.
-        data: The data to be sent.
-        blocking: If true, this function will wait for the transfer to complete.
+        Triggers the Facedancer to handle its side of a bus reset.
         """
-        if endpoint_number != 0 and not blocking:
-            logging.debug(f"Storing {len(data)} on ep {endpoint_number} for later")
-            self.ep_transfer_queue[endpoint_number].append([data, len(data)])
-            return
+        logging.info("bus reset")
 
-        backup_len = len(data)
-        max_packet_size = self.max_ep0_packet_size if endpoint_number == 0 else self.ep_in[endpoint_number].max_packet_size
-
-        if not data:
-            self.api.send(endpoint_number, data, blocking)
-
-        while data:
-            packet = data[0:max_packet_size]
-            data = data[len(packet):]
-            logging.debug(f"Sending {len(packet)} on ep {endpoint_number} blocking {blocking}")
-            self.api.send(endpoint_number, packet, blocking)
-
-        # Many things to take into account here ...
-        # first, if the len we are sending is a multiple of the max_packet_size, the host will request a ZLP (otherwise, it can't know when the transfer ends)
-        # however, if the endpoint is endpoint 0, the host knows the size of the transfer in advance so it might not request the ZLP
-        # this could be solved by using NAKs for EP0 as well (answering by a ZLP if a NAK is received but we already sent everything)
-        # however, this could add too much latency and make enumeration fail
-        if endpoint_number == 0 and (backup_len % max_packet_size) == 0 and backup_len > 0 and backup_len != self.current_setup_req.length:
-            logging.debug(f"Sending ZLP")
-            self.api.send(endpoint_number, b"", blocking) # Sending ZLP
-    
-    def read_from_endpoint(self, endpoint_number):
+    def set_address(self, address: int, defer: bool=False):
         """
-        Reads a block of data from the given endpoint.
-
-        endpoint_number: The number of the OUT endpoint on which data is to be rx'd.
-        """
-        return self.api.read(endpoint_number, blocking=True)
-
-    def stall_endpoint(self, endpoint_number, direction=0):
-        """
-        Stalls the provided endpoint, as defined in the USB spec.
-
-        endpoint_number: The number of the endpoint to be stalled.
-        """
-
-        in_vs_out = "IN" if direction else "OUT"
-        logging.info(f"Stalling EP {endpoint_number} {in_vs_out}")
-
-        self.api.stall_endpoint(endpoint_number, direction)
-
-    def stall_ep0(self):
-        """
-        Convenience function that stalls the control endpoint zero.
-        """
-        logging.info("stall_ep0")
-        self.stall_endpoint(0)
-
-    def set_address(self, address, defer=False):
-        """
-        Sets the device address of the Hydradancer. Usually only used during
+        Sets the device address of the Facedancer. Usually only used during
         initial configuration.
 
-        address: The address that the Hydradancer should assume.
-        defer: True if the set_address request should wait for an active transaction to finish.
+        Args:
+            address : The address the Facedancer should assume.
+            defer   : True iff the set_address request should wait for an active transaction to
+                      finish.
         """
         logging.info("set address")
         self.api.set_address(address, defer)
 
-    def reset(self):
-        """
-        Triggers the Hydradancer to handle its side of a bus reset.
-        """
-        logging.info("bus reset")
-
-
-    def configured(self, configuration):
+    def configured(self, configuration: USBConfiguration):
         """
         Callback that's issued when a USBDevice is configured, e.g. by the
         SET_CONFIGURATION request. Allows us to apply the new configuration.
 
-        configuration: The configuration applied by the SET_CONFIG request.
+        Args:
+            configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
 
         if configuration is None:
@@ -244,17 +194,62 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.configuration = configuration
         logging.debug("configured")
 
-    def ack_status_stage(self, direction=HOST_TO_DEVICE, endpoint_number=0, blocking=False):
+    def read_from_endpoint(self, endpoint_number: int) -> bytes:
         """
-            Handles the status stage of a correctly completed control request,
-            by priming the appropriate endpoint to handle the status phase.
+        Reads a block of data from the given endpoint.
 
-            direction: Determines if we're ACK'ing an IN or OUT vendor request.
-                (This should match the direction of the DATA stage.)
-            endpoint_number: The endpoint number on which the control request
-                occurred.
-            blocking: True if we should wait for the ACK to be fully issued
-                before returning.
+        Args:
+            endpoint_number : The number of the OUT endpoint on which data is to be rx'd.
+        """
+        return self.api.read(endpoint_number, blocking=True)
+
+    def send_on_endpoint(self, endpoint_number: int, data: bytes, blocking: bool=True):
+        """
+        Sends a collection of USB data on a given endpoint.
+
+        Args:
+            endpoint_number : The number of the IN endpoint on which data should be sent.
+            data : The data to be sent.
+            blocking : If true, this function should wait for the transfer to complete.
+        """
+        if endpoint_number != 0 and not blocking:
+            logging.debug(f"Storing {len(data)} on ep {endpoint_number} for later")
+            self.ep_transfer_queue[endpoint_number].append([data, len(data)])
+            return
+
+        backup_len = len(data)
+        max_packet_size = self.max_ep0_packet_size if endpoint_number == 0 else self.ep_in[endpoint_number].max_packet_size
+
+        if not data:
+            self.api.send(endpoint_number, data, blocking)
+
+        while data:
+            packet = data[0:max_packet_size]
+            data = data[len(packet):]
+            logging.debug(f"Sending {len(packet)} on ep {endpoint_number} blocking {blocking}")
+            self.api.send(endpoint_number, packet, blocking)
+
+        # Many things to take into account here ...
+        # first, if the len we are sending is a multiple of the max_packet_size, the host will request a ZLP (otherwise, it can't know when the transfer ends)
+        # however, if the endpoint is endpoint 0, the host knows the size of the transfer in advance so it might not request the ZLP
+        # this could be solved by using NAKs for EP0 as well (answering by a ZLP if a NAK is received but we already sent everything)
+        # however, this could add too much latency and make enumeration fail
+        if endpoint_number == 0 and (backup_len % max_packet_size) == 0 and backup_len > 0 and backup_len != self.current_setup_req.length:
+            logging.debug(f"Sending ZLP")
+            self.api.send(endpoint_number, b"", blocking) # Sending ZLP
+
+    def ack_status_stage(self, direction: USBDirection=USBDirection.OUT, endpoint_number:int =0, blocking: bool=False):
+        """
+        Handles the status stage of a correctly completed control request,
+        by priming the appropriate endpoint to handle the status phase.
+
+        Args:
+            direction : Determines if we're ACK'ing an IN or OUT vendor request.
+                       (This should match the direction of the DATA stage.)
+            endpoint_number : The endpoint number on which the control request
+                              occurred.
+            blocking : True if we should wait for the ACK to be fully issued
+                       before returning.
         """
         if direction == self.HOST_TO_DEVICE:
             # If this was an OUT request, we'll prime the output buffer to
@@ -266,6 +261,36 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
             # so the status phase can operate correctly. This effectively reads the
             # zero length packet from the STATUS phase.
             self.read_from_endpoint(endpoint_number)
+
+    def stall_endpoint(self, endpoint_number:int, direction: USBDirection=USBDirection.OUT):
+        """
+        Stalls the provided endpoint, as defined in the USB spec.
+
+        Args:
+            endpoint_number : The number of the endpoint to be stalled.
+        """
+        in_vs_out = "IN" if direction else "OUT"
+        logging.info(f"Stalling EP {endpoint_number} {in_vs_out}")
+
+        self.api.stall_endpoint(endpoint_number, direction)         
+
+    def service_irqs(self):
+        """
+        Core routine of the Facedancer execution/event loop. Continuously monitors the
+        Facedancer's execution status, and reacts as events occur.
+        """
+        events = self.api.fetch_events()
+
+        self.handle_control_request()
+
+        self.handle_data_endpoints()
+
+        if events is not None:
+            for event in events:
+                if event is None:
+                    continue
+                if event.event_type == HydradancerEvent.EVENT_BUS_RESET:
+                    self.reset()
 
     def handle_data_endpoints(self):
         """
@@ -333,25 +358,8 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         # handle status stage of IN transfer
         elif len(data) == 0:
-            logging.debug("Received ACK for IN Ctrl req")            
+            logging.debug("Received ACK for IN Ctrl req")
 
-    def service_irqs(self):
-        """
-        Core routine of the Facedancer execution/event loop. Continuously monitors the
-        Hydradancers's execution status, and reacts as events occur.
-        """
-        events = self.api.fetch_events()
-
-        self.handle_control_request()
-
-        self.handle_data_endpoints()
-
-        if events is not None:
-            for event in events:
-                if event is None:
-                    continue
-                if event.event_type == HydradancerEvent.EVENT_BUS_RESET:
-                    self.reset()
 
 
 
