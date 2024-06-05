@@ -214,7 +214,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         """
         if endpoint_number != 0 and not blocking:
             logging.debug(f"Storing {len(data)} on ep {endpoint_number} for later")
-            self.ep_transfer_queue[endpoint_number].append([data, len(data)])
+            self.ep_transfer_queue[endpoint_number].append(data)
             return
 
         backup_len = len(data)
@@ -310,12 +310,12 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
             if self.api.in_buffer_empty(ep_num) and self.api.nak_on_endpoint(ep_num):
                 if len(self.ep_transfer_queue[ep_num]) > 0:
                     max_packet_size = ep.max_packet_size
-                    packet = self.ep_transfer_queue[ep_num][0][0][0:max_packet_size]
-                    self.ep_transfer_queue[ep_num][0][0] = self.ep_transfer_queue[ep_num][0][0][len(packet):]
+                    packet = self.ep_transfer_queue[ep_num][0][0:max_packet_size]
+                    self.ep_transfer_queue[ep_num][0] = self.ep_transfer_queue[ep_num][0][len(packet):]
 
                     self.api.send(ep_num, packet, blocking = True)
 
-                    if len(self.ep_transfer_queue[ep_num][0][0]) == 0:
+                    if len(self.ep_transfer_queue[ep_num][0]) == 0:
                         self.ep_transfer_queue[ep_num].pop(0)
                 else:
                     self.connected_device.handle_nak(ep_num)
