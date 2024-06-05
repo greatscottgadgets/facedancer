@@ -1,7 +1,7 @@
 """
-Backend for HydraUSB3.
+Backend for the Hydradancer boards.
 
-Supports 4 high-speed endpoints, with addresses between 1 and 7.
+Supports 5 endpoints, with addresses between 0 and 7. Supports low, full and high-speed.
 """
 
 import sys
@@ -221,13 +221,13 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         max_packet_size = self.max_ep0_packet_size if endpoint_number == 0 else self.ep_in[endpoint_number].max_packet_size
 
         if not data:
-            self.api.send(endpoint_number, data, blocking)
+            self.api.send(endpoint_number, data)
 
         while data:
             packet = data[0:max_packet_size]
             data = data[len(packet):]
-            logging.debug(f"Sending {len(packet)} on ep {endpoint_number} blocking {blocking}")
-            self.api.send(endpoint_number, packet, blocking)
+            logging.debug(f"Sending {len(packet)} on ep {endpoint_number}")
+            self.api.send(endpoint_number, packet)
 
         # Many things to take into account here ...
         # first, if the len we are sending is a multiple of the max_packet_size, the host will request a ZLP (otherwise, it can't know when the transfer ends)
@@ -236,7 +236,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         # however, this could add too much latency and make enumeration fail
         if endpoint_number == 0 and (backup_len % max_packet_size) == 0 and backup_len > 0 and backup_len != self.current_setup_req.length:
             logging.debug(f"Sending ZLP")
-            self.api.send(endpoint_number, b"", blocking) # Sending ZLP
+            self.api.send(endpoint_number, b"") # Sending ZLP
 
     def ack_status_stage(self, direction: USBDirection=USBDirection.OUT, endpoint_number:int =0, blocking: bool=False):
         """
@@ -313,7 +313,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
                     packet = self.ep_transfer_queue[ep_num][0][0:max_packet_size]
                     self.ep_transfer_queue[ep_num][0] = self.ep_transfer_queue[ep_num][0][len(packet):]
 
-                    self.api.send(ep_num, packet, blocking = True)
+                    self.api.send(ep_num, packet)
 
                     if len(self.ep_transfer_queue[ep_num][0]) == 0:
                         self.ep_transfer_queue[ep_num].pop(0)
@@ -371,11 +371,11 @@ class HydradancerBoard():
     """
     Handles the communication with the Hydradancer control board and manages the events it sends.
     """
-    MAX_PACKET_SIZE = 512
+    MAX_PACKET_SIZE = 1024
 
     # USB Vendor Requests codes
-    ENABLE_USB_CONNECTION_REQUEST_CODE = 50
-    SET_ADDRESS_REQUEST_CODE = 51
+    ENABLE_USB_CONNECTION = 50
+    SET_ADDRESS = 51
     GET_EVENT = 52
     SET_ENDPOINT_MAPPING = 53
     DISABLE_USB = 54
@@ -385,16 +385,15 @@ class HydradancerBoard():
     DO_BUS_RESET = 58
     CONFIGURED = 59
 
-    #  events offsets
-    HYDRADANCER_STATUS_BUS_RESET = 0x1
-
     # Facedancer USB2 speed to Hydradancer USB2 speed
     facedancer_to_hydradancer_speed = {
         DeviceSpeed.LOW : 0,
         DeviceSpeed.FULL : 1,
         DeviceSpeed.HIGH : 2
     }
-
+    
+    # Max number of events that can be sent by the board
+    # This must not be less than what is defined in the firmware
     EVENT_QUEUE_SIZE = 100
 
     # Endpoint states on the emulation board
@@ -525,7 +524,7 @@ class HydradancerBoard():
         """
         try:
             self.device.ctrl_transfer(
-                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.ENABLE_USB_CONNECTION_REQUEST_CODE)
+                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.ENABLE_USB_CONNECTION)
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to connect") from exception
@@ -631,7 +630,7 @@ class HydradancerBoard():
         """
         try:
             self.device.ctrl_transfer(
-                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_ADDRESS_REQUEST_CODE, address)
+                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.SET_ADDRESS, address)
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError(
@@ -641,8 +640,6 @@ class HydradancerBoard():
         """
         Stall the ep_num endpoint on the emulation board.
         STALL will be cleared automatically after next SETUP packet received.
-        Currently stalls both directions, because ep0 was STALLED only in one direction
-        (TODO maybe separate ep0 from the rest, and double-check).
         """
         # Stall EP
 
@@ -659,12 +656,11 @@ class HydradancerBoard():
             logging.error(exception)
             raise HydradancerBoardFatalError(f"Could not stall ep {ep_num}") from exception
 
-    def send(self, ep_num, data, blocking=False):
+    def send(self, ep_num, data):
         """
-        Prime target endpoint ep_num. If blocking=True, it will wait for the endpoint's buffer to be empty.
+        Prime target endpoint ep_num.
         """
         try:
-            count = 0
             start_time = time_ns()
             MAX_TIME_NS = 1e-3 * 1e9 
             while not (self.in_buffer_empty(ep_num) and (ep_num == 0)) and not (ep_num != 0 and self.nak_on_endpoint(ep_num) and self.in_buffer_empty(ep_num)):
@@ -709,18 +705,18 @@ class HydradancerBoard():
         if len(endpoint_numbers) > len(self.endpoints_pool):
             raise HydradancerBoardFatalError(
                 f"Hydradancer cannot handle {len(endpoint_numbers)} endpoints, only {len(self.endpoints_pool)}")
-        for number in endpoint_numbers:
-            self.set_endpoint_mapping(number)
         try:
+            for number in endpoint_numbers:
+                self.set_endpoint_mapping(number)
             self.device.ctrl_transfer(CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT,
                                     self.CONFIGURED)
+            logging.info(f"Endpoints mapping {self.endpoints_mapping}")
+            self.configured = True
         except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
             logging.error(exception)
             raise HydradancerBoardFatalError(
                 "Could not pass configured step on board") from exception
-                
-        logging.info(f"Endpoints mapping {self.endpoints_mapping}")
-        self.configured = True
+
 
     def fetch_events(self):
         """
