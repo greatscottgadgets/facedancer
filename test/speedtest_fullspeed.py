@@ -66,6 +66,18 @@ class USBSpeedtest(USBDevice):
         print(f"sending {len(self.random_buffer)} bytes on {ep}")
         self.send(ep.number, self.random_buffer)
 
+    def handle_buffer_empty(self, endpoint: USBEndpoint):
+        """ Handler called when a given endpoint first has an empty buffer.
+
+        Often, an empty buffer indicates an opportunity to queue data
+        for sending ('prime an endpoint'), but doesn't necessarily mean
+        that the host is planning on reading the data.
+
+        This function is called only once per buffer.
+        """
+        print(f"priming {len(self.random_buffer)} bytes on {endpoint}")
+        self.send(endpoint.number, self.random_buffer)
+
 
 if __name__ == "__main__":
     default_main(USBSpeedtest)
