@@ -67,7 +67,8 @@ class USBProxySetupFilters(USBProxyFilter):
         # handle it ourself, and absorb it.
         if req.get_recipient() == self.RECIPIENT_DEVICE and \
            req.request == self.SET_ADDRESS_REQUEST:
-            self.device.handle_set_address_request(req)
+            req.acknowledge(blocking=True)
+            self.device.set_address(req.value)
             return None, None
 
         # Special case: if this is a SET_CONFIGURATION_REQUEST,
