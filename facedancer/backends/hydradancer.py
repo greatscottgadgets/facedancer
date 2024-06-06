@@ -212,7 +212,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
             data : The data to be sent.
             blocking : If true, this function should wait for the transfer to complete.
         """
-        if endpoint_number != 0 and not blocking:
+        if endpoint_number != 0 and not blocking and not self.api.in_buffer_empty(endpoint_number):
             logging.debug(f"Storing {len(data)} on ep {endpoint_number} for later")
             self.ep_transfer_queue[endpoint_number].append(data)
             return
@@ -281,16 +281,17 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         """
         events = self.api.fetch_events()
 
-        self.handle_control_request()
-
-        self.handle_data_endpoints()
-
         if events is not None:
             for event in events:
                 if event is None:
                     continue
                 if event.event_type == HydradancerEvent.EVENT_BUS_RESET:
                     self.handle_bus_reset()
+                if event.event_type == HydradancerEvent.EVENT_IN_BUFFER_AVAILABLE and event.value != 0 and (event.value in self.ep_in.keys()):
+                    self.connected_device.handle_buffer_empty(self.ep_in[event.value])
+
+        self.handle_control_request()
+        self.handle_data_endpoints()
 
     def handle_bus_reset(self):
         """
@@ -317,10 +318,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         for ep_num, ep in self.ep_in.items():
             if self.api.in_buffer_empty(ep_num) and self.api.nak_on_endpoint(ep_num):
-                if len(self.ep_transfer_queue[ep_num]) == 0:
-                    self.connected_device.handle_nak(ep_num)
-                
-                # The queue might not be empty anymore, check immediately
                 if len(self.ep_transfer_queue[ep_num]) != 0:
                     max_packet_size = ep.max_packet_size
                     packet = self.ep_transfer_queue[ep_num][0][0:max_packet_size]
@@ -330,6 +327,8 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
                     if len(self.ep_transfer_queue[ep_num][0]) == 0:
                         self.ep_transfer_queue[ep_num].pop(0)
+                else:
+                    self.connected_device.handle_nak(ep_num)
 
     def handle_control_request(self):
         if not self.api.control_buffer_available():
@@ -674,7 +673,7 @@ class HydradancerBoard():
         try:
             start_time = time_ns()
             MAX_TIME_NS = 1e-3 * 1e9 
-            while not (self.in_buffer_empty(ep_num) and (ep_num == 0)) and not (ep_num != 0 and self.nak_on_endpoint(ep_num) and self.in_buffer_empty(ep_num)):
+            while not self.in_buffer_empty(ep_num):
                 events = self.fetch_events()
                 if events is not None:
                     for event in events:
