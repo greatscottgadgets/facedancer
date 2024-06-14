@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # pylint: disable=unused-wildcard-import, wildcard-import
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
-""" Example template for creating new FaceDancer devices. """
+""" Example template for creating new Facedancer devices. """
 
 import logging
 
@@ -13,11 +13,11 @@ from facedancer.classes import USBDeviceClass
 
 @use_inner_classes_automatically
 class TemplateDevice(USBDevice):
-    """ This class is meant to act as a template to help you get acquainted with FaceDancer."""
+    """ This class is meant to act as a template to help you get acquainted with Facedancer."""
 
     #
     # Core 'dataclass' definitions.
-    # These define the basic way that a FaceDancer device advertises itself to the host.
+    # These define the basic way that a Facedancer device advertises itself to the host.
     #
     # Every one of these is optional. The defaults are relatively sane, so you can mostly
     # ignore these unless you want to change them! See the other examples for more minimal
@@ -45,7 +45,7 @@ class TemplateDevice(USBDevice):
 
     # The string descriptors we'll provide for our device.
     # Note that these should be Python strings, and _not_ bytes.
-    manufacturer_string      : str  = "FaceDancer"
+    manufacturer_string      : str  = "Facedancer"
     product_string           : str  = "Generic USB Device"
     serial_number_string     : str  = "S/N 3420E"
 
@@ -264,7 +264,7 @@ class TemplateDevice(USBDevice):
     #
 
 
-# FaceDancer ships with a default main() function that you can use to set up and run
+# Facedancer ships with a default main() function that you can use to set up and run
 # your device. It ships with some nice features -- including a ``--suggest`` function
 # that can suggest pieces of boilerplate code that might be useful in device emulation.
 #

@@ -1,6 +1,6 @@
 # pylint: disable=unused-wildcard-import, wildcard-import
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 
 import asyncio

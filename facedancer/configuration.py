@@ -1,5 +1,5 @@
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ Functionality for describing USB device configurations. """
 

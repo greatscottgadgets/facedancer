@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ USB 'Rubber Ducky' example; enters some text via the keyboard module. """
 

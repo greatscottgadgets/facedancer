@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # pylint: disable=unused-wildcard-import, wildcard-import
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ Example for using the imperative API. """
 
 #
-# The other FaceDancer examples tend to use the declarative API,
+# The other Facedancer examples tend to use the declarative API,
 # as it's more succinct, and typically can be created faster.
 #
 # However, the new API still supports an imperative syntax,

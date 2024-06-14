@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 
 import sys

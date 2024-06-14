@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # pylint: disable=unused-wildcard-import, wildcard-import
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 
 import logging

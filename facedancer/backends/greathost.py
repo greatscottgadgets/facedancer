@@ -202,13 +202,13 @@ class GreatDancerHostApp(FacedancerUSBHost):
 
 
     def port_is_enabled(self):
-        """ Returns true iff the FaceDancer host port's enabled. """
+        """ Returns true iff the Facedancer host port's enabled. """
         status = self._port_status()
         return bool(status & self.PORT_STATUS_REGISTER_ENABLED_MASK)
 
 
     def port_is_powered(self):
-        """ Returns true iff the FaceDancer host port's enabled. """
+        """ Returns true iff the Facedancer host port's enabled. """
         status = self._port_status()
         return bool(status & self.PORT_STATUS_REGISTER_POWERED_MASK)
 
@@ -226,7 +226,7 @@ class GreatDancerHostApp(FacedancerUSBHost):
             (self._port_status() >> self.PORT_STATUS_REGISTER_SPEED_SHIFT) & \
             self.PORT_STATUS_REGISTER_SPEED_MASK
 
-        # Translate from a GreatFET format device speed to a FaceDancer one.
+        # Translate from a GreatFET format device speed to a Facedancer one.
         port_speed = self.STATUS_REG_SPEED_VALUES[port_speed_raw]
 
         if as_string:
