@@ -13,13 +13,15 @@ Facedancer Documentation
   facedancer_examples
 
 .. toctree::
+  :maxdepth: 2
+  :caption: Developer Documentation
+
+  howto_facedancer_backend
+
+.. toctree::
   :maxdepth: 1
   :caption: API Documentation
 
   api_docs/modules
 
-.. toctree::
-  :maxdepth: 2
-  :caption: Developer Documentation
-
-  howto_facedancer_backend
+:ref:`genindex` | :ref:`modindex`
