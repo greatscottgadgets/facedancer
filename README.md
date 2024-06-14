@@ -10,7 +10,7 @@ and some pretty significant new features.
 
 Install this package with the following command:
 
-    pip install .
+    pip install facedancer
 
 After that you can import the facedancer package as usual:
 
