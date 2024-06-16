@@ -251,10 +251,10 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
             blocking : True if we should wait for the ACK to be fully issued
                        before returning.
         """
-        if direction == self.HOST_TO_DEVICE:
+        if direction == USBDirection.OUT:
             # If this was an OUT request, we'll prime the output buffer to
             # respond with the ZLP expected during the status stage.
-            self.send_on_endpoint(endpoint_number, data=[], blocking=blocking)
+            self.send_on_endpoint(endpoint_number, data=b"", blocking=blocking)
 
         else:
             # If this was an IN request, we'll need to set up a transfer descriptor
@@ -416,7 +416,8 @@ class HydradancerBoard():
     DEVICE_TO_HOST = 1
 
     EP_POLL_NUMBER = 1
-    SUPPORTED_EP_NUM = [0, 1, 2, 3, 4, 5, 6, 7]
+    SUPPORTED_EP_NUM = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    INCOMPATIBLE_EP = [[], [9], [10], [11], [8, 12], [13], [14], [15], [4], [1], [2], [3], [4], [5], [6], [7]]
 
     timeout_ms_poll = 1
 
@@ -675,14 +676,10 @@ class HydradancerBoard():
             MAX_TIME_NS = 1e-3 * 1e9 
             while not self.in_buffer_empty(ep_num):
                 events = self.fetch_events()
-                if events is not None:
-                    for event in events:
-                        if event is not None and event.event_type == HydradancerEvent.EVENT_BUS_RESET:
-                            self.bus_reset()
                 if (time_ns() - start_time) > MAX_TIME_NS:
                     logging.debug("Stop waiting to unlock situation")
                     break
-            logging.debug(f"Sending len {len(data)} {data}")
+            logging.debug(f"Sending len {len(data)} {data} on ep {ep_num}")
             self.ep_out[self.endpoints_mapping[ep_num]].write(
                 data)
             self.hydradancer_status["ep_in_status"] &= ~(0x01 << ep_num)
@@ -717,6 +714,9 @@ class HydradancerBoard():
                 f"Hydradancer cannot handle {len(endpoint_numbers)} endpoints, only {len(self.endpoints_pool)}")
         try:
             for number in endpoint_numbers:
+                if self.INCOMPATIBLE_EP[number] in endpoint_numbers:
+                   raise HydradancerBoardFatalError(
+                    f"EP {number} can't be used at the same time as EPs {','.join([endpoint_numbers])}") from exception             
                 self.set_endpoint_mapping(number)
             self.device.ctrl_transfer(CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT,
                                     self.CONFIGURED)
