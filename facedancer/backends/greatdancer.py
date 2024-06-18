@@ -13,7 +13,7 @@ from ..logging  import log
 
 class GreatDancerApp(FacedancerApp):
     """
-    Backend for using GreatFET devices as FaceDancers.
+    Backend for using GreatFET devices as Facedancers.
     """
 
     app_name = "GreatDancer"

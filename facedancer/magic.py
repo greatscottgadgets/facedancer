@@ -1,5 +1,5 @@
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ Functionally for automatic instantiations / tracking via decorators. """
 
@@ -27,7 +27,7 @@ class AutoInstantiable(metaclass=ABCMeta):
 class AutoInstantiator:
     """ Simple wrapper class annotated on objects that can be instantiated automatically.
 
-    Used for the @use_automatically decorator; which removes a lot of the FaceDancer boilerplate
+    Used for the @use_automatically decorator; which removes a lot of the Facedancer boilerplate
     at the cost of being somewhat cryptic.
     """
 
@@ -49,7 +49,7 @@ class AutoInstantiator:
 
 
 def use_automatically(cls):
-    """ Class decorator used to annotate FaceDancer inner classes. Implies @dataclass.
+    """ Class decorator used to annotate Facedancer inner classes. Implies @dataclass.
 
     This decorator can be placed on inner classes that describe "subordinate"
     objects on USB devices. For example, a USBDevice can have several subordinate
@@ -59,7 +59,7 @@ def use_automatically(cls):
     instantiate the relevant given class during its creation; automatically populating
     the subordinate properties of the relevant device.
 
-    For example, assume we have a FaceDancer class representing a custom USB device::
+    For example, assume we have a Facedancer class representing a custom USB device::
 
         @dataclass
         class ExampleDevice(USBDevice):

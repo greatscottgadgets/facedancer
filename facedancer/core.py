@@ -122,7 +122,7 @@ def FacedancerUSBHostApp(verbose=0, quirks=None):
 
 class FacedancerUSBHost:
     """
-    Base class for FaceDancer host connections-- extended to provide actual
+    Base class for Facedancer host connections-- extended to provide actual
     connections to each host.
     """
 

@@ -1,5 +1,5 @@
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ Standard filters for USBProxy that should (almost) always be used. """
 

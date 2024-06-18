@@ -75,7 +75,7 @@ class InterruptEvent:
 #
 class MoondancerApp(FacedancerApp, FacedancerBackend):
     """
-    Backend for using Cynthion devices as FaceDancers.
+    Backend for using Cynthion devices as Facedancers.
     """
 
     app_name = "Moondancer"

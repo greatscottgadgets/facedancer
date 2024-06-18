@@ -4,35 +4,47 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "facedancer"
-dynamic = ["version"]
+description = "Implement your own USB device in Python, supported by a hardware peripheral such as Cynthion or GreatFET."
+license = { text = "BSD" }
+readme = "README.md"
 requires-python = ">=3.8"
 authors = [
     {name = "Great Scott Gadgets", email = "dev@greatscottgadgets.com"},
 ]
-license = { text = "BSD" }
-description = "Implement your own USB device in Python, supported by a hardware peripheral such as Cynthion or GreatFET."
-urls = { Source = "https://github.com/greatscottgadgets/facedancer" }
-readme = "README.md"
+
 classifiers = [
     "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
     "Natural Language :: English",
     "Environment :: Console",
     "Environment :: Plugins",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
-    "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Topic :: Security",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-]
-dependencies = [
-    "pyusb", "pyserial", "prompt-toolkit", "libusb1",
+    "Topic :: System :: Hardware :: Universal Serial Bus (USB)",
 ]
 
-[tool.setuptools-git-versioning]
-enabled = true
+dependencies = [
+    "pyusb",
+    "pyserial",
+    "prompt-toolkit",
+    "libusb1",
+]
+
+dynamic = ["version"]
+
+[project.urls]
+Documentation = "https://facedancer.readthedocs.io"
+Repository    = "https://github.com/greatscottgadgets/facedancer"
+Issues        = "https://github.com/greatscottgadgets/facedancer/issues"
 
 [tool.setuptools.package-dir]
 facedancer = "facedancer"
+
+[tool.setuptools-git-versioning]
+enabled = true
+starting_version = "3.0.0"

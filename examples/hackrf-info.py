@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # pylint: disable=unused-wildcard-import, wildcard-import
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 
 from facedancer import *
@@ -23,7 +23,7 @@ class HackRF(USBDevice):
     product_id          : int = 0x6089
 
     # Most hosts won't accept a device unless it has a configuration
-    # and an interface. We'll add some default/empty ones. FaceDancer
+    # and an interface. We'll add some default/empty ones. Facedancer
     # provides sane defaults, so we don't need to do anything else!
     class DefaultConfiguration(USBConfiguration):
         class DefaultInterface(USBInterface):
@@ -65,7 +65,7 @@ class HackRF(USBDevice):
         # failing with "hackrf_version_string_read() failed: Pipe error (-1000)."
         #
         # That's a pretty good hint of what it expects.
-        request.reply(b"Sekret FaceDancer Version")
+        request.reply(b"Sekret Facedancer Version")
 
 
     @vendor_request_handler(number=18, direction=USBDirection.IN)

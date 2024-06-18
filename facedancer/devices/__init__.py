@@ -1,5 +1,5 @@
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 
 import sys
@@ -11,7 +11,7 @@ import argparse
 from ..logging import configure_default_logging
 
 def default_main(device_or_type, *coroutines):
-    """ Simple, default main for FaceDancer emulation.
+    """ Simple, default main for Facedancer emulation.
 
     Parameters:
         device_type -- The USBDevice type to emulate.

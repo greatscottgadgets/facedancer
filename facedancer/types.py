@@ -1,5 +1,5 @@
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ USB types -- defines enumerations that describe standard USB types """
 

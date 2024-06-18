@@ -1,5 +1,5 @@
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ Functionality for defining USB devices. """
 
@@ -33,7 +33,7 @@ from .logging       import log
 @dataclass
 class USBBaseDevice(USBDescribable, USBRequestHandler):
     """
-    Base-most class for FaceDancer USB devices. This version is very similar to the USBDevice type,
+    Base-most class for Facedancer USB devices. This version is very similar to the USBDevice type,
     except that it does not define _any_ standard handlers. This allows you the freedom to declare
     whatever standard requests you'd like.
 
@@ -68,7 +68,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     vendor_id                : int  = 0x610b
     product_id               : int  = 0x4653
 
-    manufacturer_string      : str  = "FaceDancer"
+    manufacturer_string      : str  = "Facedancer"
     product_string           : str  = "Generic USB Device"
     serial_number_string     : str  = "S/N 3420E"
 

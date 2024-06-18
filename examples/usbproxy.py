@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# This file is part of FaceDancer.
+# This file is part of Facedancer.
 #
 """ USB Proxy example; forwards all USB transactions and logs them to the console. """
 
