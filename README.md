@@ -99,7 +99,7 @@ export BACKEND=greatfet
  * The CCCamp 2015 rad1o badge with GreatFET l0adable (```BACKEND=greatfet```)
  * All GoodFET-based Facedancers, including the common Facedancer21 (```BACKEND=goodfet```)
  * RPi + Max3241 Raspdancer boards (```BACKEND=raspdancer```)
- * Hydradancer and HydraUSB3 boards (```BACKEND=hydradancer```)
+ * HydraDancer and HydraUSB3 boards (```BACKEND=hydradancer```)
 
 Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulating
 more complex devices -- there's limitation on the number/type of endpoints that can be
@@ -109,7 +109,8 @@ For a similar reason, the MAX3420/MAX3421 boards (`BACKEND=goodfet` or `BACKEND=
 currently cannot be used as USBProxy-nv MITM devices. All modern boards (`BACKEND=greatfet`, `BACKEND=hydradancer`)
 should be fully functional.
 
-Note that the Hydradancer and HydraUSB3 boards (`BACKEND=greatfet`) do not currently support host-mode.
+Note that the HydraDancer and HydraUSB3 boards (`BACKEND=hydradancer`) do not currently support host-mode.
+Note actual FaceDancer 3.0 does not work on Windows(some issues in pyusb...) and only GNU/Linux
 
 ## What boards could be supported soon?
 
