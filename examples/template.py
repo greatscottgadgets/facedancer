@@ -136,6 +136,7 @@ class TemplateDevice(USBDevice):
                 # properties -- their number and direction.
                 #
                 # Together, these two fields form the endpoint's address.
+                # Endpoint numbers should be > 0, since endpoint 0 is reserved as the default pipe by the spec.
                 number               : int                    = 1
                 direction            : USBDirection           = USBDirection.IN
 
