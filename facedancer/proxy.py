@@ -353,8 +353,8 @@ class LibUSB1Device:
             if active_configuration:
                 for interface in active_configuration:
                     number = interface[0].getNumber()
-                    cls.device_handle.attachKernelDriver(number)
                     cls.device_handle.releaseInterface(number)
+                    cls.device_handle.attachKernelDriver(number)
 
             cls.device_handle.close()
             cls.device_handle = None
