@@ -672,13 +672,8 @@ class HydradancerBoard():
         Prime target endpoint ep_num.
         """
         try:
-            start_time = time_ns()
-            MAX_TIME_NS = 1e-3 * 1e9 
             while not self.in_buffer_empty(ep_num):
                 events = self.fetch_events()
-                if (time_ns() - start_time) > MAX_TIME_NS:
-                    logging.debug("Stop waiting to unlock situation")
-                    break
             logging.debug(f"Sending len {len(data)} {data} on ep {ep_num}")
             self.ep_out[self.endpoints_mapping[ep_num]].write(
                 data)
