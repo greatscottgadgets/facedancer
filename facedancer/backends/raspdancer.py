@@ -31,11 +31,11 @@ class RaspdancerMaxUSBApp(MAXUSBApp):
 
         # Only ever try Raspdancer backends if the backend is set to raspdancer;
         # we don't want to start randomly spamming a system's SPI bus.
-        if backend_name != "raspdancer":
+        if backend_name is None or backend_name != "raspdancer":
             return False
 
         # If we're not explicitly trying to use something else,
-        # see if there's a connected GreatFET.
+        # see if there's a connected Raspdancer.
         try:
             rd = Raspdancer()
             return True

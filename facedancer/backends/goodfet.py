@@ -19,13 +19,14 @@ class GoodfetMaxUSBApp(MAXUSBApp):
         Determines if the current environment seems appropriate
         for using the GoodFET::MaxUSB backend.
         """
-        # Check: if we have a backend name other than goodfet,
-        # the user is trying to use something else. Abort!
-        if backend_name and backend_name != "goodfet":
+
+        # Check: Only proceed if the user has specified "goodfet" as
+        # the backend name, we don't want a false positive because the
+        # user has another USB serial device connected.
+        if backend_name is None or backend_name != "goodfet":
             return False
 
-        # If we're not explicitly trying to use something else,
-        # see if there's a connected GoodFET.
+        # See if there's a connected GoodFET.
         try:
             gf = GoodFETSerialPort()
             gf.close()

@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!--
+
 ## [Unreleased]
--->
+### Fixed
+* Clarify the explanatory text for endpoint numbers in the app template. (tx @salcho!)
+* Shutting down Facedancer proxy devices could result in a `LIBUSB_ERROR_BUSY` (tx @mipek!)
+* Facedancer devices would be incorrectly identified as `goodfet` when `/dev/ttyUSB0` exists on the host device.
+
 
 ## [3.0.0] - 2024-06-18
 ### Added
