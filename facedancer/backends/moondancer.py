@@ -161,7 +161,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             device = cynthion.Cynthion()
             return device.supports_api('moondancer')
         except ImportError:
-            log.debug("Skipping Cynthion-based devices, as the cynthion python module isn't installed.")
+            log.info("Skipping Cynthion-based devices, as the cynthion python module isn't installed.")
             return False
         except:
             return False

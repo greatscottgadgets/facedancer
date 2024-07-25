@@ -7,7 +7,7 @@
 import os
 
 from .errors import *
-
+from .logging import log
 
 def FacedancerUSBApp(verbose=0, quirks=None):
     """
@@ -49,11 +49,13 @@ class FacedancerApp:
 
         if subclass:
             if verbose > 0:
-                print("Using {} backend.".format(subclass.app_name))
+                log.info("Using {} backend.".format(subclass.app_name))
 
             return subclass(verbose=verbose, quirks=quirks)
         else:
-            raise DeviceNotFoundError()
+            log.error("FacedancerApp failed to autodetect any Facedancer devices.")
+            log.error("Try specifying a backend with: BACKEND=\"<backend name>\" <your app>")
+            raise DeviceNotFoundError("FacedancerApp failed to autodetect any Facedancer devices.")
 
 
     @classmethod
@@ -99,7 +101,7 @@ class FacedancerApp:
         self.init_commands()
 
         if self.verbose > 0:
-            print(self.app_name, "initialized")
+            log.info(self.app_name, "initialized")
 
     def init_commands(self):
         pass
@@ -183,11 +185,13 @@ class FacedancerUSBHost:
 
         if subclass:
             if verbose > 0:
-                print("Using {} backend.".format(subclass.app_name))
+                log.info("Using {} backend.".format(subclass.app_name))
 
             return subclass(verbose=verbose, quirks=quirks)
         else:
-            raise DeviceNotFoundError()
+            log.error("FacedancerUSBHost failed to autodetect any Facedancer devices.")
+            log.error("Try specifying a backend with: BACKEND=\"<backend name>\" <your app>")
+            raise DeviceNotFoundError("FacedancerUSBHost failed to autodetect any Facedancer devices.")
 
 
     @classmethod
@@ -294,23 +298,23 @@ class FacedancerUSBHost:
                                                   request, value, index, length)
 
         if self.verbose > 4:
-            print("Issuing setup packet: {}".format(setup_request))
+            log.info("Issuing setup packet: {}".format(setup_request))
 
         self.send_on_endpoint(0, setup_request, True, data_packet_pid=0)
 
         if self.verbose > 4:
-            print("Done.")
+            log.info("Done.")
 
         # If we have a data stage, issue it:
         if length:
 
             if self.verbose > 4:
-                print("Reading response... ")
+                log.info("Reading response... ")
 
             data = self.read_from_endpoint(0, length, data_packet_pid=1)
 
             if self.verbose > 4:
-                print("Got response: {}".format(data))
+                log.info("Got response: {}".format(data))
 
             # and give the host an opportunity to ACK by sending a ZLP.
             self.send_on_endpoint(0, [], data_packet_pid=1)
@@ -370,7 +374,7 @@ class FacedancerUSBHost:
 
         # Set up the device to work.
         if self.verbose > 3:
-            print("Initializing control endpoint...")
+            log.info("Initializing control endpoint...")
         self.initialize_control_endpoint()
 
         # Try to ask the device for its maximum packet size on EP0.
