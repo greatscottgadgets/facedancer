@@ -354,7 +354,6 @@ class LibUSB1Device:
                 for interface in active_configuration:
                     number = interface[0].getNumber()
                     cls.device_handle.releaseInterface(number)
-                    cls.device_handle.attachKernelDriver(number)
 
             cls.device_handle.close()
             cls.device_handle = None
@@ -367,15 +366,17 @@ class LibUSB1Device:
     @classmethod
     def open(cls, device, detach=True):
         cls.device_handle = device.open()
+        try:
+            cls.device_handle.setAutoDetachKernelDriver(detach)
+        except usb1.USBErrorNotSupported:
+            pass
 
-        if detach:
-            number = cls.device_handle.getConfiguration()
-            active_configuration = next(filter(lambda c: c.getConfigurationValue() == number, device), None)
-            if active_configuration:
-                for interface in active_configuration:
-                    number = interface[0].getNumber()
-                    cls.device_handle.detachKernelDriver(number)
-                    cls.device_handle.claimInterface(number)
+        number = cls.device_handle.getConfiguration()
+        active_configuration = next(filter(lambda c: c.getConfigurationValue() == number, device), None)
+        if active_configuration:
+            for interface in active_configuration:
+                number = interface[0].getNumber()
+                cls.device_handle.claimInterface(number)
 
         return cls.device_handle
 
