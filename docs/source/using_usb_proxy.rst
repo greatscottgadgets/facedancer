@@ -5,16 +5,16 @@ Using USB Proxy
 Introduction
 ------------
 
-A major new feature of the newer Facedancer codebase is the ability to MITM (Meddler-In-The-Middle) USB connections -- replacing the authors' original `USBProxy <https://github.com/dominicgs/usbproxy>`__ project. This opens up a whole new realm of applications -- including protocol analysis and live manipulation of USB packets -- and is especially useful when you don't control the software running on the target device (e.g. on embedded systems or games consoles).
+A major new feature of the newer Facedancer codebase is the ability to MITM (Meddler-In-The-Middle) USB connections -- replacing the authors' original `USBProxy <https://github.com/dominicgs/usbproxy>`__ project. This opens up a whole new realm of applications -- including protocol analysis and live manipulation of USB packets -- and is especially useful when you don't control the software running on the Target Host (e.g. on embedded systems or games consoles).
 
 .. code-block:: text
 
                      +-----------------------------------------------------------------------+
     +------------+   |  +--------------------------------+   +---------------------------+   |  +--------------+
     |            |   |  |                                |   |                           |   |  |              |
-    |  PROXIED   |   |  |         HOST COMPUTER          |   |    FACEDANCER DEVICE      |   |  |  TARGET USB  |
-    |   DEVICE   <------>  running Facedancer software   <--->  acts as USB-Controlled   <------>     HOST     |
-    |            |   |  |                                |   |      USB Controller       |   |  |              |
+    |  PROXIED   |   |  |         CONTROL HOST           |   |    FACEDANCER DEVICE      |   |  |    TARGET    |
+    |    USB     <------>  running Facedancer software   <--->  acts as USB-Controlled   <------>     HOST     |
+    |  DEVICE    |   |  |                                |   |      USB Controller       |   |  |              |
     |            |   |  |                                |   |                           |   |  |              |
     +------------+   |  +--------------------------------+   +---------------------------+   |  +--------------+
                      |                                                                       |
@@ -26,7 +26,7 @@ A major new feature of the newer Facedancer codebase is the ability to MITM (Med
 The Simplest USB Proxy
 ----------------------
 
-The simplest use for USB Proxy is to transparently forward USB transactions between the host to the device and log them to the console.
+The simplest use for USB Proxy is to transparently forward USB transactions between the target computer and the proxied device while logging them to the console.
 
 .. literalinclude:: ../../examples/usbproxy.py
    :language: python
@@ -36,9 +36,9 @@ The simplest use for USB Proxy is to transparently forward USB transactions betw
 
 Setting up a USB Proxy begins by creating an instance of the :class:`~facedancer.proxy.USBProxyDevice` with the vendor and product id's of the proxied device as arguments.
 
-The actual behaviour of USB Proxy is governed by adding :mod:`~facedancer.filters` to the proxy that can intercept, read, modify and forward USB transactions between the host and device.
+The actual behaviour of USB Proxy is governed by adding :mod:`~facedancer.filters` to the proxy that can intercept, read, modify and forward USB transactions between the target computer and proxied device.
 
-The first filter is a :class:`~facedancer.filters.standard.USBProxySetupFilters` which is a simple forwarding filter that ensures all control transfers are forwarded between the target host and the proxied device. Without the presence of this script the target host will detect your proxied device but all attempts at enumeration would fail.
+The first filter is a :class:`~facedancer.filters.standard.USBProxySetupFilters` which is a simple forwarding filter that ensures all control transfers are forwarded between the target computer and the proxied device. Without the presence of this script the target computer will detect your proxied device but all attempts at enumeration would fail.
 
 The second filter is a :class:`~facedancer.filters.logging.USBProxyPrettyPrintFilter` which will intercept all transactions and then log them to the console.
 
