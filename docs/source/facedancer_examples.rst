@@ -2,6 +2,15 @@
 Facedancer Examples
 ===================
 
+.. warning::
+
+   Facedancer and Cynthion are not currently supported with Windows as the Control Host.
+
+   Windows is however supported as the Target Host when using Linux or macOS for the Control Host.
+
+   For more information please see the tracking issue: `#170 <https://github.com/greatscottgadgets/cynthion/issues/170>`__
+
+
 There are a number of :repo:`Facedancer examples<examples/>` available that demonstrate emulation of various USB device functions.
 
 
@@ -10,7 +19,7 @@ There are a number of :repo:`Facedancer examples<examples/>` available that demo
 
 The canonical "Hello World" of USB emulation, the rubber-ducky example implements a minimal subset of the USB HID class specification in order to emulate a USB keyboard.
 
-.. list-table:: Host Compatibility
+.. list-table:: Target Host Compatibility
    :widths: 30 30 30
    :header-rows: 1
 
@@ -28,7 +37,7 @@ The canonical "Hello World" of USB emulation, the rubber-ducky example implement
 
 An emulation of an FTDI USB-to-serial converter, the ftdi-echo example converts input received from a connected terminal to uppercase and echoes the result back to the sender.
 
-.. list-table:: Host Compatibility
+.. list-table:: Target Host Compatibility
    :widths: 30 30 30
    :header-rows: 1
 
@@ -62,7 +71,7 @@ You can also test or modify the disk image locally by mounting it with:
 Remember to unmount it before using it with the device emulation!
 
 
-.. list-table:: Host Compatibility
+.. list-table:: Target Host Compatibility
    :widths: 30 30 30
    :header-rows: 1
 
