@@ -5,12 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
+<!--
 ## [Unreleased]
+-->
+
+## [3.0.1] - 2024-08-19
+### Changed
+* USBProxy now auto-detaches kernel drivers for the device being proxied.
+* Updated documentation with current status of Facedancer support on Windows.
+
 ### Fixed
 * Clarify the explanatory text for endpoint numbers in the app template. (tx @salcho!)
 * Shutting down Facedancer proxy devices could result in a `LIBUSB_ERROR_BUSY` (tx @mipek!)
 * Facedancer devices would be incorrectly identified as `goodfet` when `/dev/ttyUSB0` exists on the host device.
+* Fixed ambiguous documentation terminology to always use one of "Target Host", "Control Host".
 
 
 ## [3.0.0] - 2024-06-18
@@ -44,6 +52,7 @@ Any future bug-fixes or backports to Facedancer `2.9.x` should use the [`v2.9.x 
 - The current Facedancer core will be supersed by the implementation in `future/` with the `v3.0` release.
 
 
-[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.0...HEAD
+[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.1...HEAD
+[3.0.1]: https://github.com/greatscottgadgets/facedancer/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/greatscottgadgets/facedancer/compare/2.9.0...3.0.0
 [2.9.0]: https://github.com/greatscottgadgets/facedancer/releases/tag/2.9.0
