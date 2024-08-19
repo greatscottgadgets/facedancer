@@ -26,6 +26,10 @@ A major new feature of the newer Facedancer codebase is the ability to MITM (Med
 The Simplest USB Proxy
 ----------------------
 
+.. note::
+
+   On macOS USBProxy needs to run as root in order to claim the device being proxied from the operating system.
+
 The simplest use for USB Proxy is to transparently forward USB transactions between the target computer and the proxied device while logging them to the console.
 
 .. literalinclude:: ../../examples/usbproxy.py
