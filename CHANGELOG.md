@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -->
 
+## [3.0.2] - 2024-08-20
+### Changed
+* Added support for Cynthion on Windows.
+* Update docs to reflect current status of GreatFET support on Windows.
+
 ## [3.0.1] - 2024-08-19
 ### Changed
 * USBProxy now auto-detaches kernel drivers for the device being proxied.
@@ -52,7 +57,8 @@ Any future bug-fixes or backports to Facedancer `2.9.x` should use the [`v2.9.x 
 - The current Facedancer core will be supersed by the implementation in `future/` with the `v3.0` release.
 
 
-[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.1...HEAD
+[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.2...HEAD
+[3.0.2]: https://github.com/greatscottgadgets/facedancer/compare/3.0.1...3.0.2
 [3.0.1]: https://github.com/greatscottgadgets/facedancer/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/greatscottgadgets/facedancer/compare/2.9.0...3.0.0
 [2.9.0]: https://github.com/greatscottgadgets/facedancer/releases/tag/2.9.0
