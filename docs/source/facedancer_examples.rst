@@ -4,7 +4,7 @@ Facedancer Examples
 
 .. warning::
 
-   Facedancer and Cynthion are not currently supported with Windows as the Control Host.
+   Facedancer and GreatFET are not currently supported with Windows as the Control Host.
 
    Windows is however supported as the Target Host when using Linux or macOS for the Control Host.
 

@@ -4,7 +4,7 @@ Getting started with Facedancer
 
 .. warning::
 
-   Facedancer and USBProxy are not currently supported in a Control Host role on Windows with Cynthion. Attempting to use Facedancer or USBProxy with Cynthion on Windows may cause Cynthion USB analysis to stop working.
+   Facedancer and USBProxy are not currently supported in a Control Host role on Windows with GreatFET.
 
    For more information please see the tracking issue: `#170 <https://github.com/greatscottgadgets/cynthion/issues/170>`__
 

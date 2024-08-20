@@ -4,7 +4,7 @@
 # necessary for autodetection.
 # and GoodFETMonitorApp.
 
-import os, platform, sys
+import os
 
 from .errors import *
 from .logging import log
@@ -19,18 +19,7 @@ def FacedancerUSBApp(verbose=0, quirks=None):
         verbose : Sets the verbosity level of the relevant app. Increasing
                   this from zero yields progressively more output.
     """
-    subclass = FacedancerApp.autodetect(verbose, quirks)
-    if subclass.app_name == "Moondancer" and platform.system() == "Windows":
-        log.error("Facedancer and Cynthion are not currently supported")
-        log.error("with Windows as the Control Host.")
-        log.error("Windows is however supported as the Target Host")
-        log.error("when using Linux or macOS as the Control Host.")
-        log.error("For more information please see the tracking issue:")
-        log.error("https://github.com/greatscottgadgets/cynthion/issues/170")
-        log.error("Command aborted.")
-        sys.exit(1)
-
-    return subclass
+    return FacedancerApp.autodetect(verbose, quirks)
 
 
 class FacedancerApp:
