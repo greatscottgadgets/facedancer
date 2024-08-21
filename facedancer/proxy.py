@@ -4,7 +4,9 @@
 """ USB Proxy implementation. """
 
 import atexit
+import platform
 import usb1
+import sys
 
 from usb1        import USBError, USBErrorTimeout
 
@@ -353,7 +355,11 @@ class LibUSB1Device:
             if active_configuration:
                 for interface in active_configuration:
                     number = interface[0].getNumber()
-                    cls.device_handle.releaseInterface(number)
+                    try:
+                        cls.device_handle.releaseInterface(number)
+                    except usb1.USBErrorNotFound as e:
+                        log.warning(f"Failed to releace interface {0} for {device}")
+                        pass
 
             cls.device_handle.close()
             cls.device_handle = None
@@ -376,7 +382,18 @@ class LibUSB1Device:
         if active_configuration:
             for interface in active_configuration:
                 number = interface[0].getNumber()
-                cls.device_handle.claimInterface(number)
+                try:
+                    cls.device_handle.claimInterface(number)
+                except usb1.USBErrorAccess:
+                    log.error(f"Failed to claim interface {number} for {device}")
+                    if platform.system() == "Darwin":
+                        log.error("You may need to run your proxy code as root.\n")
+                    elif platform.system() == "Linux":
+                        log.error("Please ensure you have configured an entry for the device in your")
+                        log.error("/etc/udev/rules.d directory.\n")
+                    elif platform.system() == "Windows":
+                        log.error("You may need to experiment with the Zadig driver to access the device.\n")
+                    sys.exit(1)
 
         return cls.device_handle
 
