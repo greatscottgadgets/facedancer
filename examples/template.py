@@ -56,12 +56,12 @@ class TemplateDevice(USBDevice):
     supported_languages      : tuple = (LanguageIDs.ENGLISH_US,)
 
     # The revision of the device hardware. This doesn't matter to the USB specification,
-    # but it's sometimes read by drivers.
-    device_revision          : int  = 0
+    # but it's sometimes read by drivers. 0x0001 represents "0.1" in BCD.
+    device_revision          : int  = 0x0001
 
     # The revision of the USB specification that this device adheres to.
-    # Typically, you'll leave this at '2'.
-    usb_spec_version         : int  = 0x0002
+    # Typically, you'll leave this at 0x0200 which represents "2.0" in BCD.
+    usb_spec_version         : int  = 0x0200
 
 
     #
