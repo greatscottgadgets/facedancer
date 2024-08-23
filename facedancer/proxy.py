@@ -299,16 +299,16 @@ class USBProxyDevice(USBBaseDevice):
         if ep_num is None:
             return
 
-        # Read the target data from the target device.
-        endpoint_address = ep_num | 0x80
-
-        # Quick hack to improve responsiveness on interrupt endpoints.
         try:
+            # Quick hack to improve responsiveness on interrupt endpoints.
             if endpoint.interval:
                 data = self.proxied_device.read(ep_num, endpoint.max_packet_size, timeout=endpoint.interval)
             else:
                 data = self.proxied_device.read(ep_num, endpoint.max_packet_size)
 
+        except usb1.USBErrorPipe:
+            self.proxied_device.clear_halt(ep_num, USBDirection.IN)
+            return
         except USBErrorTimeout:
             return
 
@@ -447,6 +447,11 @@ class LibUSB1Device:
         # TODO support interrupt endpoints
         return cls.device_handle.bulkWrite(endpoint_number, data, timeout)
 
+
+    @classmethod
+    def clear_halt(cls, endpoint_number, direction):
+        endpoint_address = direction.to_endpoint_address(endpoint_number)
+        return cls.device_handle.clearHalt(endpoint_address)
 
 
 if __name__ == "__main__":
