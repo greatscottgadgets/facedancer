@@ -703,7 +703,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
 
     def handle_get_supported_languages_descriptor(self) -> bytes:
-        """ Returns the special string-descriptor-zero that indicates which languages are supported. """
+        """Return the special string-descriptor-zero that indicates which languages are supported."""
+
+        if self.supported_languages is None:
+            return None
 
         # Our string descriptor is going to have two header bytes, plus two bytes
         # for each language.
