@@ -100,23 +100,26 @@ class StringDescriptorManager:
         self.indexes     = {}
 
 
+    def add_string(self, string, index=None):
+        """Add a Python string as a new string descriptor, and return an index.
 
-    def _allocate_index(self):
-        """ Grabs a unique, ascending string index for the current string. """
+        The specified index is used for the new string descriptor, overwriting
+        any previous descriptor with the same index. If an index is not
+        specified, a new, unique, incrementing index is allocated.
+        """
 
-        index = self.next_index
-        self.next_index += 1
+        if index is None:
+            index = self.next_index
 
-        return index
-
-
-    def add_string(self, string):
-        """ Adds a python string to the string manager, and returns an index. """
-
-        index = self._allocate_index()
+        if index in self.descriptors:
+            old_string = self.descriptors[index].python_string
+            self.indexes.pop(old_string)
 
         self.descriptors[index] = USBStringDescriptor.from_string(string, index=index)
         self.indexes[string]    = index
+
+        while self.next_index in self.descriptors:
+            self.next_index += 1
 
         return index
 
