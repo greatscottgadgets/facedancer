@@ -77,7 +77,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     supported_languages      : tuple = (LanguageIDs.ENGLISH_US,)
 
     device_revision          : int  = 0
-    usb_spec_version         : int  = 0x0002
+    usb_spec_version         : int  = 0x0200
 
     device_speed             : DeviceSpeed = None
 
@@ -100,14 +100,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             data += b"\0" * padding_necessary
 
         # Parse the core descriptor into its components...
-        spec_version_msb, spec_version_lsb, device_class, device_subclass, device_protocol, \
-                max_packet_size_ep0, vendor_id, product_id, device_rev_msb, device_rev_lsb, \
+        spec_version, device_class, device_subclass, device_protocol, \
+                max_packet_size_ep0, vendor_id, product_id, device_rev, \
                 manufacturer_string_index, product_string_index, \
-                serial_number_string_index, num_configurations = struct.unpack_from("<xxBBBBBBHHBBBBBB", data)
-
-        # Generate our BCD arguments.
-        spec_version = (spec_version_msb << 8) | spec_version_lsb
-        device_rev = (device_rev_msb << 8) | device_rev_lsb
+                serial_number_string_index, num_configurations = struct.unpack_from("<xxHBBBBHHHBBBB", data)
 
         device = cls(
             device_class=device_class,
@@ -669,13 +665,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     def get_descriptor(self) -> bytes:
         """ Returns a complete descriptor for this device. """
 
-        # FIXME: use construct, here!
-
         d = bytearray([
             18,         # length of descriptor in bytes
             1,          # descriptor type 1 == device
-            (self.usb_spec_version >> 8) & 0xff,
             self.usb_spec_version & 0xff,
+            (self.usb_spec_version >> 8) & 0xff,
             self.device_class,
             self.device_subclass,
             self.protocol_revision_number,
@@ -684,8 +678,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             (self.vendor_id >> 8) & 0xff,
             self.product_id & 0xff,
             (self.product_id >> 8) & 0xff,
-            (self.device_revision >> 8) & 0xff,
             self.device_revision & 0xff,
+            (self.device_revision >> 8) & 0xff,
             self.strings.get_index(self.manufacturer_string),
             self.strings.get_index(self.product_string),
             self.strings.get_index(self.serial_number_string),
