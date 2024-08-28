@@ -257,6 +257,21 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         self.backend.clear_halt(endpoint_number, direction)
 
 
+    def control_send(self, endpoint_number: int, in_request: USBControlRequest, data: bytes, *, blocking: bool = False):
+        """ Queues sending data on the provided control endpoint in
+            response to a IN control request.
+
+        Args:
+            endpoint_number : The endpoint number to send data upon.
+            in_request      : The control request being responded to.
+            data            : The data to send.
+            blocking        : If provided and true, this function will block
+                               until the backend indicates the send is complete.
+
+        """
+        self.backend.send_on_control_endpoint(endpoint_number, in_request, data, blocking=blocking)
+
+
     def send(self, endpoint_number: int, data: bytes, *, blocking: bool = False):
         """ Queues sending data on the IN endpoint with the provided number.
 
@@ -267,13 +282,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
                                until the backend indicates the send is complete.
         """
 
-        # EP0 is special, as it conceptually belongs to the whole device, as it's used
-        # for control requests and configuration. We'll handle it directly, here.
-        #
-        # All of our backends currently automatically handle packetization and ZLPs for
-        # the control endpoint, so we'll skip packetizing it (which would generate spurious ZLPs).
         if endpoint_number == 0:
-            self.backend.send_on_endpoint(0, data, blocking=blocking)
+            # TODO upgrade to an exception with the release of Facedancer 3.1.0
+            log.warning("Please use USBDevice::control_send() for control transfers")
         elif self.configuration:
             endpoint = self.configuration.get_endpoint(endpoint_number, USBDirection.IN)
             endpoint.send(data, blocking=blocking)

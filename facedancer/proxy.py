@@ -245,7 +245,7 @@ class USBProxyDevice(USBBaseDevice):
             self.backend.stall_endpoint(0, USBDirection.IN)
         else:
             # TODO: support control endpoints other than 0
-            self.send(0, data)
+            self.control_send(0, request, data)
 
 
     def _proxy_out_control_request(self, request: USBControlRequest):

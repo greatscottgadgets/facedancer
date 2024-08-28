@@ -251,7 +251,7 @@ class USBControlRequest:
 
     def reply(self, data: bytes):
         """ Replies to the given request with a given set of bytes. """
-        self.device.send(endpoint_number=0, data=data)
+        self.device.control_send(endpoint_number=0, in_request=self, data=data)
 
 
     def acknowledge(self, *, blocking: bool = False):
@@ -260,7 +260,7 @@ class USBControlRequest:
         Args:
             blocking : If true, the relevant control request will complete before returning.
         """
-        self.device.send(endpoint_number=0, data=b"", blocking=blocking)
+        self.device.control_send(endpoint_number=0, in_request=self, data=b"", blocking=blocking)
 
 
     def ack(self, *, blocking: bool = False):

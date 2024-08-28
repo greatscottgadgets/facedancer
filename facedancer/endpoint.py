@@ -100,7 +100,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         return self.parent.get_device()
 
 
-    def send(self, data: bytes, *, blocking: bool =False):
+    def send(self, data: bytes, *, blocking: bool = False):
         """ Sends data on this endpoint. Valid only for IN endpoints.
 
         Args:
