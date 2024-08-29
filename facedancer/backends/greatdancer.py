@@ -10,8 +10,10 @@ from ..types    import *
 
 from ..logging  import log
 
+from .base            import FacedancerBackend
 
-class GreatDancerApp(FacedancerApp):
+
+class GreatDancerApp(FacedancerApp, FacedancerBackend):
     """
     Backend for using GreatFET devices as Facedancers.
     """
