@@ -249,7 +249,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     @to_this_interface
     def handle_set_interface_request(self, request: USBControlRequest):
         """ Handle SET_INTERFACE requests; per USB2 [9.4.10] """
-        logging.debug(f"f{self.name} received SET_INTERFACE request")
+        log.debug(f"f{self.name} received SET_INTERFACE request")
         # We don't support alternate interface settings; so ACK
         # alternate setting zero, and stall all others.
         if request.value == 0:
