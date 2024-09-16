@@ -6,7 +6,10 @@ import time
 
 from ..core import FacedancerApp
 
-class MAXUSBApp(FacedancerApp):
+from .base            import FacedancerBackend
+
+
+class MAXUSBApp(FacedancerApp, FacedancerBackend):
     app_name = "MAXUSB"
 
     reg_ep0_fifo                    = 0x00

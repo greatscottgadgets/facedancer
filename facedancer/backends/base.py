@@ -93,6 +93,21 @@ class FacedancerBackend:
         raise NotImplementedError
 
 
+    def send_on_control_endpoint(self, endpoint_number: int, in_request: USBControlRequest, data: bytes, blocking: bool=True):
+        """
+        Sends a collection of USB data in response to a IN control request by the host.
+
+        Args:
+            endpoint_number  : The number of the IN endpoint on which data should be sent.
+            in_request       : The control request being responded to.
+            data             : The data to be sent.
+            blocking         : If true, this function should wait for the transfer to complete.
+        """
+        # Truncate data to requested length and forward to `send_on_endpoint()` for backends
+        # that do not need to support this method.
+        return self.send_on_endpoint(endpoint_number, data[:in_request.length], blocking)
+
+
     def send_on_endpoint(self, endpoint_number: int, data: bytes, blocking: bool=True):
         """
         Sends a collection of USB data on a given endpoint.

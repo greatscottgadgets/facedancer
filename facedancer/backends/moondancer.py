@@ -11,6 +11,7 @@ from typing           import List, Tuple
 from ..core           import *
 from ..device         import USBDevice
 from ..configuration  import USBConfiguration
+from ..request        import USBControlRequest
 from ..types          import DeviceSpeed, USBDirection
 
 from ..logging        import log
@@ -312,8 +313,23 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         return data
 
 
-    # TODO greatdancer does blocking=True by default, should we too given that everthing else sets it to False
-    #      by default?
+    def send_on_control_endpoint(self, endpoint_number: int, in_request: USBControlRequest, data: bytes, blocking: bool=True):
+        """
+        Sends a collection of USB data in response to a IN control request by the host.
+
+        Args:
+            endpoint_number  : The number of the IN endpoint on which data should be sent.
+            requested_length : The number of bytes requested by the host.
+            data             : The data to be sent.
+            blocking         : If true, this function should wait for the transfer to complete.
+        """
+        requested_length = in_request.length
+        self.api.write_control_endpoint(endpoint_number, requested_length, blocking, bytes(data))
+
+        log.debug(f"moondancer.send_on_control_endpoint({endpoint_number}, {requested_length}, {len(data)}, {blocking})")
+        log.trace(f"  moondancer.api.write_control_endpoint({endpoint_number}, {requested_length}, {blocking}, {len(data)})")
+
+
     def send_on_endpoint(self, endpoint_number: int, data: bytes, blocking: bool=True):
         """
         Sends a collection of USB data on a given endpoint.
@@ -323,8 +339,6 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             data     : The data to be sent.
             blocking : If true, this function will wait for the transfer to complete.
         """
-
-        # TODO possibly wait until endpoint is ready to send?
 
         self.api.write_endpoint(endpoint_number, blocking, bytes(data))
 
