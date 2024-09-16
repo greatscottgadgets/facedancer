@@ -388,6 +388,21 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             log.debug(f"  moondancer.api.stall_endpoint_out({endpoint_number})")
 
 
+    def clear_halt(self, endpoint_number: int, direction: USBDirection):
+        """ Clears a halt condition on the provided non-control endpoint.
+
+        Args:
+            endpoint_number : The endpoint number
+            direction       : The endpoint direction; or OUT if not provided.
+        """
+
+        endpoint_address = (endpoint_number | 0x80) if direction else endpoint_number
+        log.debug(f"Clearing halt EP{endpoint_number} {USBDirection(direction).name} (0x{endpoint_address:x})")
+
+        self.api.clear_feature_endpoint_halt(endpoint_number, direction)
+        log.debug(f"  moondancer.api.clear_feature_endpoint_halt({endpoint_number}, {direction})")
+
+
     def service_irqs(self):
         """
         Core routine of the Facedancer execution/event loop. Continuously monitors the

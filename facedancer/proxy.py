@@ -4,7 +4,9 @@
 """ USB Proxy implementation. """
 
 import atexit
+import platform
 import usb1
+import sys
 
 from usb1        import USBError, USBErrorTimeout
 
@@ -297,16 +299,16 @@ class USBProxyDevice(USBBaseDevice):
         if ep_num is None:
             return
 
-        # Read the target data from the target device.
-        endpoint_address = ep_num | 0x80
-
-        # Quick hack to improve responsiveness on interrupt endpoints.
         try:
+            # Quick hack to improve responsiveness on interrupt endpoints.
             if endpoint.interval:
                 data = self.proxied_device.read(ep_num, endpoint.max_packet_size, timeout=endpoint.interval)
             else:
                 data = self.proxied_device.read(ep_num, endpoint.max_packet_size)
 
+        except usb1.USBErrorPipe:
+            self.proxied_device.clear_halt(ep_num, USBDirection.IN)
+            return
         except USBErrorTimeout:
             return
 
@@ -353,7 +355,11 @@ class LibUSB1Device:
             if active_configuration:
                 for interface in active_configuration:
                     number = interface[0].getNumber()
-                    cls.device_handle.releaseInterface(number)
+                    try:
+                        cls.device_handle.releaseInterface(number)
+                    except usb1.USBErrorNotFound as e:
+                        log.warning(f"Failed to releace interface {0} for {device}")
+                        pass
 
             cls.device_handle.close()
             cls.device_handle = None
@@ -376,7 +382,18 @@ class LibUSB1Device:
         if active_configuration:
             for interface in active_configuration:
                 number = interface[0].getNumber()
-                cls.device_handle.claimInterface(number)
+                try:
+                    cls.device_handle.claimInterface(number)
+                except usb1.USBErrorAccess:
+                    log.error(f"Failed to claim interface {number} for {device}")
+                    if platform.system() == "Darwin":
+                        log.error("You may need to run your proxy code as root.\n")
+                    elif platform.system() == "Linux":
+                        log.error("Please ensure you have configured an entry for the device in your")
+                        log.error("/etc/udev/rules.d directory.\n")
+                    elif platform.system() == "Windows":
+                        log.error("You may need to experiment with the Zadig driver to access the device.\n")
+                    sys.exit(1)
 
         return cls.device_handle
 
@@ -430,6 +447,11 @@ class LibUSB1Device:
         # TODO support interrupt endpoints
         return cls.device_handle.bulkWrite(endpoint_number, data, timeout)
 
+
+    @classmethod
+    def clear_halt(cls, endpoint_number, direction):
+        endpoint_address = direction.to_endpoint_address(endpoint_number)
+        return cls.device_handle.clearHalt(endpoint_address)
 
 
 if __name__ == "__main__":

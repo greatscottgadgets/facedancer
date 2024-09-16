@@ -130,6 +130,18 @@ class FacedancerBackend:
         raise NotImplementedError
 
 
+    def clear_halt(self, endpoint_number:int, direction: USBDirection):
+        """ Clears a halt condition on the provided non-control endpoint.
+
+        Args:
+            endpoint_number : The endpoint number
+            direction       : The endpoint direction; or OUT if not provided.
+        """
+        # FIXME do nothing as only the moondancer backend supports this for now
+        # raise NotImplementedError
+        pass
+
+
     def service_irqs(self):
         """
         Core routine of the Facedancer execution/event loop. Continuously monitors the

@@ -247,7 +247,15 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         self.backend.stall_endpoint(endpoint_number, direction)
 
 
-    # TODO: add a clear_stall() method here for non-control endpoints
+    def clear_halt(self, endpoint_number: int, direction: USBDirection):
+        """ Clears a halt condition on the provided non-control endpoint.
+
+        Args:
+            endpoint_number : The endpoint number
+            direction       : The endpoint direction; or OUT if not provided.
+        """
+        self.backend.clear_halt(endpoint_number, direction)
+
 
     def send(self, endpoint_number: int, data: bytes, *, blocking: bool = False):
         """ Queues sending data on the IN endpoint with the provided number.
