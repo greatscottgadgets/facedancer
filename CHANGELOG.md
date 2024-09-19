@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -->
 
+## [3.0.3] - 2024-09-19
+### Added
+* Support for specifying string descriptor indices.
+* Allow `supported_languages = None` for device definitions.
+* Provide an error message when device claim/release fails.
+* New backend method: `clear_halt()`
+* New backend method: `send_on_control_endpoint()`
+* [HydraDancer](https://github.com/HydraDancer) backend. (tx @kauwua!)
+### Fixed
+* Correct byteorder for bcdUSB and bcdDevice.
+* Older facedancer backends were not derived from `FacedancerBackend`.
+* Log message in `handle_set_interface_request` was using the incorrect logging method. (tx @kawua!)
+
+
 ## [3.0.2] - 2024-08-20
 ### Changed
 * Added support for Cynthion on Windows.
@@ -57,7 +71,8 @@ Any future bug-fixes or backports to Facedancer `2.9.x` should use the [`v2.9.x 
 - The current Facedancer core will be supersed by the implementation in `future/` with the `v3.0` release.
 
 
-[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.2...HEAD
+[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.3...HEAD
+[3.0.3]: https://github.com/greatscottgadgets/facedancer/compare/3.0.2...3.0.3
 [3.0.2]: https://github.com/greatscottgadgets/facedancer/compare/3.0.1...3.0.2
 [3.0.1]: https://github.com/greatscottgadgets/facedancer/compare/3.0.0...3.0.1
 [3.0.0]: https://github.com/greatscottgadgets/facedancer/compare/2.9.0...3.0.0
