@@ -8,7 +8,8 @@ import asyncio
 import inspect
 import argparse
 
-from ..logging import configure_default_logging
+from ..errors  import EndEmulation
+from ..logging import configure_default_logging, log
 
 def default_main(device_or_type, *coroutines):
     """ Simple, default main for Facedancer emulation.
@@ -38,7 +39,11 @@ def default_main(device_or_type, *coroutines):
         sys.exit(0)
 
     # Run the relevant code, along with any added coroutines.
-    device.emulate(*coroutines)
-
-    if args.suggest:
-        device.print_suggested_additions()
+    log.info("Starting emulation, press 'Control-C' to disconnect and exit.")
+    try:
+        device.emulate(*coroutines)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if args.suggest:
+            device.print_suggested_additions()

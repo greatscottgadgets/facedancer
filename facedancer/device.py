@@ -14,6 +14,7 @@ from dataclasses    import dataclass, field
 from prompt_toolkit import HTML, print_formatted_text
 
 from .core          import FacedancerUSBApp
+from .errors        import EndEmulation
 from .types         import DescriptorTypes, LanguageIDs, USBStandardRequests
 from .types         import USBDirection, USBRequestType, USBRequestRecipient
 from .types         import DeviceSpeed
@@ -226,6 +227,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         try:
             self.run_with(*coroutines)
+        except EndEmulation as e:
+            log.info(f"{e}")
         finally:
             self.disconnect()
 
