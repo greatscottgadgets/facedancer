@@ -51,4 +51,5 @@ class MyDevice(USBDevice):
         request.ack()
 
 
-main(MyDevice)
+if __name__ == "__main__":
+    main(MyDevice)
