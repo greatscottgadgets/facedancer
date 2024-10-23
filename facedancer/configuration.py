@@ -64,20 +64,21 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         descriptor_type, total_length, num_interfaces, index, string_index, \
             attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
 
-        # Extract the subordinate descriptors, and parse them.
-        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
-
-        # TODO _parse_subordinate_descriptors should handle this
-        interfaces = {interface.number:interface for interface in interfaces}
-
-        return cls(
+        configuration = cls(
             number=index,
             configuration_string=string_index,
             max_power=max_power,
             self_powered=(attributes >> 6) & 1,
             supports_remote_wakeup=(attributes >> 5) & 1,
-            interfaces=interfaces,
         )
+
+        # Extract the subordinate descriptors, and parse them.
+        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
+
+        for interface in interfaces:
+            configuration.add_interface(interface)
+
+        return configuration
 
 
     @classmethod
