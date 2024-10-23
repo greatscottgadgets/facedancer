@@ -262,8 +262,17 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     # Automatic instantiation support.
     #
 
-    def get_identifier(self) -> int:
-        return self.number
+    def get_identifier(self) -> (int, int):
+        return (self.number, self.alternate)
+
+
+    # Although we identify interfaces by (number, alternate), this helper
+    # is called from the request handling code, where we only want to
+    # match by interface number. The correct alternate interface should have
+    # been selected earlier in the request handling process.
+    def matches_identifier(self, other: int) -> bool:
+        return (other == self.number)
+
 
     #
     # Request handler functions.

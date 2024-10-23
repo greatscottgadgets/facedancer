@@ -145,7 +145,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_interface(self, interface: USBInterface):
         """ Adds an interface to the configuration. """
-        self.interfaces[interface.number] = interface
+        self.interfaces[interface.get_identifier()] = interface
         interface.parent = self
 
 
@@ -247,7 +247,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         # FIXME: use construct
 
         # All all subordinate descriptors together to create a big subordinate descriptor.
-        interfaces = sorted(self.interfaces.values(), key=lambda item: item.number)
+        interfaces = sorted(self.interfaces.values(), key=lambda item: item.get_identifier())
         for interface in interfaces:
             interface_descriptors += interface.get_descriptor()
 
