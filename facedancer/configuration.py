@@ -158,7 +158,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         """
 
         # Search each of our interfaces for the relevant endpoint.
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             endpoint = interface.get_endpoint(number, direction)
             if endpoint is not None:
                 return endpoint
@@ -185,7 +185,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
             data     : The raw bytes received on the relevant endpoint.
         """
 
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             if interface.has_endpoint(endpoint.number, direction=USBDirection.OUT):
                 interface.handle_data_received(endpoint, data)
                 return
@@ -205,7 +205,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
             endpoint : The endpoint on which the host requested data.
         """
 
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             if interface.has_endpoint(endpoint.number, direction=USBDirection.IN):
                 interface.handle_data_requested(endpoint)
                 return
@@ -224,7 +224,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         This function is called only once per buffer.
         """
 
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             if interface.has_endpoint(endpoint.number, direction=USBDirection.IN):
                 interface.handle_buffer_empty(endpoint)
                 return

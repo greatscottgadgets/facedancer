@@ -887,6 +887,15 @@ class USBDevice(USBBaseDevice):
         else:
             try:
                 self.configuration = self.configurations[request.value]
+
+                # On a configuration change, all interfaces revert
+                # to alternate setting 0.
+                self.configuration.active_interfaces = {
+                    interface.number: interface
+                        for interface in self.configuration.get_interfaces()
+                            if interface.alternate == 0
+                }
+
                 request.acknowledge()
             except KeyError:
                 request.stall()
