@@ -256,7 +256,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
 
-        log.debug("fmoondancer.configured({configuration})")
+        log.debug(f"moondancer.configured({configuration})")
 
         if configuration is None:
             log.error("Target host configuration could not be applied.")
@@ -436,7 +436,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             parsed_events = [InterruptEvent(event) for event in events]
 
             for event in parsed_events:
-                log.debug(f"MD IRQ => {event} {event.endpoint_number}")
+                log.debug(f"MD IRQ => {event}")
                 if event == InterruptEvent.USB_BUS_RESET:
                     self.handle_bus_reset()
                 elif event == InterruptEvent.USB_RECEIVE_CONTROL:
@@ -550,9 +550,23 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
                 # And clear our pending setup data.
                 self.pending_control_request = None
 
+                # Finally, re-enable other OUT endpoints so we can receive on them again.
+                self._ep_out_interface_enable()
+
+                return
+
             # Finally, prime endpoint to receive next packet.
             self.api.ep_out_prime_receive(endpoint_number)
 
+            return
+
+        elif endpoint_number == 0:
+            data = self.api.read_endpoint(endpoint_number)
+            if len(data) == 0:
+                # It's a zlp following a control transfer, re-enable ep_out interface for reception.
+                self._ep_out_interface_enable()
+            else:
+                log.error(f"Received {len(data)} bytes on control endpoint with no pending control request")
             return
 
         # Read the data from the endpoint
@@ -586,3 +600,9 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             if endpoint_number != 0:
                 log.trace(f"Received IN NAK on ep{endpoint_number}")
                 self.connected_device.handle_nak(endpoint_number)
+
+    # - helpers ---------------------------------------------------------------
+
+    def _ep_out_interface_enable(self):
+        for ep in filter(lambda ep: USBDirection.from_endpoint_address(ep).is_out(), self.configured_endpoints):
+            self.api.ep_out_prime_receive(ep)
