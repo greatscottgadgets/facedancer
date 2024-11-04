@@ -7,6 +7,7 @@ import unittest
 import usb1
 
 from facedancer.errors import DeviceNotFoundError
+from facedancer.types import USBStandardRequests
 
 
 VENDOR_ID  = 0x1209
@@ -14,6 +15,9 @@ PRODUCT_ID = 0x0001
 
 OUT_ENDPOINT = 0x01
 IN_ENDPOINT  = 0x82
+
+OUT_ALT_ENDPOINT = 0x03
+IN_ALT_ENDPOINT  = 0x84
 
 # This is constrained by pygreat::comms_backends::usb1::LIBGREAT_MAX_COMMAND_SIZE
 # and is board dependent.
@@ -42,20 +46,20 @@ class FacedancerTestCase(unittest.TestCase):
 
     # - transfers -------------------------------------------------------------
 
-    def bulk_out_transfer(self, data):
+    def bulk_out_transfer(self, ep, data):
         logging.debug("Testing bulk OUT endpoint")
         response = self.device_handle.bulkWrite(
-            endpoint = 0x01,
+            endpoint = ep,
             data     = data,
             timeout  = 1000,
         )
         logging.debug(f"sent {response} bytes\n")
         return response
 
-    def bulk_in_transfer(self, length):
+    def bulk_in_transfer(self, ep, length):
         logging.debug("Testing bulk IN endpoint")
         response = self.device_handle.bulkRead(
-            endpoint = 0x82,
+            endpoint = ep,
             length   = length,
             timeout  = 1000,
         )
@@ -129,3 +133,20 @@ class FacedancerTestCase(unittest.TestCase):
             timeout      = 1000,
         )
         return response
+
+    def set_interface(self, interface_number, alternate):
+        logging.debug("Setting interface {interface_number} to alternate setting {alternate}")
+        self.device_handle.setInterfaceAltSetting(interface_number, alternate)
+
+    def get_interface(self, interface_number):
+        logging.debug("Getting alternate setting of interface {interface}")
+        response = self.device_handle.controlRead(
+            request_type = usb1.TYPE_STANDARD | usb1.RECIPIENT_INTERFACE,
+            request      = USBStandardRequests.GET_INTERFACE,
+            index        = interface_number,
+            value        = 0,
+            length       = 1,
+            timeout      = 1000,
+        )
+        return response[0]
+

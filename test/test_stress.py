@@ -7,7 +7,7 @@ import unittest
 import usb1
 
 from .base   import FacedancerTestCase
-from .base   import VENDOR_ID, PRODUCT_ID, MAX_TRANSFER_LENGTH
+from .base   import VENDOR_ID, PRODUCT_ID, MAX_TRANSFER_LENGTH, OUT_ENDPOINT, IN_ENDPOINT
 from .device import generate_data
 
 # How many iterations to run for stress test
@@ -29,10 +29,10 @@ class TestStress(FacedancerTestCase):
 
     def test_stress_test(self):
         def bulk_out_transfer(self, length):
-            bytes_sent = self.bulk_out_transfer(generate_data(length))
+            bytes_sent = self.bulk_out_transfer(OUT_ENDPOINT, generate_data(length))
             self.assertEqual(bytes_sent, length)
         def bulk_in_transfer(self, length):
-            received = self.bulk_in_transfer(length)
+            received = self.bulk_in_transfer(IN_ENDPOINT, length)
             self.assertEqual(len(received), length)
         def control_out_transfer(self, length):
             bytes_sent = self.control_out_transfer(generate_data(length))

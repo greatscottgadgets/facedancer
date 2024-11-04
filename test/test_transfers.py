@@ -7,7 +7,7 @@ import unittest
 import usb1
 
 from .base   import FacedancerTestCase
-from .base   import VENDOR_ID, PRODUCT_ID, MAX_TRANSFER_LENGTH
+from .base   import VENDOR_ID, PRODUCT_ID, MAX_TRANSFER_LENGTH, OUT_ENDPOINT, IN_ENDPOINT
 from .device import generate_data
 
 
@@ -31,6 +31,7 @@ class TestTransfers(FacedancerTestCase):
     def setUp(self):
         # reset test device state between tests
         self.reset_device_state()
+        self.set_interface(0, 0)
 
 
     # - transfer checks -------------------------------------------------------
@@ -68,7 +69,7 @@ class TestTransfers(FacedancerTestCase):
         data = generate_data(length)
 
         # perform Bulk OUT transfer
-        bytes_sent = self.bulk_out_transfer(data)
+        bytes_sent = self.bulk_out_transfer(OUT_ENDPOINT, data)
 
         # check transfer
         self.check_out_transfer(length, data, bytes_sent)
@@ -80,7 +81,7 @@ class TestTransfers(FacedancerTestCase):
         self.set_in_transfer_length(length)
 
         # perform Bulk IN transfer
-        received_data = self.bulk_in_transfer(length)
+        received_data = self.bulk_in_transfer(IN_ENDPOINT, length)
 
         # check transfer
         self.check_in_transfer(length, received_data)
