@@ -256,7 +256,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
 
-        log.debug("fmoondancer.configured({configuration})")
+        log.debug(f"moondancer.configured({configuration})")
 
         if configuration is None:
             log.error("Target host configuration could not be applied.")
