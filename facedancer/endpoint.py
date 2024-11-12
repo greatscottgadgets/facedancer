@@ -49,6 +49,9 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     max_packet_size      : int = 64
     interval             : int = 0
 
+    # Extra bytes that extend the basic endpoint descriptor.
+    extra_bytes          : bytes = b''
+
     parent               : USBDescribable = None
 
 
@@ -75,7 +78,8 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
             synchronization_type=sync_type,
             usage_type=usage_type,
             max_packet_size=max_packet_size,
-            interval=interval
+            interval=interval,
+            extra_bytes=data[7:]
         )
 
 
@@ -170,8 +174,10 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         # FIXME: use construct
 
         d = bytearray([
-                7,          # length of descriptor in bytes
-                5,          # descriptor type 5 == endpoint
+                # length of descriptor in bytes
+                7 + len(self.extra_bytes),
+                # descriptor type 5 == endpoint
+                5,
                 self.address,
                 self.attributes,
                 self.max_packet_size & 0xff,
@@ -179,7 +185,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
                 self.interval
         ])
 
-        return d
+        return d + self.extra_bytes
 
 
     #
