@@ -62,12 +62,12 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         # Unpack the main collection of data into the descriptor itself.
         descriptor_type, total_length, num_interfaces, index, string_index, \
-            attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
+            attributes, half_max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
 
         configuration = cls(
             number=index,
             configuration_string=string_index,
-            max_power=max_power,
+            max_power=half_max_power * 2,
             self_powered=(attributes >> 6) & 1,
             supports_remote_wakeup=(attributes >> 5) & 1,
         )
