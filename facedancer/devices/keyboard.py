@@ -50,7 +50,7 @@ class USBKeyboardDevice(USBDevice):
             #
 
 
-            class USBClassDescriptor(USBClassDescriptor):
+            class HIDDescriptor(USBDescriptor):
                 number      : int   =  USBDescriptorTypeNumber.HID
                 raw         : bytes = b'\x09\x21\x10\x01\x00\x01\x22\x2b\x00'
 

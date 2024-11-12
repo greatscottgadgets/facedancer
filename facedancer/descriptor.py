@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from .magic import AutoInstantiable
 
 from enum import IntEnum
+from warnings import warn
 
 
 class USBDescribable(object):
@@ -40,8 +41,7 @@ class USBDescribable(object):
             if subclass.handles_binary_descriptor(data):
                 return subclass.from_binary_descriptor(data)
 
-        return None
-
+        return USBDescriptor.from_binary_descriptor(data)
 
 
 @dataclass
@@ -54,17 +54,32 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
     type_number : int            = None
     parent      : USBDescribable = None
 
+    # Whether this descriptor should be included in a GET_CONFIGURATION response.
+    include_in_config : bool     = False
+
     def __call__(self, index=0):
         """ Converts the descriptor object into raw bytes. """
         return self.raw
 
     def get_identifier(self):
-        return self.number
+        return (self.type_number, self.number)
 
+    @classmethod
+    def from_binary_descriptor(cls, data):
+        return USBDescriptor(raw=data, type_number=data[1], number=None)
 
 @dataclass
 class USBClassDescriptor(USBDescriptor):
     """ Class for arbitrary USB Class descriptors. """
+
+    include_in_config = True
+
+    def __init_subclass__(cls, **kwargs):
+        warn(
+            "The USBClassDescriptor class is deprecated. "
+            "Use USBDescriptor with include_in_config=True instead.",
+            UserWarning, 3)
+        super().__init_subclass__(**kwargs)
 
 
 @dataclass

@@ -5,11 +5,11 @@
 
 import struct
 
-from typing      import Iterable
-from dataclasses import dataclass
+from typing      import Iterable, List, Dict
+from dataclasses import dataclass, field
 
 from .magic      import AutoInstantiable
-from .descriptor import USBDescribable
+from .descriptor import USBDescribable, USBDescriptor
 from .request    import USBRequestHandler, get_request_handler_methods
 from .request    import to_this_endpoint, standard_request_handler
 from .types      import USBDirection, USBTransferType, USBSynchronizationType
@@ -51,6 +51,12 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     # Extra bytes that extend the basic endpoint descriptor.
     extra_bytes          : bytes = b''
+
+    # Descriptors that will be included in a GET_CONFIGURATION response.
+    attached_descriptors : List[USBDescriptor] = field(default_factory=list)
+
+    # Descriptors that can be requested with the GET_DESCRIPTOR request.
+    requestable_descriptors : Dict[tuple[int, int], USBDescriptor] = field(default_factory=dict)
 
     parent               : USBDescribable = None
 
@@ -167,6 +173,16 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         return (self.transfer_type & 0x03)               | \
                ((self.synchronization_type & 0x03) << 2) | \
                ((self.usage_type & 0x03) << 4)
+
+
+    def add_descriptor(self, descriptor: USBDescriptor):
+        """ Adds the provided descriptor to the endpoint. """
+        if descriptor.include_in_config:
+            self.attached_descriptors.append(descriptor)
+        else:
+            identifier = descriptor.get_identifier()
+            self.requestable_descriptors[identifier] = descriptor
+        descriptor.parent = self
 
 
     def get_descriptor(self) -> bytes:
