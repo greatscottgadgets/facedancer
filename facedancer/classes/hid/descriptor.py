@@ -116,21 +116,22 @@ class HIDCollection(IntEnum):
     VENDOR         = 0xFF
 
 
-
 @dataclass
 class HIDReportDescriptor(USBDescriptor):
     """ Descriptor class representing a HID report descriptor. """
 
     # Parameter where the user defines the descriptor's fields.
-    fields : Iterable[bytes] = ()
+    fields: Iterable[bytes] = ()
 
     # Mark this as a HID report descriptor.
-    number : int    = USBDescriptorTypeNumber.REPORT
-    raw    : None   = None
-
+    number: int = USBDescriptorTypeNumber.REPORT
+    raw: None | bytes = None
 
     def __call__(self, index=0):
         """ Converts the descriptor object into raw bytes. """
+
+        if self.raw is not None:
+            return self.raw
 
         raw = bytearray()
 
