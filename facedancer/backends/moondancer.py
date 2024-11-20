@@ -304,8 +304,8 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         # Read from the given endpoint...
         data = self.api.read_endpoint(endpoint_number)
 
-        # Prime endpoint to receive data again...
-        self.api.ep_out_prime_receive(endpoint_number)
+        # Re-enable OUT interface to receive data again...
+        self.api.ep_out_interface_enable()
 
         log.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)} '{data}'")
 
@@ -441,6 +441,9 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
                     self.handle_bus_reset()
                 elif event == InterruptEvent.USB_RECEIVE_CONTROL:
                     self.handle_receive_control(event.endpoint_number)
+                elif event == InterruptEvent.USB_RECEIVE_PACKET and event.endpoint_number == 0:
+                    # TODO support endpoints other than EP0
+                    self.handle_receive_control_packet(event.endpoint_number)
                 elif event == InterruptEvent.USB_RECEIVE_PACKET:
                     self.handle_receive_packet(event.endpoint_number)
                 elif event == InterruptEvent.USB_SEND_COMPLETE:
@@ -516,7 +519,56 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             self.api.ep_out_prime_receive(endpoint_number)
 
 
-    # USB0_RECEIVE_PACKET
+    # USB0_RECEIVE_PACKET(0)
+    def handle_receive_control_packet(self, endpoint_number: int):
+        log.debug(f"moondancer.handle_receive_control_packet({endpoint_number}) pending:{self.pending_control_request}")
+
+        # Handle packet if we don't have a pending control request
+        if not self.pending_control_request:
+            data = self.api.read_endpoint(endpoint_number)
+            if len(data) == 0:
+                # It's a zlp following an IN control transfer, re-enable ep_out interface for reception.
+                self.api.ep_out_interface_enable()
+            else:
+                log.error(f"Discarding {len(data)} bytes on control endpoint with no pending control request")
+            return
+
+        # We have a pending control request with a data stage...
+        # Read the rest of the data from the endpoint, completing the control request.
+        new_data = self.api.read_endpoint(endpoint_number)
+
+        log.debug(f"  handling control data stage: {len(new_data)} bytes")
+        log.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(new_data)}")
+
+        if len(new_data) == 0:
+            # It's a zlp following a control IN transfer, re-enable ep_out interface for reception.
+            self.api.ep_out_interface_enable()
+            log.debug(f"ZLP ending Control IN transfer on ep: {endpoint_number}")
+            return
+
+        # Append our new data to the pending control request.
+        self.pending_control_request.data.extend(new_data)
+
+        all_data_received = len(self.pending_control_request.data) == self.pending_control_request.length
+        is_short_packet   = len(new_data) < self.max_packet_size_ep0
+
+        if all_data_received or is_short_packet:
+            # Handle the completed setup request...
+            self.connected_device.handle_request(self.pending_control_request)
+
+            # And clear our pending setup data.
+            self.pending_control_request = None
+
+            # Finally, re-enable other OUT endpoints so we can receive on them again.
+            self.api.ep_out_interface_enable()
+
+            return
+
+        # Finally, re-enable other OUT endpoints so we can receive on them again.
+        self.api.ep_out_interface_enable()
+
+
+    # USB0_RECEIVE_PACKET(1...15)
     def handle_receive_packet(self, endpoint_number: int):
         """
         Handles a known-completed transfer on a given endpoint.
@@ -525,67 +577,25 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             endpoint_number : The endpoint number for which the transfer should be serviced.
         """
 
-        log.debug(f"moondancer.handle_receive_packet({endpoint_number}) pending:{self.pending_control_request}")
-
-        # If we have a pending control request with a data stage...
-        # TODO support endpoints other than EP0
-        if self.pending_control_request and endpoint_number == 0:
-
-            # Read the rest of the data from the endpoint, completing the control request.
-            new_data = self.api.read_endpoint(endpoint_number)
-
-            log.debug(f"  handling control data stage: {len(new_data)} bytes")
-            log.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(new_data)}")
-
-            # Append our new data to the pending control request.
-            self.pending_control_request.data.extend(new_data)
-
-            all_data_received = len(self.pending_control_request.data) == self.pending_control_request.length
-            is_short_packet   = len(new_data) < self.max_packet_size_ep0
-
-            if all_data_received or is_short_packet:
-                # Handle the completed setup request...
-                self.connected_device.handle_request(self.pending_control_request)
-
-                # And clear our pending setup data.
-                self.pending_control_request = None
-
-                # Finally, re-enable other OUT endpoints so we can receive on them again.
-                self._ep_out_interface_enable()
-
-                return
-
-            # Finally, prime endpoint to receive next packet.
-            self.api.ep_out_prime_receive(endpoint_number)
-
-            return
-
-        elif endpoint_number == 0:
-            data = self.api.read_endpoint(endpoint_number)
-            if len(data) == 0:
-                # It's a zlp following a control transfer, re-enable ep_out interface for reception.
-                self._ep_out_interface_enable()
-            else:
-                log.error(f"Received {len(data)} bytes on control endpoint with no pending control request")
-            return
+        log.debug(f"moondancer.handle_receive_packet({endpoint_number})")
 
         # Read the data from the endpoint
         data = self.api.read_endpoint(endpoint_number)
 
         log.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(data)}")
 
+        # Ignore it if it's a ZLP ack as Facedancer devices don't handle it.
         if len(data) == 0:
-            # it's a zlp ack, devices don't handle it so ignore it
-            log.debug(f"  received ZLP on ep{endpoint_number}")
             # Finally, Prime endpoint to receive again.
-            self.api.ep_out_prime_receive(endpoint_number)
+            self.api.ep_out_interface_enable()
+            log.debug(f"  ZLP ending Bulk IN transfer on ep: {endpoint_number}")
             return
 
         # Pass it to the device's handler
         self.connected_device.handle_data_available(endpoint_number, data)
 
-        # Finally, Prime endpoint to receive again.
-        self.api.ep_out_prime_receive(endpoint_number)
+        # Finally, re-enable other OUT endpoints so we can receive on them again.
+        self.api.ep_out_interface_enable()
 
 
     # USB0_SEND_COMPLETE
@@ -600,9 +610,3 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             if endpoint_number != 0:
                 log.trace(f"Received IN NAK on ep{endpoint_number}")
                 self.connected_device.handle_nak(endpoint_number)
-
-    # - helpers ---------------------------------------------------------------
-
-    def _ep_out_interface_enable(self):
-        for ep in filter(lambda ep: USBDirection.from_endpoint_address(ep).is_out(), self.configured_endpoints):
-            self.api.ep_out_prime_receive(ep)
