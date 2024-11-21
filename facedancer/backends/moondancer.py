@@ -527,7 +527,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         if not self.pending_control_request:
             data = self.api.read_endpoint(endpoint_number)
             if len(data) == 0:
-                # It's a zlp following an IN control transfer, re-enable ep_out interface for reception.
+                # It's a zlp following an IN control transfer, re-enable interface for reception on other endpoints.
                 self.api.ep_out_interface_enable()
             else:
                 log.error(f"Discarding {len(data)} bytes on control endpoint with no pending control request")
@@ -541,7 +541,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         log.trace(f"  moondancer.api.read_endpoint({endpoint_number}) -> {len(new_data)}")
 
         if len(new_data) == 0:
-            # It's a zlp following a control IN transfer, re-enable ep_out interface for reception.
+            # It's a zlp following a control IN transfer, re-enable interface for reception on other endpoints.
             self.api.ep_out_interface_enable()
             log.debug(f"ZLP ending Control IN transfer on ep: {endpoint_number}")
             return
@@ -559,13 +559,13 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
             # And clear our pending setup data.
             self.pending_control_request = None
 
-            # Finally, re-enable other OUT endpoints so we can receive on them again.
+            # Finally, re-enable interface for reception on other endpoints.
             self.api.ep_out_interface_enable()
 
             return
 
-        # Finally, re-enable other OUT endpoints so we can receive on them again.
-        self.api.ep_out_interface_enable()
+        # Finally, re-prime our control endpoint to receive the rest of the control data.
+        self.api.ep_out_prime_receive(endpoint_number)
 
 
     # USB0_RECEIVE_PACKET(1...15)
