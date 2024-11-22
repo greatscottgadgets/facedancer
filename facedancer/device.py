@@ -7,6 +7,7 @@ import sys
 import asyncio
 import struct
 import warnings
+import itertools
 
 from typing         import Coroutine, Dict, Iterable, Union
 from dataclasses    import dataclass, field
@@ -549,7 +550,11 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # Build a tuple of the relevant immutable parts of the request,
         # and store it as a suggestion.
-        suggestion_summary = (request.direction, request.type, request.recipient, request.number)
+        if request.recipient in (USBRequestRecipient.INTERFACE, USBRequestRecipient.ENDPOINT):
+            recipient_id = request.index & 0xFF
+        else:
+            recipient_id = None
+        suggestion_summary = (request.direction, request.type, request.recipient, recipient_id, request.number)
 
         self._suggested_requests.add(suggestion_summary)
         self._suggested_request_metadata[suggestion_summary] = {
@@ -578,73 +583,93 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             USBRequestRecipient.OTHER:     '@to_other',
         }
 
+        # Helper function used to group requests by recipients.
+        def grouper(suggestion):
+            direction, request_type, recipient, recipient_id, number = suggestion
+            return (recipient, recipient_id)
+
         print_html("\n<u>Request handler code:</u>")
 
         if not self._suggested_requests:
             print_html("\t No suggestions.")
             return
 
-        # Print each suggestion.
-        for suggestion in self._suggested_requests:
-            direction, request_type, recipient, number = suggestion
-            metadata = self._suggested_request_metadata[suggestion]
+        # Sort the suggested requests by recipient, then group them.
+        all_suggestions = sorted(self._suggested_requests, key=grouper)
+        groups = itertools.groupby(all_suggestions, key=grouper)
 
-            # Find the associated text descriptions for the relevant field.
-            decorator = request_type_decorator[request_type]
-            direction_name = USBDirection(direction).name
+        # Print each suggestion, grouped by recipient.
+        for group, suggestions in groups:
 
-            # Generate basic metadata for our function.
-            request_number = f"<ansiblue>{number}</ansiblue>"
-            function_name = f"handle_control_request_{number}"
-
-            # Figure out if we want to use a cleaner request number.
-            if request_type == USBRequestType.STANDARD:
-                try:
-                    request_number = f"USBStandardRequests.{USBStandardRequests(number).name}"
-                    function_name  = f"handle_{USBStandardRequests(number).name.lower()}_request"
-                except ValueError:
-                    pass
-
-
-            # Figure out if we should include a target decorator.
-            if recipient in target_decorator:
-                recipient_decorator = target_decorator[recipient]
-                specific_recipient  = ""
+            recipient, recipient_id = group
+            if recipient == USBRequestRecipient.INTERFACE:
+                print_html(f"\nOn interface {recipient_id}:")
+            elif recipient == USBRequestRecipient.ENDPOINT:
+                print_html(f"\nOn endpoint {recipient_id}:")
             else:
-                recipient_decorator = None
-                specific_recipient = f"recipient=<ansiblue>{recipient}</ansiblue>, "
+                print_html(f"\nOn the device:")
 
-            #
-            # Print the code block.
-            #
-            print_html("")
+            for suggestion in suggestions:
+                direction, request_type, recipient, recipient_id, number = suggestion
+                metadata = self._suggested_request_metadata[suggestion]
 
-            # Primary request decorator, e.g. "@standard_request_handler".
-            print_html(f"    <ansigreen>{decorator}</ansigreen>("
-                    f"number={request_number}, "
-                    f"{specific_recipient}"
-                    f"direction=USBDirection.{direction_name}"
-                    f")")
+                # Find the associated text descriptions for the relevant field.
+                decorator = request_type_decorator[request_type]
+                direction_name = USBDirection(direction).name
 
-            # Recipient specifier; e.g. "@to_device"
-            if recipient_decorator:
-                print_html(f"    <ansigreen>{recipient_decorator}</ansigreen>")
+                # Generate basic metadata for our function.
+                request_number = f"<ansiblue>{number}</ansiblue>"
+                function_name = f"handle_control_request_{number}"
 
-            # Function definition.
-            print_html(f"    <ansiwhite><b>def</b></ansiwhite> "
-                    f"<ansiyellow>{function_name}</ansiyellow>"
-                    "(self, request):"
-            )
+                # Figure out if we want to use a cleaner request number.
+                if request_type == USBRequestType.STANDARD:
+                    try:
+                        request_number = f"USBStandardRequests.{USBStandardRequests(number).name}"
+                        function_name  = f"handle_{USBStandardRequests(number).name.lower()}_request"
+                    except ValueError:
+                        pass
 
-            # Note about the requested length, if applicable.
-            if direction == USBDirection.IN:
-                print_html(f"        <ansimagenta># Most recent request was for {metadata['length']}B of data.</ansimagenta>")
-            else:
-                print_html(f"        <ansimagenta># Most recent request data: {metadata['data']}.</ansimagenta>")
 
-            # Default function body.
-            print_html(f"        <ansimagenta># Replace me with your handler.</ansimagenta>")
-            print_html(f"        request.stall()")
+                # Figure out if we should include a target decorator.
+                if recipient in target_decorator:
+                    recipient_decorator = target_decorator[recipient]
+                    specific_recipient  = ""
+                else:
+                    recipient_decorator = None
+                    specific_recipient = f"recipient=<ansiblue>{recipient}</ansiblue>, "
+
+
+                #
+                # Print the code block.
+                #
+                print_html("")
+
+                # Primary request decorator, e.g. "@standard_request_handler".
+                print_html(f"    <ansigreen>{decorator}</ansigreen>("
+                        f"number={request_number}, "
+                        f"{specific_recipient}"
+                        f"direction=USBDirection.{direction_name}"
+                        f")")
+
+                # Recipient specifier; e.g. "@to_device"
+                if recipient_decorator:
+                    print_html(f"    <ansigreen>{recipient_decorator}</ansigreen>")
+
+                # Function definition.
+                print_html(f"    <ansiwhite><b>def</b></ansiwhite> "
+                        f"<ansiyellow>{function_name}</ansiyellow>"
+                        "(self, request):"
+                )
+
+                # Note about the requested length, if applicable.
+                if direction == USBDirection.IN:
+                    print_html(f"        <ansimagenta># Most recent request was for {metadata['length']}B of data.</ansimagenta>")
+                else:
+                    print_html(f"        <ansimagenta># Most recent request data: {metadata['data']}.</ansimagenta>")
+
+                # Default function body.
+                print_html(f"        <ansimagenta># Replace me with your handler.</ansimagenta>")
+                print_html(f"        request.stall()")
 
 
     def print_suggested_additions(self):
