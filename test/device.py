@@ -25,7 +25,7 @@ class StressTestDevice(USBDevice):
 
     def __post_init__(self):
         super().__post_init__()
-        self.in_transfer_length = 32
+        self.in_transfer_length = 0
         self.last_out_transfer_data = bytearray()
 
     class MyConfiguration(USBConfiguration):
@@ -88,6 +88,7 @@ class StressTestDevice(USBDevice):
     @to_device
     def reset_device_state(self: USBDevice, request: USBControlRequest):
         logging.debug(f"reset_device_state: {len(self.last_out_transfer_data)} bytes")
+        self.in_transfer_length = 0
         self.last_out_transfer_data = bytearray()
         request.ack()
 
