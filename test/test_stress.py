@@ -24,9 +24,6 @@ class TestStress(FacedancerTestCase):
     # - life-cycle ------------------------------------------------------------
 
     def setUp(self):
-        # set interface
-        self.set_interface(0, 0)
-
         # reset test device state between tests
         self.reset_device_state()
 
