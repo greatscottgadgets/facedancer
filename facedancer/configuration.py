@@ -13,7 +13,7 @@ from .magic       import instantiate_subordinates, AutoInstantiable
 from .request     import USBRequestHandler
 
 from .interface   import USBInterface
-from .descriptor  import USBDescribable, USBClassDescriptor
+from .descriptor  import USBDescribable, USBDescriptor
 from .endpoint    import USBEndpoint
 
 
@@ -62,36 +62,19 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         # Unpack the main collection of data into the descriptor itself.
         descriptor_type, total_length, num_interfaces, index, string_index, \
-            attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
+            attributes, half_max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
 
         configuration = cls(
             number=index,
             configuration_string=string_index,
-            max_power=max_power,
+            max_power=half_max_power * 2,
             self_powered=(attributes >> 6) & 1,
             supports_remote_wakeup=(attributes >> 5) & 1,
         )
 
-        # Extract the subordinate descriptors, and parse them.
-        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
-
-        for interface in interfaces:
-            configuration.add_interface(interface)
-
-        return configuration
-
-
-    @classmethod
-    def _parse_subordinate_descriptors(cls, data):
-        """
-        Generates descriptor objects from the list of subordinate descriptors.
-
-        Args:
-            data: The raw bytes for the descriptor to be parsed.
-        """
-
-        # TODO: handle recieving interfaces out of order?
-        interfaces = []
+        data = data[length:total_length]
+        last_interface = None
+        last_endpoint  = None
 
         # Continue parsing until we run out of descriptors.
         while data:
@@ -102,16 +85,23 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
             # If we have an interface descriptor, add it to our list of interfaces.
             if isinstance(descriptor, USBInterface):
-                interfaces.append(descriptor)
+                configuration.add_interface(descriptor)
+                last_interface = descriptor
+                last_endpoint = None
             elif isinstance(descriptor, USBEndpoint):
-                interfaces[-1].add_endpoint(descriptor)
-            elif isinstance(descriptor, USBClassDescriptor):
-                interfaces[-1].set_class(descriptor)
+                last_interface.add_endpoint(descriptor)
+                last_endpoint = descriptor
+            elif isinstance(descriptor, USBDescriptor):
+                descriptor.include_in_config = True
+                if len(last_interface.endpoints) == 0:
+                    last_interface.add_descriptor(descriptor)
+                else:
+                    last_endpoint.add_descriptor(descriptor)
 
             # Move on to the next descriptor.
             data = data[length:]
 
-        return interfaces
+        return configuration
 
 
     def __post_init__(self):

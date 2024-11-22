@@ -5,11 +5,11 @@
 
 import struct
 
-from typing      import Iterable
-from dataclasses import dataclass
+from typing      import Iterable, List, Dict
+from dataclasses import dataclass, field
 
 from .magic      import AutoInstantiable
-from .descriptor import USBDescribable
+from .descriptor import USBDescribable, USBDescriptor
 from .request    import USBRequestHandler, get_request_handler_methods
 from .request    import to_this_endpoint, standard_request_handler
 from .types      import USBDirection, USBTransferType, USBSynchronizationType
@@ -49,6 +49,15 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     max_packet_size      : int = 64
     interval             : int = 0
 
+    # Extra bytes that extend the basic endpoint descriptor.
+    extra_bytes          : bytes = b''
+
+    # Descriptors that will be included in a GET_CONFIGURATION response.
+    attached_descriptors : List[USBDescriptor] = field(default_factory=list)
+
+    # Descriptors that can be requested with the GET_DESCRIPTOR request.
+    requestable_descriptors : Dict[tuple[int, int], USBDescriptor] = field(default_factory=dict)
+
     parent               : USBDescribable = None
 
 
@@ -75,7 +84,8 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
             synchronization_type=sync_type,
             usage_type=usage_type,
             max_packet_size=max_packet_size,
-            interval=interval
+            interval=interval,
+            extra_bytes=data[7:]
         )
 
 
@@ -165,13 +175,25 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
                ((self.usage_type & 0x03) << 4)
 
 
+    def add_descriptor(self, descriptor: USBDescriptor):
+        """ Adds the provided descriptor to the endpoint. """
+        if descriptor.include_in_config:
+            self.attached_descriptors.append(descriptor)
+        else:
+            identifier = descriptor.get_identifier()
+            self.requestable_descriptors[identifier] = descriptor
+        descriptor.parent = self
+
+
     def get_descriptor(self) -> bytes:
         """ Get a descriptor string for this endpoint. """
         # FIXME: use construct
 
         d = bytearray([
-                7,          # length of descriptor in bytes
-                5,          # descriptor type 5 == endpoint
+                # length of descriptor in bytes
+                7 + len(self.extra_bytes),
+                # descriptor type 5 == endpoint
+                5,
                 self.address,
                 self.attributes,
                 self.max_packet_size & 0xff,
@@ -179,7 +201,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
                 self.interval
         ])
 
-        return d
+        return d + self.extra_bytes
 
 
     #

@@ -5,7 +5,7 @@
 
 import struct
 
-from typing       import Dict, Iterable
+from typing       import Dict, List, Iterable
 from dataclasses  import dataclass, field
 
 from .magic       import instantiate_subordinates, AutoInstantiable
@@ -45,8 +45,11 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     interface_string       : str = None
 
-    descriptors            : Dict[int, bytes] = field(default_factory=dict)
-    class_descriptor       : bytes = None
+    # Descriptors that will be included in a GET_CONFIGURATION response.
+    attached_descriptors     : List[USBDescriptor] = field(default_factory=list)
+
+    # Descriptors that can be requested with the GET_DESCRIPTOR request.
+    requestable_descriptors    : Dict[tuple[int, int], USBDescriptor] = field(default_factory=dict)
 
     endpoints              : Dict[int, USBEndpoint] = field(default_factory=dict)
     parent                 : USBDescribable = None
@@ -75,16 +78,13 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         # Capture any descriptors/endpoints declared directly on the class.
         self.endpoints.update(instantiate_subordinates(self, USBEndpoint))
-        self.descriptors.update(instantiate_subordinates(self, USBDescriptor))
-
-        # If we weren't provided with a class descriptor, try to find one
-        # provided on the class.
-        if self.class_descriptor is None:
-            class_descriptors = instantiate_subordinates(self, USBClassDescriptor)
-            self.class_descriptor = list(class_descriptors.values())[0] if class_descriptors else None
-
-        # Add in our general interface-descriptor handler.
-        self.descriptors[USBDescriptorTypeNumber.INTERFACE] = self.get_descriptor
+        descriptors = instantiate_subordinates(self, USBDescriptor).items()
+        for (identifier, descriptor) in descriptors:
+            if descriptor.include_in_config:
+                self.attached_descriptors.append(descriptor)
+            else:
+                self.requestable_descriptors[identifier] = descriptor
+            descriptor.parent = self
 
         # Populate our request handlers.
         self._request_handler_methods = get_request_handler_methods(self)
@@ -127,6 +127,16 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
             direction       : The endpoint direction to be matched.
         """
         return (self.get_endpoint(endpoint_number, direction) is not None)
+
+
+    def add_descriptor(self, descriptor: USBDescriptor):
+        """ Adds the provided descriptor to the interface. """
+        if descriptor.include_in_config:
+            self.attached_descriptors.append(descriptor)
+        else:
+            identifier = descriptor.get_identifier()
+            self.requestable_descriptors[identifier] = descriptor
+        descriptor.parent = self
 
 
     #
@@ -226,16 +236,21 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
                 string_manager.get_index(self.interface_string)
         ])
 
-        # If we have a class object, append its class descriptor...
-        if self.class_descriptor:
-            if callable(self.class_descriptor):
-                d += self.class_descriptor()
+        for descriptor in self.attached_descriptors:
+            if callable(descriptor):
+                d += descriptor()
             else:
-                d += self.class_descriptor
+                d += descriptor
 
         # ... append each endpoint's endpoint descriptor.
         for e in self.endpoints.values():
             d += e.get_descriptor()
+            for descriptor in e.attached_descriptors:
+                if callable(descriptor):
+                    d += descriptor()
+                else:
+                    d += descriptor
+
 
         return d
 

@@ -82,7 +82,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     device_speed             : DeviceSpeed = None
 
-    descriptors              : Dict[int, Union[bytes, callable]] = field(default_factory=dict)
+    # Descriptors that can be requested with the GET_DESCRIPTOR request.
+    requestable_descriptors  : Dict[tuple[int, int], Union[bytes, callable]] = field(default_factory=dict)
     configurations           : Dict[int, USBConfiguration]       = field(default_factory=dict)
     backend                  : FacedancerUSBApp = None
 
@@ -134,10 +135,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # If we don't have a collection of descriptors, gather any attached to the class.
         subordinate_descriptors = instantiate_subordinates(self, USBDescriptor)
-        self.descriptors.update(subordinate_descriptors)
+        self.requestable_descriptors.update(subordinate_descriptors)
 
         # Add our basic descriptor handlers.
-        self.descriptors.update({
+        self.requestable_descriptors.update({
             DescriptorTypes.DEVICE:        lambda _ : self.get_descriptor(),
             DescriptorTypes.CONFIGURATION: self.get_configuration_descriptor,
             DescriptorTypes.STRING:        self.get_string_descriptor
@@ -745,7 +746,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     @staticmethod
     def handle_generic_get_descriptor_request(
-            descriptor_container:Union['USBDevice', USBInterface],
+            self: Union['USBDevice', USBInterface],
             request: USBControlRequest):
         """ Handle GET_DESCRIPTOR requests; per USB2 [9.4.3] """
 
@@ -754,9 +755,13 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         # Extract the core parameters from the request.
         descriptor_type  = request.value_high
         descriptor_index = request.value_low
+        identifier = (descriptor_type, descriptor_index)
 
-        # Try to find the descriptor associate with the request.
-        response = descriptor_container.descriptors.get(descriptor_type, None)
+        # Try to find the specific descriptor for the request.
+        response = self.requestable_descriptors.get(identifier, None)
+        # If that fails, try to find a function covering this type.
+        if response is None:
+            response = self.requestable_descriptors.get(descriptor_type, None)
 
         # If we have a callable, we need to evaluate it to figure
         # out what the actual descriptor should be.
