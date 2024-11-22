@@ -64,20 +64,21 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         descriptor_type, total_length, num_interfaces, index, string_index, \
             attributes, max_power = struct.unpack_from('<xBHBBBBB', data[0:length])
 
-        # Extract the subordinate descriptors, and parse them.
-        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
-
-        # TODO _parse_subordinate_descriptors should handle this
-        interfaces = {interface.number:interface for interface in interfaces}
-
-        return cls(
+        configuration = cls(
             number=index,
             configuration_string=string_index,
             max_power=max_power,
             self_powered=(attributes >> 6) & 1,
             supports_remote_wakeup=(attributes >> 5) & 1,
-            interfaces=interfaces,
         )
+
+        # Extract the subordinate descriptors, and parse them.
+        interfaces = cls._parse_subordinate_descriptors(data[length:total_length])
+
+        for interface in interfaces:
+            configuration.add_interface(interface)
+
+        return configuration
 
 
     @classmethod
@@ -144,7 +145,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_interface(self, interface: USBInterface):
         """ Adds an interface to the configuration. """
-        self.interfaces[interface.number] = interface
+        self.interfaces[interface.get_identifier()] = interface
         interface.parent = self
 
 
@@ -157,7 +158,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         """
 
         # Search each of our interfaces for the relevant endpoint.
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             endpoint = interface.get_endpoint(number, direction)
             if endpoint is not None:
                 return endpoint
@@ -184,7 +185,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
             data     : The raw bytes received on the relevant endpoint.
         """
 
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             if interface.has_endpoint(endpoint.number, direction=USBDirection.OUT):
                 interface.handle_data_received(endpoint, data)
                 return
@@ -204,7 +205,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
             endpoint : The endpoint on which the host requested data.
         """
 
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             if interface.has_endpoint(endpoint.number, direction=USBDirection.IN):
                 interface.handle_data_requested(endpoint)
                 return
@@ -223,7 +224,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         This function is called only once per buffer.
         """
 
-        for interface in self.interfaces.values():
+        for interface in self.active_interfaces.values():
             if interface.has_endpoint(endpoint.number, direction=USBDirection.IN):
                 interface.handle_buffer_empty(endpoint)
                 return
@@ -246,7 +247,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         # FIXME: use construct
 
         # All all subordinate descriptors together to create a big subordinate descriptor.
-        interfaces = sorted(self.interfaces.values(), key=lambda item: item.number)
+        interfaces = sorted(self.interfaces.values(), key=lambda item: item.get_identifier())
         for interface in interfaces:
             interface_descriptors += interface.get_descriptor()
 

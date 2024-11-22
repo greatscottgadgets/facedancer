@@ -9,7 +9,7 @@ import logging, random, sys
 from facedancer import *
 from facedancer import main
 
-from .base import VENDOR_ID, PRODUCT_ID, OUT_ENDPOINT, IN_ENDPOINT, MAX_TRANSFER_LENGTH
+from .base import VENDOR_ID, PRODUCT_ID, OUT_ENDPOINT, IN_ENDPOINT, OUT_ALT_ENDPOINT, IN_ALT_ENDPOINT, MAX_TRANSFER_LENGTH
 
 
 DEVICE_SPEED = DeviceSpeed.HIGH
@@ -31,6 +31,8 @@ class StressTestDevice(USBDevice):
     class MyConfiguration(USBConfiguration):
 
         class MyInterface(USBInterface):
+            number    : int = 0
+            alternate : int = 0
 
             class MyOutEndpoint(USBEndpoint):
                 number          : int          = OUT_ENDPOINT
@@ -49,6 +51,29 @@ class StressTestDevice(USBDevice):
                 def handle_data_requested(self: USBEndpoint):
                     in_transfer_length = self.get_device().in_transfer_length
                     logging.debug(f"test_bulk_in sending {in_transfer_length} bytes")
+                    self.send(generate_data(in_transfer_length), blocking=False)
+
+        class MyAlternateInterface(USBInterface):
+            number    : int = 0
+            alternate : int = 1
+
+            class MyOutEndpoint(USBEndpoint):
+                number          : int          = OUT_ALT_ENDPOINT
+                direction       : USBDirection = USBDirection.OUT
+                max_packet_size : int          = 512 if DEVICE_SPEED == DeviceSpeed.HIGH else 64
+
+                def handle_data_received(self: USBEndpoint, data):
+                    self.get_device().last_out_transfer_data += bytes(data)
+                    logging.debug(f"test_bulk_out alternate received {len(data)} bytes")
+
+            class MyInEndpoint(USBEndpoint):
+                number          : int          = IN_ALT_ENDPOINT & 0x7f
+                direction       : USBDirection = USBDirection.IN
+                max_packet_size : int          = 512 if DEVICE_SPEED == DeviceSpeed.HIGH else 64
+
+                def handle_data_requested(self: USBEndpoint):
+                    in_transfer_length = self.get_device().in_transfer_length
+                    logging.debug(f"test_bulk_in alternate sending {in_transfer_length} bytes")
                     self.send(generate_data(in_transfer_length), blocking=False)
 
     @vendor_request_handler(number=10, direction=USBDirection.OUT)

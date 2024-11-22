@@ -243,27 +243,68 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     # Alternate interface support.
     #
 
-    # TODO: support these!
-
     @standard_request_handler(number=USBStandardRequests.SET_INTERFACE)
     @to_this_interface
     def handle_set_interface_request(self, request: USBControlRequest):
         """ Handle SET_INTERFACE requests; per USB2 [9.4.10] """
         log.debug(f"f{self.name} received SET_INTERFACE request")
-        # We don't support alternate interface settings; so ACK
-        # alternate setting zero, and stall all others.
-        if request.value == 0:
-            request.acknowledge()
-        else:
+
+        configuration = self.parent
+        device = configuration.parent
+        backend = device.backend
+
+        if device.configuration is None:
             request.stall()
+        else:
+            try:
+                # Find this alternate setting and switch to it.
+                number = request.index_low
+                alternate = request.value
+                identifier = (number, alternate)
+                interface = configuration.interfaces[identifier]
+                configuration.active_interfaces[number] = interface
+                # Reset the data toggles of this interface's endpoints.
+                for endpoint in interface.endpoints.values():
+                    backend.clear_halt(endpoint.number, endpoint.direction)
+                request.acknowledge()
+            except KeyError:
+                request.stall()
+
+    @standard_request_handler(number=USBStandardRequests.GET_INTERFACE)
+    @to_this_interface
+    def handle_get_interface_request(self, request):
+        """ Handle GET_INTERFACE requests; per USB2 [9.4.4] """
+        log.debug("received GET_INTERFACE request")
+
+        configuration = self.parent
+        device = configuration.parent
+
+        if device.configuration is None:
+            request.stall()
+        else:
+            try:
+                number = request.index_low
+                interface = configuration.active_interfaces[number]
+                request.reply(bytes([interface.alternate]))
+            except KeyError:
+                request.stall()
 
 
     #
     # Automatic instantiation support.
     #
 
-    def get_identifier(self) -> int:
-        return self.number
+    def get_identifier(self) -> (int, int):
+        return (self.number, self.alternate)
+
+
+    # Although we identify interfaces by (number, alternate), this helper
+    # is called from the request handling code, where we only want to
+    # match by interface number. The correct alternate interface should have
+    # been selected earlier in the request handling process.
+    def matches_identifier(self, other: int) -> bool:
+        return (other == self.number)
+
 
     #
     # Request handler functions.
