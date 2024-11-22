@@ -896,35 +896,6 @@ class USBDevice(USBBaseDevice):
         self.backend.configured(self.configuration)
 
 
-    @standard_request_handler(number=USBStandardRequests.GET_INTERFACE)
-    @to_device
-    def handle_get_interface_request(self, request):
-        """ Handle GET_INTERFACE requests; per USB2 [9.4.4] """
-        log.debug("received GET_INTERFACE request")
-
-        # TODO: support alternate interfaces.
-        # Since we don't support alternate interfaces [yet], we'll always
-        # indicate use of interface zero.
-        if self.configuration and (request.index_low in self.configuration.interfaces):
-            request.reply(b'\x00')
-        else:
-            request.stall()
-
-
-    @standard_request_handler(number=USBStandardRequests.SET_INTERFACE)
-    @to_device
-    def handle_set_interface_request(self, request):
-        """ Handle SET_INTERFACE requests; per USB2 [9.4.10] """
-        log.debug(f"f{self.name} received SET_INTERFACE request")
-
-        # We don't support alternate interface settings; so ACK
-        # alternate setting zero, and stall all others.
-        if request.value == 0:
-            request.acknowledge()
-        else:
-            request.stall()
-
-
     # USB 2.0 specification, section 9.4.11 (p 288 of pdf)
     @standard_request_handler(number=USBStandardRequests.SYNCH_FRAME)
     @to_device
