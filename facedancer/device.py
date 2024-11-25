@@ -3,6 +3,9 @@
 #
 """ Functionality for defining USB devices. """
 
+# Support annotations on Python < 3.9
+from __future__  import annotations
+
 import sys
 import asyncio
 import struct

@@ -3,6 +3,9 @@
 #
 """ Functionality for describing USB endpoints. """
 
+# Support annotations on Python < 3.9
+from __future__  import annotations
+
 import struct
 
 from typing      import Iterable, List, Dict
