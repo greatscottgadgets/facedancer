@@ -1,4 +1,3 @@
-
 #
 # This file is part of Facedancer.
 #
@@ -14,6 +13,11 @@ from .device import generate_data
 
 class TestAlternate(FacedancerTestCase):
     """Test alternate interface settings"""
+
+
+    def setUp(self):
+        # reset test device state between tests
+        self.reset_device_state()
 
 
     def test_alternate_interfaces(self):
