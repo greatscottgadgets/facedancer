@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -->
 
+## [3.0.5] - 2024-11-25
+### Added
+* Support switching between alternate interface settings.
+* Improved Facedancer descriptor functionality.
+* Log a warning when Moondancer needs system permissions for the interface.
+* Group Facedancer request handler suggestions by their recipients.
+* Implement the `raw` field in `HIDReportDescriptor`. (tx @jalmeroth!)
+### Fixed
+* Moondancer: Only prime control endpoints on receipt of a setup packet.
+* Moondancer: Use `ep_out_interface_enable` instead of `ep_out_prime_endpoint` where appropriate.
+
+## [3.0.4] - 2024-10-10
+### Added
+* Example: `examples/coroutine.py` demonstrates how to create a custom main function and the use of coroutines.
+* Keyboard shortcut: `Ctrl-C` will now gracefully exit a Facedancer emulation.
+
 ## [3.0.3] - 2024-09-19
 ### Added
 * Support for specifying string descriptor indices.
@@ -71,7 +87,9 @@ Any future bug-fixes or backports to Facedancer `2.9.x` should use the [`v2.9.x 
 - The current Facedancer core will be supersed by the implementation in `future/` with the `v3.0` release.
 
 
-[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.3...HEAD
+[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.5...HEAD
+[3.0.5]: https://github.com/greatscottgadgets/facedancer/compare/3.0.5...3.0.5
+[3.0.4]: https://github.com/greatscottgadgets/facedancer/compare/3.0.3...3.0.4
 [3.0.3]: https://github.com/greatscottgadgets/facedancer/compare/3.0.2...3.0.3
 [3.0.2]: https://github.com/greatscottgadgets/facedancer/compare/3.0.1...3.0.2
 [3.0.1]: https://github.com/greatscottgadgets/facedancer/compare/3.0.0...3.0.1
