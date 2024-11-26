@@ -3,6 +3,9 @@
 #
 """ Code for implementing HID classes. """
 
+# Support annotations on Python < 3.9
+from __future__  import annotations
+
 from enum        import IntEnum
 from dataclasses import dataclass
 from typing      import Tuple, Iterable
@@ -124,8 +127,8 @@ class HIDReportDescriptor(USBDescriptor):
     fields: Iterable[bytes] = ()
 
     # Mark this as a HID report descriptor.
-    number: int = USBDescriptorTypeNumber.REPORT
-    raw: None | bytes = None
+    type_number : int = USBDescriptorTypeNumber.REPORT
+    raw         : None | bytes = None
 
     def __call__(self, index=0):
         """ Converts the descriptor object into raw bytes. """
