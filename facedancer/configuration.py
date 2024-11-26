@@ -4,6 +4,7 @@
 """ Functionality for describing USB device configurations. """
 
 import struct
+import textwrap
 
 from dataclasses  import field
 from typing       import Iterable
@@ -289,3 +290,23 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def _get_subordinate_handlers(self) -> Iterable[USBInterface]:
         return self.interfaces.values()
+
+
+    def generate_code(self, name=None, indent=0):
+
+        if name is None:
+            name = f"Configuration_{self.number}"
+
+        code = f"""
+class {name}(USBConfiguration):
+    number                 = {self.number}
+    configuration_string   = {repr(self.configuration_string)}
+    max_power              = {self.max_power}
+    self_powered           = {repr(self.self_powered)}
+    supports_remote_wakeup = {repr(self.supports_remote_wakeup)}
+"""
+
+        for interface in self.interfaces.values():
+            code += interface.generate_code(indent=4)
+
+        return textwrap.indent(code, indent * ' ')

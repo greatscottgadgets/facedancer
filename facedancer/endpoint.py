@@ -7,6 +7,7 @@
 from __future__  import annotations
 
 import struct
+import textwrap
 
 from typing      import Iterable, List, Dict
 from dataclasses import field
@@ -262,3 +263,30 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
         additional    = f" every {self.interval}ms" if is_interrupt else ""
 
         return f"endpoint {self.number:02x}/{direction}: {transfer_type} transfers{additional}"
+
+
+    def generate_code(self, name=None, indent=0):
+
+        if name is None:
+            name = f"Endpoint_{self.number}_{self.direction.name}"
+
+        direction = f"USBDirection.{self.direction.name}"
+        transfer_type = f"USBTransferType.{self.transfer_type.name}"
+        sync_type = f"USBSynchronizationType.{self.synchronization_type.name}"
+        usage_type = f"USBUsageType.{self.usage_type.name}"
+
+        values = str.join(", ", map(lambda x: f"0x{x:02x}", self.extra_bytes))
+
+        code = f"""
+class {name}(USBEndpoint):
+    number               = {self.number}
+    direction            = {direction}
+    transfer_type        = {transfer_type}
+    synchronization_type = {sync_type}
+    usage_type           = {usage_type}
+    max_packet_size      = {self.max_packet_size}
+    interval             = {self.interval}
+    extra_bytes          = bytes([{values}])
+"""
+
+        return textwrap.indent(code, indent * ' ')
