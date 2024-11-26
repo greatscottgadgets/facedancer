@@ -59,12 +59,12 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Generates an interface object from a descriptor.
         """
         interface_number, alternate_setting, num_endpoints, interface_class, \
-                interface_subclass, interface_protocol, interface_string_index \
+                interface_subclass, interface_protocol, string_index \
                 = struct.unpack_from("xxBBBBBBB", data)
         return cls(
             name=None,
@@ -73,7 +73,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
             class_number=interface_class,
             subclass_number=interface_subclass,
             protocol_number=interface_protocol,
-            interface_string=interface_string_index
+            interface_string=None if string_index == 0 else strings[string_index]
         )
 
 

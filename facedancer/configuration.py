@@ -49,7 +49,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Generates a new USBConfiguration object from a configuration descriptor,
         handling any attached subordinate descriptors.
@@ -66,7 +66,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         configuration = cls(
             number=index,
-            configuration_string=string_index,
+            configuration_string=None if string_index == 0 else strings[string_index],
             max_power=half_max_power * 2,
             self_powered=bool((attributes >> 6) & 1),
             supports_remote_wakeup=bool((attributes >> 5) & 1),
@@ -81,7 +81,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
             # Determine the length and type of the next descriptor.
             length     = data[0]
-            descriptor = USBDescribable.from_binary_descriptor(data[:length])
+            descriptor = USBDescribable.from_binary_descriptor(data[:length], strings=strings)
 
             # If we have an interface descriptor, add it to our list of interfaces.
             if isinstance(descriptor, USBInterface):

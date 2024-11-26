@@ -65,7 +65,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Creates an endpoint object from a description of that endpoint.
         """
