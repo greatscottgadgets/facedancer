@@ -51,11 +51,14 @@ class USBKeyboardDevice(USBDevice):
 
 
             class HIDDescriptor(USBDescriptor):
-                number      : int   =  USBDescriptorTypeNumber.HID
-                raw         : bytes = b'\x09\x21\x10\x01\x00\x01\x22\x2b\x00'
+                number            : int   = 0
+                type_number       : int   = USBDescriptorTypeNumber.HID
+                raw               : bytes = b'\x09\x21\x10\x01\x00\x01\x22\x2b\x00'
+                include_in_config : bool  = True
 
 
             class ReportDescriptor(HIDReportDescriptor):
+                number : int   =  0
                 fields : tuple = (
 
                     # Identify ourselves as a keyboard.
