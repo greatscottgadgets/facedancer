@@ -82,10 +82,10 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         return cls(
             number=number,
-            direction=direction,
-            transfer_type=transfer_type,
-            synchronization_type=sync_type,
-            usage_type=usage_type,
+            direction=USBDirection(direction),
+            transfer_type=USBTransferType(transfer_type),
+            synchronization_type=USBSynchronizationType(sync_type),
+            usage_type=USBUsageType(usage_type),
             max_packet_size=max_packet_size,
             interval=interval,
             extra_bytes=data[7:]
