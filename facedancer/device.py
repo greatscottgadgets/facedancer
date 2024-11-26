@@ -841,7 +841,6 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             request.stall()
 
 
-
 class USBDevice(USBBaseDevice):
     """ Class representing the behavior of a USB device.
 
@@ -979,3 +978,41 @@ class USBDevice(USBBaseDevice):
         """ Handle SYNC_FRAME requests; per USB2 [9.4.10] """
         log.debug(f"f{self.name} received SYNCH_FRAME request")
         request.acknowledge()
+
+
+    def generate_code(self, name="Device"):
+
+        languages = [f"LanguageIDs.{l.name}" for l in self.supported_languages]
+
+        if len(languages) == 1:
+            languages = f"({languages[0]},)"
+        else:
+            languages = f"({str.join(', '), languages})"
+
+        if self.device_speed is None:
+            speed = "None"
+        else:
+            speed = f"DeviceSpeed.{self.device_speed.name}"
+
+        code = f"""
+@use_inner_classes_automatically
+class {name}(USBDevice):
+    device_speed             : DeviceSpeed = {speed}
+    device_class             : int         = {self.device_class}
+    device_subclass          : int         = {self.device_subclass}
+    protocol_revision_number : int         = {self.protocol_revision_number}
+    max_packet_size_ep0      : int         = {self.max_packet_size_ep0}
+    vendor_id                : int         = 0x{self.vendor_id:04x}
+    product_id               : int         = 0x{self.product_id:04x}
+    manufacturer_string      : str         = {repr(self.manufacturer_string)}
+    product_string           : str         = {repr(self.product_string)}
+    serial_number_string     : str         = {repr(self.serial_number_string)}
+    supported_languages      : tuple       = {languages}
+    device_revision          : int         = 0x{self.device_revision:04x}
+    usb_spec_version         : int         = 0x{self.usb_spec_version:04x}
+"""
+
+        for configuration_id in sorted(self.configurations):
+            code += self.configurations[configuration_id].generate_code(indent=4)
+
+        return code
