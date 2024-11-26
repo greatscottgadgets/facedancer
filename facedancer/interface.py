@@ -7,6 +7,7 @@
 from __future__  import annotations
 
 import struct
+import textwrap
 
 from typing       import Dict, List, Iterable
 from dataclasses  import dataclass, field
@@ -359,3 +360,27 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def _get_subordinate_handlers(self) -> Iterable[callable]:
         return self.endpoints.values()
+
+
+    def generate_code(self, name=None, indent=0):
+
+        if name is None:
+            if self.alternate == 0:
+                name = f"Interface_{self.number}"
+            else:
+                name = f"Interface_{self.number}_{self.alternate}"
+
+        code = f"""
+class {name}(USBInterface):
+    number           : int = {self.number}
+    alternate        : int = {self.alternate}
+    class_number     : int = {self.class_number}
+    subclass_number  : int = {self.subclass_number}
+    protocol_number  : int = {self.protocol_number}
+    interface_string : str = {repr(self.interface_string)}
+"""
+
+        for endpoint in self.endpoints.values():
+            code += endpoint.generate_code(indent=4)
+
+        return textwrap.indent(code, indent * ' ')
