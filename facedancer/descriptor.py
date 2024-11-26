@@ -30,7 +30,7 @@ class USBDescribable(object):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Attempts to create a USBDescriptor subclass from the given raw
         descriptor data.
@@ -39,9 +39,9 @@ class USBDescribable(object):
         for subclass in cls.__subclasses__():
             # If this subclass handles our binary descriptor, use it to parse the given descriptor.
             if subclass.handles_binary_descriptor(data):
-                return subclass.from_binary_descriptor(data)
+                return subclass.from_binary_descriptor(data, strings=strings)
 
-        return USBDescriptor.from_binary_descriptor(data)
+        return USBDescriptor.from_binary_descriptor(data, strings=strings)
 
 
 @dataclass
@@ -65,7 +65,7 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
         return (self.type_number, self.number)
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
 
 @dataclass

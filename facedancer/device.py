@@ -93,7 +93,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Creates a USBBaseDevice object from its descriptor.
         """
@@ -111,6 +111,15 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
                 manufacturer_string_index, product_string_index, \
                 serial_number_string_index, num_configurations = struct.unpack_from("<xxHBBBBHHHBBBB", data)
 
+        def lookup(string_index):
+            if string_index == 0:
+                return None
+            elif string_index in strings:
+                return strings[string_index]
+            else:
+                raise Exception(
+                    f"Missing string for string descriptor #{string_index}")
+
         device = cls(
             device_class=device_class,
             device_subclass=device_subclass,
@@ -118,9 +127,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             max_packet_size_ep0=max_packet_size_ep0,
             vendor_id=vendor_id,
             product_id=product_id,
-            manufacturer_string=manufacturer_string_index,
-            product_string=product_string_index,
-            serial_number_string=serial_number_string_index,
+            manufacturer_string=lookup(manufacturer_string_index),
+            product_string=lookup(product_string_index),
+            serial_number_string=lookup(serial_number_string_index),
             device_revision=device_rev,
             usb_spec_version=spec_version,
         )
