@@ -72,7 +72,7 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
 class USBClassDescriptor(USBDescriptor):
     """ Class for arbitrary USB Class descriptors. """
 
-    include_in_config = True
+    include_in_config : bool = True
 
     def __init_subclass__(cls, **kwargs):
         warn(
