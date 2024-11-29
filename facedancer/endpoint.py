@@ -289,4 +289,19 @@ class {name}(USBEndpoint):
     extra_bytes          = bytes([{values}])
 """
 
+        # Use alphabetic suffixes to distinguish between multiple attached
+        # descriptors with the same type number.
+        suffixes = defaultdict(lambda: 'A')
+
+        for descriptor in self.attached_descriptors:
+            type_number = descriptor.type_number
+            suffix = suffixes[type_number]
+            suffixes[type_number] = chr(ord(suffix) + 1)
+            name = f"Descriptor_0x{type_number:02X}_{suffix}"
+            code += descriptor.generate_code(name=name, indent=4)
+
+        for descriptor_id in sorted(self.requestable_descriptors):
+            descriptor = self.requestable_descriptors[descriptor_id]
+            code += descriptor.generate_code(indent=4)
+
         return textwrap.indent(code, indent * ' ')

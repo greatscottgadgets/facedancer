@@ -1002,9 +1002,9 @@ class {name}(USBDevice):
     max_packet_size_ep0      = {self.max_packet_size_ep0}
     vendor_id                = 0x{self.vendor_id:04x}
     product_id               = 0x{self.product_id:04x}
-    manufacturer_string      = {repr(self.manufacturer_string)}
-    product_string           = {repr(self.product_string)}
-    serial_number_string     = {repr(self.serial_number_string)}
+    manufacturer_string      = {self.manufacturer_string.generate_code()}
+    product_string           = {self.product_string.generate_code()}
+    serial_number_string     = {self.serial_number_string.generate_code()}
     supported_languages      = {languages}
     device_revision          = 0x{self.device_revision:04x}
     usb_spec_version         = 0x{self.usb_spec_version:04x}

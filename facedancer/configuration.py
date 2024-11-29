@@ -300,7 +300,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         code = f"""
 class {name}(USBConfiguration):
     number                 = {self.number}
-    configuration_string   = {repr(self.configuration_string)}
+    configuration_string   = {self.configuration_string.generate_code()}
     max_power              = {self.max_power}
     self_powered           = {repr(self.self_powered)}
     supports_remote_wakeup = {repr(self.supports_remote_wakeup)}
