@@ -68,8 +68,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
             number=index,
             configuration_string=string_index,
             max_power=half_max_power * 2,
-            self_powered=(attributes >> 6) & 1,
-            supports_remote_wakeup=(attributes >> 5) & 1,
+            self_powered=bool((attributes >> 6) & 1),
+            supports_remote_wakeup=bool((attributes >> 5) & 1),
         )
 
         data = data[length:total_length]
