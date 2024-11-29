@@ -10,6 +10,8 @@ from .magic import AutoInstantiable
 from enum import IntEnum
 from warnings import warn
 
+import itertools
+import textwrap
 
 def include_in_config(cls):
     """ Decorator that marks a descriptor to be included in configuration data. """
@@ -94,6 +96,44 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
     @classmethod
     def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
+
+    def generate_code(self, name=None, indent=0):
+        type_num = f"0x{self.type_number:02X}"
+        if name is None:
+            if self.include_in_config:
+                name = f"Descriptor_{type_num}"
+            else:
+                name = f"Descriptor_{type_num}_{self.number}"
+
+        num_bytes = len(self.raw)
+        if num_bytes == 0:
+            raw = ""
+        elif num_bytes < 7:
+            raw = str.join(", ", (f'0x{b:02X}' for b in self.raw))
+        else:
+            if 8 < num_bytes < 20:
+                chunk_size = (num_bytes + 1) // 2
+            else:
+                chunk_size = 10
+            raw = "\n        " + str.join(",\n        ", (
+                str.join(", ", (f'0x{b:02X}' for b in chunk))
+                    for chunk in itertools.batched(self.raw, chunk_size)))
+
+        code = "\n"
+        if self.include_in_config:
+            code += f"@include_in_config\n"
+        if self.number is not None:
+            code += f"@requestable(number={self.number})\n"
+
+        code += f"class {name}(USBDescriptor):\n"
+
+        if self.type_number != self.raw[1]:
+            code += f"    type_number : int = {type_num}\n"
+
+        code += f"    raw : bytes = bytes([{raw}])\n"
+
+        return textwrap.indent(code, ' ' * indent)
+
 
 @dataclass
 class USBClassDescriptor(USBDescriptor):
