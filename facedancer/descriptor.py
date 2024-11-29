@@ -10,6 +10,8 @@ from .magic import AutoInstantiable
 from enum import IntEnum
 from warnings import warn
 
+import itertools
+import textwrap
 
 class USBDescribable(object):
     """
@@ -82,6 +84,39 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
     @classmethod
     def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
+
+    def generate_code(self, name=None, indent=0):
+        if name is None:
+            if self.include_in_config:
+                name = f"Descriptor_0x{self.type_number:02X}"
+            else:
+                name = f"Descriptor_0x{self.type_number:02X}_{self.number}"
+
+        num_bytes = len(self.raw)
+        if num_bytes == 0:
+            raw = ""
+        elif num_bytes < 7:
+            raw = str.join(", ", (f'0x{b:02X}' for b in self.raw))
+        else:
+            if 8 < num_bytes < 20:
+                chunk_size = (num_bytes + 1) // 2
+            else:
+                chunk_size = 10
+            raw = "\n        " + str.join(",\n        ", (
+                str.join(", ", (f'0x{b:02X}' for b in chunk))
+                    for chunk in itertools.batched(self.raw, chunk_size)))
+
+        code = f"""
+class {name}(USBDescriptor):
+    type_number       : int  = 0x{self.type_number:02X}
+    include_in_config : bool = {self.include_in_config}
+    number            : int  = {self.number}
+
+    raw : bytes = bytes([{raw}])
+"""
+
+        return textwrap.indent(code, ' ' * indent)
+
 
 @dataclass
 class USBClassDescriptor(USBDescriptor):
