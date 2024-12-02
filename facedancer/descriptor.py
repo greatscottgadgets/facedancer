@@ -48,13 +48,28 @@ class USBDescribable(object):
 class USBDescriptor(USBDescribable, AutoInstantiable):
     """ Class for arbitrary USB descriptors; minimal concrete implementation of USBDescribable. """
 
+    """
+    Index number of this descriptor.
+
+    When include_in_config is True, this determines the order in which
+    attached descriptors will appear after their parent in the response
+    to a GET_CONFIGURATION request.
+
+    When include_in_config is False, this is the index number with which
+    this descriptor can be requested with a GET_DESCRIPTOR request.
+    """
     number      : int
+
+    """ The raw bytes of the descriptor. """
     raw         : bytes
 
+    """ The bDescriptorType of the descriptor. """
     type_number : int            = None
+
+    """ Parent object which this descriptor is associated with. """
     parent      : USBDescribable = None
 
-    # Whether this descriptor should be included in a GET_CONFIGURATION response.
+    """ Whether this descriptor should be included in a GET_CONFIGURATION response. """
     include_in_config : bool     = False
 
     def __call__(self, index=0):
