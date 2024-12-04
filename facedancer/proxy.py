@@ -38,9 +38,6 @@ class USBProxyDevice(USBBaseDevice):
         # We have only one proxy backend in existence at this time.
         self.proxied_device = LibUSB1Device
 
-        # Maintain a list of the current configuration's endpoints.
-        self.endpoints = {}
-
         # Find the device to proxy matching the given keyword arguments...
         usb_devices = list(self.proxied_device.find(find_all=True, **kwargs))
         if len(usb_devices) <= index:
@@ -105,19 +102,33 @@ class USBProxyDevice(USBBaseDevice):
             configuration: The configuration to be applied.
         """
 
-        # Clear endpoint list.
-        self.endpoints = {}
+        # All interfaces on the configuration are set to their default setting.
+        configuration.active_interfaces = {
+            interface.number : interface
+                for interface in configuration.get_interfaces()
+                    if interface.alternate == 0
+        }
 
-        # Gather the configuration's endpoints for easy access, later...
-        for interface in configuration.interfaces.values():
-            interface.parent = configuration # FIXME Not great semantics
-            for endpoint in interface.endpoints.values():
-                self.endpoints[endpoint.number] = endpoint
-
-        # ... and pass our configuration on to the core device.
+        # Pass our configuration on to the core device.
         self.backend.configured(configuration)
         configuration.parent = self # FIXME Not great semantics
         self.configuration = configuration
+
+
+    def interface_changed(self, interface_number: int, alternate: int):
+        """
+        Callback that handles when a SET_INTERFACE request is made to the target.
+        If you're using the standard filters, this will be called automatically;
+        if not, you'll have to call it once you know an alternate setting has been
+        applied.
+
+        Args:
+            interface_number: The interface number.
+            alternate: The alternate setting to be applied.
+        """
+        identifier = (interface_number, alternate)
+        interface = self.configuration.interfaces[identifier]
+        self.configuration.active_interfaces[interface_number] = interface
 
 
     def handle_bus_reset(self):
@@ -173,24 +184,17 @@ class USBProxyDevice(USBBaseDevice):
         to participate in a transfer. We use this as our cue to participate
         in communications.
         """
-
         # Make sure the endpoint exists for the current configuration
         # before attempting to handle NAK events.
-        if not ep_num in self.endpoints:
+        # Skip handling OUT endpoints, as we handle those in handle_data_available.
+        endpoint = self.configuration.get_endpoint(ep_num, USBDirection.IN)
+        if endpoint is None:
             return
 
         # TODO: Currently, we use this for _all_ non-control transfers, as we
         # don't e.g. periodically schedule isochronous or interrupt transfers.
         # We probably should set up those to be independently scheduled and
         # then limit this to only bulk endpoints.
-
-        # Get the endpoint object we reference.
-        endpoint = self.endpoints[ep_num]
-
-        # Skip handling OUT endpoints, as we handle those in handle_data_available.
-        if not endpoint.direction:
-            return
-
         self._proxy_in_transfer(endpoint)
 
 
