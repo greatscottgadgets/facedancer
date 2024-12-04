@@ -14,8 +14,10 @@ from .             import USBProxyFilter
 class USBProxySetupFilters(USBProxyFilter):
     SET_ADDRESS_REQUEST = 5
     SET_CONFIGURATION_REQUEST = 9
+    SET_INTERFACE_REQUEST = 11
     GET_DESCRIPTOR_REQUEST = 6
     RECIPIENT_DEVICE = 0
+    RECIPIENT_INTERFACE = 1
 
     DESCRIPTOR_DEVICE        = 0x01
     DESCRIPTOR_CONFIGURATION = 0x02
@@ -91,5 +93,14 @@ class USBProxySetupFilters(USBProxyFilter):
             # its descriptor. This is mighty strange behavior!
             else:
                 log.warning("-- WARNING: Applying configuration {}, but we've never read that configuration's descriptor! --".format(configuration_index))
+
+        # Special case: if this is a SET_INTERFACE_REQUEST,
+        # pass it through, but also tell the device so it can update
+        # its current configuration.
+        if req.get_recipient() == self.RECIPIENT_INTERFACE and \
+           req.request == self.SET_INTERFACE_REQUEST:
+            interface_number = req.index
+            alternate = req.value
+            self.device.interface_changed(interface_number, alternate)
 
         return req, data
