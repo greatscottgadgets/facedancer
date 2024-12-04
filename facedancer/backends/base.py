@@ -163,3 +163,31 @@ class FacedancerBackend:
         Facedancer's execution status, and reacts as events occur.
         """
         raise NotImplementedError
+
+
+    def validate_configuration(self, configuration: USBConfiguration):
+        """
+        Check if this backend is able to support this configuration.
+        Raises an exception if it is not.
+
+        Args:
+            configuration : The configuration to validate.
+        """
+        if configuration is None:
+            return
+
+        # Currently, endpoints are only set up in the configured() method, and
+        # cannot be changed on the fly by SET_INTERFACE requests.
+        #
+        # Therefore, no backends are able to support configurations which
+        # re-use endpoint addresses between alternate interface settings.
+        used_addresses = set()
+        for interface in configuration.get_interfaces():
+            for endpoint in interface.get_endpoints():
+                address = endpoint.get_identifier()
+                if address in used_addresses:
+                    raise Exception(
+                        f"This configuration cannot currently be supported, "
+                        f"because it re-uses endpoint address 0x{address:02X} "
+                        f"between multiple interface definitions.")
+                used_addresses.add(address)

@@ -258,6 +258,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
         Args:
             configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
+        self.validate_configuration(configuration)
 
         log.debug(f"moondancer.configured({configuration})")
 

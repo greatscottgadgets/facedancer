@@ -763,6 +763,7 @@ class GreatDancerApp(FacedancerApp, FacedancerBackend):
         Args:
             configuration: The configuration applied by the SET_CONFIG request.
         """
+        self.validate_configuration(configuration)
         self._configure_endpoints(configuration)
         self.configuration = configuration
 
