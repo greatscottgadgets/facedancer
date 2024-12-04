@@ -168,6 +168,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         Args:
             configuration : The USBConfiguration object applied by the SET_CONFIG request.
         """
+        self.validate_configuration(configuration)
 
         if configuration is None:
             self.configuration = None

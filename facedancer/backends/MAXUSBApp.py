@@ -232,8 +232,8 @@ class MAXUSBApp(FacedancerApp, FacedancerBackend):
         Args:
             configuration : The configuration applied by the SET_CONFIG request.
         """
+        self.validate_configuration(configuration)
 
         # For the MAXUSB case, we don't need to do anything, though it might
         # be nice to print a message or store the active configuration for
         # use by the USBDevice, etc. etc.
-        pass
