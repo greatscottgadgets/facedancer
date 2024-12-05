@@ -11,7 +11,7 @@ import struct
 from typing      import Iterable, List, Dict
 from dataclasses import dataclass, field
 
-from .magic      import AutoInstantiable
+from .magic      import AutoInstantiable, instantiate_subordinates
 from .descriptor import USBDescribable, USBDescriptor
 from .request    import USBRequestHandler, get_request_handler_methods
 from .request    import to_this_endpoint, standard_request_handler
@@ -93,6 +93,15 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     def __post_init__(self):
+
+        # Capture any descriptors declared directly on the class.
+        descriptors = instantiate_subordinates(self, USBDescriptor).items()
+        for (identifier, descriptor) in descriptors:
+            if descriptor.include_in_config:
+                self.attached_descriptors.append(descriptor)
+            else:
+                self.requestable_descriptors[identifier] = descriptor
+            descriptor.parent = self
 
         # Grab our request handlers.
         self._request_handler_methods = get_request_handler_methods(self)
