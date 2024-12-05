@@ -137,9 +137,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         self.strings = StringDescriptorManager()
 
-        # If we don't have a collection of descriptors, gather any attached to the class.
-        subordinate_descriptors = instantiate_subordinates(self, USBDescriptor)
-        self.requestable_descriptors.update(subordinate_descriptors)
+        # Gather any descriptors attached to the class.
+        for descriptor in instantiate_subordinates(self, USBDescriptor):
+            self.add_descriptor(descriptor)
 
         # Add our basic descriptor handlers.
         self.requestable_descriptors.update({
@@ -154,7 +154,8 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         # Populate our control request handlers, and any subordinate classes we'll need to create.
         self._request_handler_methods = get_request_handler_methods(self)
-        self.configurations = instantiate_subordinates(self, USBConfiguration)
+        for configuration in instantiate_subordinates(self, USBConfiguration):
+            self.add_configuration(configuration)
 
         # Create a set of suggested requests. We'll use this to store the vitals
         # of any unhandled requests, so we can provide user suggestions later.
@@ -170,6 +171,30 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
         """ Adds the provided configuration to this device. """
         self.configurations[configuration.number] = configuration
         configuration.parent = self
+
+
+    def add_descriptor(self, descriptor: USBDescriptor):
+        """ Adds the provided descriptor to this device. """
+        identifier = (descriptor.type_number, descriptor.number)
+        desc_name = type(descriptor).__name__
+
+        if descriptor.number is None:
+            raise Exception(
+                f"Descriptor of type {desc_name} cannot be added to this "
+                f"device because it has no number to identify it.")
+
+        elif identifier in self.requestable_descriptors:
+            other = self.requestable_descriptors[identifier]
+            other_name = type(other).__name__
+            other_type = f"0x{other.type_number:02X}"
+            raise Exception(
+                f"Descriptor of type {desc_name} cannot be added to this "
+                f"device because there is already a descriptor of type "
+                f"{other_name} with the same type code {other_type} and "
+                f"number {other.number}")
+
+        else:
+            self.requestable_descriptors[identifier] = descriptor
 
 
     def connect(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):

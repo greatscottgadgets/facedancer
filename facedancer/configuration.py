@@ -106,8 +106,9 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def __post_init__(self):
 
-        # Gather any interfaces defined on the object.
-        self.interfaces.update(instantiate_subordinates(self, USBInterface))
+        # Gather any interfaces attached to the configuration.
+        for interface in instantiate_subordinates(self, USBInterface):
+            self.add_interface(interface)
 
 
     @property
@@ -135,8 +136,21 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_interface(self, interface: USBInterface):
         """ Adds an interface to the configuration. """
-        self.interfaces[interface.get_identifier()] = interface
-        interface.parent = self
+        identifier = interface.get_identifier()
+        num, alt = identifier
+
+        if identifier in self.interfaces:
+            other = self.interfaces[identifier]
+            iface_name = type(interface).__name__
+            other_name = type(other).__name__
+            raise Exception(
+                f"Interface of type {iface_name} cannot be added to this "
+                f"configuration because there is already an interface of "
+                f"type {other_name} with the same interface number {num} "
+                f"and alternate setting {alt}")
+        else:
+            self.interfaces[identifier] = interface
+            interface.parent = self
 
 
     def get_endpoint(self, number: int, direction: USBDirection) -> USBEndpoint:

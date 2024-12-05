@@ -31,21 +31,14 @@ class AutoInstantiator:
     at the cost of being somewhat cryptic.
     """
 
-    def __init__(self, target_type, identifier=None):
+    def __init__(self, target_type):
         self._target_type = target_type
-        self._identifier  = identifier
 
     def creates_instance_of(self, expected_type):
         return issubclass(self._target_type, expected_type)
 
     def __call__(self, parent):
-        instance   = self._target_type(parent=parent)
-        identifier = self._identifier
-
-        if identifier is None:
-            identifier = instance.get_identifier()
-
-        return identifier, instance
+        return self._target_type(parent=parent)
 
 
 def use_automatically(cls):
@@ -108,14 +101,7 @@ def instantiate_subordinates(obj, expected_type):
     objects of any inner class decorated with ``@use_automatically``.
     """
 
-    instances = {}
-
     # Search our class for anything decorated with an AutoInstantiator of the relevant type.
     for _, member in inspect.getmembers(obj):
         if isinstance(member, AutoInstantiator) and member.creates_instance_of(expected_type):
-
-            # And instantiate it.
-            identifier, target = member(obj)
-            instances[identifier] = target
-
-    return instances
+            yield member(object)
