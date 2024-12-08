@@ -251,8 +251,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         # FIXME: use construct
 
         # All all subordinate descriptors together to create a big subordinate descriptor.
-        interfaces = sorted(self.interfaces.values(), key=lambda item: item.get_identifier())
-        for interface in interfaces:
+        for interface in self.interfaces.values():
             interface_descriptors += interface.get_descriptor()
 
         total_len      = len(interface_descriptors) + 9
