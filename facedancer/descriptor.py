@@ -10,6 +10,8 @@ from .magic import AutoInstantiable
 from enum import IntEnum
 from warnings import warn
 
+import itertools
+import textwrap
 
 class USBDescribable(object):
     """
@@ -30,7 +32,7 @@ class USBDescribable(object):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Attempts to create a USBDescriptor subclass from the given raw
         descriptor data.
@@ -39,22 +41,37 @@ class USBDescribable(object):
         for subclass in cls.__subclasses__():
             # If this subclass handles our binary descriptor, use it to parse the given descriptor.
             if subclass.handles_binary_descriptor(data):
-                return subclass.from_binary_descriptor(data)
+                return subclass.from_binary_descriptor(data, strings=strings)
 
-        return USBDescriptor.from_binary_descriptor(data)
+        return USBDescriptor.from_binary_descriptor(data, strings=strings)
 
 
 @dataclass
 class USBDescriptor(USBDescribable, AutoInstantiable):
     """ Class for arbitrary USB descriptors; minimal concrete implementation of USBDescribable. """
 
+    """
+    Index number of this descriptor.
+
+    When include_in_config is True, this determines the order in which
+    attached descriptors will appear after their parent in the response
+    to a GET_CONFIGURATION request.
+
+    When include_in_config is False, this is the index number with which
+    this descriptor can be requested with a GET_DESCRIPTOR request.
+    """
     number      : int
+
+    """ The raw bytes of the descriptor. """
     raw         : bytes
 
+    """ The bDescriptorType of the descriptor. """
     type_number : int            = None
+
+    """ Parent object which this descriptor is associated with. """
     parent      : USBDescribable = None
 
-    # Whether this descriptor should be included in a GET_CONFIGURATION response.
+    """ Whether this descriptor should be included in a GET_CONFIGURATION response. """
     include_in_config : bool     = False
 
     def __call__(self, index=0):
@@ -65,8 +82,41 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
         return (self.type_number, self.number)
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
+
+    def generate_code(self, name=None, indent=0):
+        if name is None:
+            if self.include_in_config:
+                name = f"Descriptor_0x{self.type_number:02X}"
+            else:
+                name = f"Descriptor_0x{self.type_number:02X}_{self.number}"
+
+        num_bytes = len(self.raw)
+        if num_bytes == 0:
+            raw = ""
+        elif num_bytes < 7:
+            raw = str.join(", ", (f'0x{b:02X}' for b in self.raw))
+        else:
+            if 8 < num_bytes < 20:
+                chunk_size = (num_bytes + 1) // 2
+            else:
+                chunk_size = 10
+            raw = "\n        " + str.join(",\n        ", (
+                str.join(", ", (f'0x{b:02X}' for b in chunk))
+                    for chunk in itertools.batched(self.raw, chunk_size)))
+
+        code = f"""
+class {name}(USBDescriptor):
+    type_number       : int  = 0x{self.type_number:02X}
+    include_in_config : bool = {self.include_in_config}
+    number            : int  = {self.number}
+
+    raw : bytes = bytes([{raw}])
+"""
+
+        return textwrap.indent(code, ' ' * indent)
+
 
 @dataclass
 class USBClassDescriptor(USBDescriptor):
