@@ -74,7 +74,7 @@ def use_automatically(cls):
 
 def _use_inner_classes_automatically(cls):
     # Iterate over the relevant class...
-    for name, member in inspect.getmembers(cls):
+    for name, member in cls.__dict__.items():
 
         # ... and tag each inner class with both use_automatically
         # -and- use_inner_classes_automatically. The former
@@ -102,6 +102,6 @@ def instantiate_subordinates(obj, expected_type):
     """
 
     # Search our class for anything decorated with an AutoInstantiator of the relevant type.
-    for _, member in inspect.getmembers(obj):
+    for member in type(obj).__dict__.values():
         if isinstance(member, AutoInstantiator) and member.creates_instance_of(expected_type):
             yield member(object)
