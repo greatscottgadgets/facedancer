@@ -48,10 +48,10 @@ class USBDescribable(object):
 class USBDescriptor(USBDescribable, AutoInstantiable):
     """ Class for arbitrary USB descriptors; minimal concrete implementation of USBDescribable. """
 
-    number      : int
     raw         : bytes
 
     type_number : int            = None
+    number      : int            = None
     parent      : USBDescribable = None
 
     # Whether this descriptor should be included in a GET_CONFIGURATION response.
