@@ -23,6 +23,15 @@ class DescribableMeta(ABCMeta):
         return dataclass(new_cls, kw_only=True)
 
 
+def adjust_defaults(cls, **kwargs):
+    """ Adjusts the defaults of an existing dataclass. """
+    assert is_dataclass(cls)
+    for name, value in kwargs.items():
+        cls.__dataclass_fields__[name] = field(default = value)
+        cls.__init__.__kwdefaults__[name] = value
+    return cls
+
+
 class AutoInstantiable(metaclass=DescribableMeta):
     """ Base class for methods that can be decorated with use_automatically. """
 

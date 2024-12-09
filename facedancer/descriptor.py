@@ -3,7 +3,7 @@
 #
 """ Functionality for working with objects with associated USB descriptors. """
 
-from .magic import AutoInstantiable, DescribableMeta
+from .magic import AutoInstantiable, DescribableMeta, adjust_defaults
 
 from enum import IntEnum
 from warnings import warn
@@ -183,3 +183,13 @@ class USBDescriptorTypeNumber(IntEnum):
     INTERFACE_POWER           = 8
     HID                       = 33
     REPORT                    = 34
+
+
+def include_in_config(cls):
+    """ Decorator that marks a descriptor to be included in configuration data. """
+    return adjust_defaults(cls, include_in_config=True)
+
+
+def requestable(type_number, number):
+    """ Decorator that marks a descriptor as requestable. """
+    return lambda cls: adjust_defaults(cls, type_number=type_number, number=number)
