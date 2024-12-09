@@ -57,6 +57,11 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
     # Whether this descriptor should be included in a GET_CONFIGURATION response.
     include_in_config : bool     = False
 
+    def __post_init__(self):
+        # If type number was not set, get it from the raw bytes.
+        if self.type_number is None and self.raw is not None:
+            self.type_number = self.raw[1]
+
     def __call__(self, index=0):
         """ Converts the descriptor object into raw bytes. """
         return self.raw
