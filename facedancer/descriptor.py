@@ -3,12 +3,28 @@
 #
 """ Functionality for working with objects with associated USB descriptors. """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .magic import AutoInstantiable
 
 from enum import IntEnum
 from warnings import warn
+
+
+def include_in_config(cls):
+    """ Decorator that marks a descriptor to be included in configuration data. """
+    cls.__annotations__['include_in_config'] = bool
+    cls.include_in_config : bool = field(default = True)
+    return cls
+
+
+def requestable(number):
+    """ Decorator that marks a descriptor as requestable with a given number. """
+    def wrapper(cls):
+        cls.__annotations__['number'] = int
+        cls.number : int = field(default = number)
+        return cls
+    return wrapper
 
 
 class USBDescribable(object):
