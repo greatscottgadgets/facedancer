@@ -3,12 +3,30 @@
 #
 """ Functionality for working with objects with associated USB descriptors. """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .magic import AutoInstantiable
 
 from enum import IntEnum
 from warnings import warn
+
+import itertools
+import textwrap
+
+def include_in_config(cls):
+    """ Decorator that marks a descriptor to be included in configuration data. """
+    cls.__annotations__['include_in_config'] = bool
+    cls.include_in_config : bool = field(default = True)
+    return cls
+
+
+def requestable(number):
+    """ Decorator that marks a descriptor as requestable with a given number. """
+    def wrapper(cls):
+        cls.__annotations__['number'] = int
+        cls.number : int = field(default = number)
+        return cls
+    return wrapper
 
 
 class USBDescribable(object):
@@ -30,7 +48,7 @@ class USBDescribable(object):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Attempts to create a USBDescriptor subclass from the given raw
         descriptor data.
@@ -39,23 +57,34 @@ class USBDescribable(object):
         for subclass in cls.__subclasses__():
             # If this subclass handles our binary descriptor, use it to parse the given descriptor.
             if subclass.handles_binary_descriptor(data):
-                return subclass.from_binary_descriptor(data)
+                return subclass.from_binary_descriptor(data, strings=strings)
 
-        return USBDescriptor.from_binary_descriptor(data)
+        return USBDescriptor.from_binary_descriptor(data, strings=strings)
 
 
 @dataclass
 class USBDescriptor(USBDescribable, AutoInstantiable):
     """ Class for arbitrary USB descriptors; minimal concrete implementation of USBDescribable. """
 
-    number      : int
-    raw         : bytes
+    """ The raw bytes of the descriptor. """
+    raw : bytes
 
-    type_number : int            = None
-    parent      : USBDescribable = None
+    """ The bDescriptorType of the descriptor. """
+    type_number : int = None
 
-    # Whether this descriptor should be included in a GET_CONFIGURATION response.
-    include_in_config : bool     = False
+    """ Number to request this descriptor with a GET_DESCRIPTOR request. """
+    number : int = None
+
+    """ Parent object which this descriptor is associated with. """
+    parent : USBDescribable = None
+
+    """ Whether this descriptor should be included in a GET_CONFIGURATION response. """
+    include_in_config : bool = False
+
+    def __post_init__(self):
+        # If type number was not set, get it from the raw bytes.
+        if self.type_number is None and self.raw is not None:
+            self.type_number = self.raw[1]
 
     def __call__(self, index=0):
         """ Converts the descriptor object into raw bytes. """
@@ -65,8 +94,46 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
         return (self.type_number, self.number)
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
+
+    def generate_code(self, name=None, indent=0):
+        type_num = f"0x{self.type_number:02X}"
+        if name is None:
+            if self.include_in_config:
+                name = f"Descriptor_{type_num}"
+            else:
+                name = f"Descriptor_{type_num}_{self.number}"
+
+        num_bytes = len(self.raw)
+        if num_bytes == 0:
+            raw = ""
+        elif num_bytes < 7:
+            raw = str.join(", ", (f'0x{b:02X}' for b in self.raw))
+        else:
+            if 8 < num_bytes < 20:
+                chunk_size = (num_bytes + 1) // 2
+            else:
+                chunk_size = 10
+            raw = "\n        " + str.join(",\n        ", (
+                str.join(", ", (f'0x{b:02X}' for b in chunk))
+                    for chunk in itertools.batched(self.raw, chunk_size)))
+
+        code = "\n"
+        if self.include_in_config:
+            code += f"@include_in_config\n"
+        if self.number is not None:
+            code += f"@requestable(number={self.number})\n"
+
+        code += f"class {name}(USBDescriptor):\n"
+
+        if self.type_number != self.raw[1]:
+            code += f"    type_number : int = {type_num}\n"
+
+        code += f"    raw : bytes = bytes([{raw}])\n"
+
+        return textwrap.indent(code, ' ' * indent)
+
 
 @dataclass
 class USBClassDescriptor(USBDescriptor):

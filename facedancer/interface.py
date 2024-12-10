@@ -7,9 +7,11 @@
 from __future__  import annotations
 
 import struct
+import textwrap
 
 from typing       import Dict, List, Iterable
 from dataclasses  import dataclass, field
+from collections  import defaultdict
 
 from .magic       import instantiate_subordinates, AutoInstantiable
 from .types       import USBDirection, USBStandardRequests
@@ -59,12 +61,12 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Generates an interface object from a descriptor.
         """
         interface_number, alternate_setting, num_endpoints, interface_class, \
-                interface_subclass, interface_protocol, interface_string_index \
+                interface_subclass, interface_protocol, string_index \
                 = struct.unpack_from("xxBBBBBBB", data)
         return cls(
             name=None,
@@ -73,21 +75,17 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
             class_number=interface_class,
             subclass_number=interface_subclass,
             protocol_number=interface_protocol,
-            interface_string=interface_string_index
+            interface_string=None if string_index == 0 else strings[string_index]
         )
 
 
     def __post_init__(self):
 
         # Capture any descriptors/endpoints declared directly on the class.
-        self.endpoints.update(instantiate_subordinates(self, USBEndpoint))
-        descriptors = instantiate_subordinates(self, USBDescriptor).items()
-        for (identifier, descriptor) in descriptors:
-            if descriptor.include_in_config:
-                self.attached_descriptors.append(descriptor)
-            else:
-                self.requestable_descriptors[identifier] = descriptor
-            descriptor.parent = self
+        for endpoint in instantiate_subordinates(self, USBEndpoint):
+            self.add_endpoint(endpoint)
+        for descriptor in instantiate_subordinates(self, USBDescriptor):
+            self.add_descriptor(descriptor)
 
         # Populate our request handlers.
         self._request_handler_methods = get_request_handler_methods(self)
@@ -104,8 +102,18 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_endpoint(self, endpoint: USBEndpoint):
         """ Adds the provided endpoint to the interface. """
-        self.endpoints[endpoint.get_identifier()] = endpoint
-        endpoint.parent = self
+        if endpoint.address in self.endpoints:
+            ep_name = type(endpoint).__name__
+            ep_addr = f"0x{endpoint.address:02X}"
+            other = self.endpoints[endpoint.address]
+            other_name = type(other).__name__
+            raise Exception(
+                f"Endpoint of type {ep_name} cannot be added to this "
+                f"interface because there is already an endpoint of "
+                f"type {other_name} with the same address {ep_addr}")
+        else:
+            self.endpoints[endpoint.address] = endpoint
+            endpoint.parent = self
 
 
     def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
@@ -134,12 +142,32 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_descriptor(self, descriptor: USBDescriptor):
         """ Adds the provided descriptor to the interface. """
+        identifier = descriptor.get_identifier()
+        desc_name = type(descriptor).__name__
+
         if descriptor.include_in_config:
             self.attached_descriptors.append(descriptor)
+
+        elif descriptor.number is None:
+            raise Exception(
+                f"Descriptor of type {desc_name} cannot be added to this "
+                f"interface because it is not to be included in the "
+                f"configuration descriptor, yet does not have a number "
+                f"to request it separately with")
+
+        elif identifier in self.requestable_descriptors:
+            other = self.requestable_descriptors[identifier]
+            other_name = type(other).__name__
+            other_type = f"0x{other.type_number:02X}"
+            raise Exception(
+                f"Descriptor of type {desc_name} cannot be added to this "
+                f"interface because there is already a descriptor of type "
+                f"{other_name} with the same type code {other_type} and "
+                f"number {other.number}")
+
         else:
-            identifier = descriptor.get_identifier()
             self.requestable_descriptors[identifier] = descriptor
-        descriptor.parent = self
+            descriptor.parent = self
 
 
     #
@@ -333,3 +361,42 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def _get_subordinate_handlers(self) -> Iterable[callable]:
         return self.endpoints.values()
+
+
+    def generate_code(self, name=None, indent=0):
+
+        if name is None:
+            if self.alternate == 0:
+                name = f"Interface_{self.number}"
+            else:
+                name = f"Interface_{self.number}_{self.alternate}"
+
+        code = f"""
+class {name}(USBInterface):
+    number           : int = {self.number}
+    alternate        : int = {self.alternate}
+    class_number     : int = {self.class_number}
+    subclass_number  : int = {self.subclass_number}
+    protocol_number  : int = {self.protocol_number}
+    interface_string : str = {repr(self.interface_string)}
+"""
+
+        # Use alphabetic suffixes to distinguish between multiple attached
+        # descriptors with the same type number.
+        suffixes = defaultdict(lambda: 'A')
+
+        for descriptor in self.attached_descriptors:
+            type_number = descriptor.type_number
+            suffix = suffixes[type_number]
+            suffixes[type_number] = chr(ord(suffix) + 1)
+            name = f"Descriptor_0x{type_number:02X}_{suffix}"
+            code += descriptor.generate_code(name=name, indent=4)
+
+        for endpoint in self.endpoints.values():
+            code += endpoint.generate_code(indent=4)
+
+        for descriptor_id in sorted(self.requestable_descriptors):
+            descriptor = self.requestable_descriptors[descriptor_id]
+            code += descriptor.generate_code(indent=4)
+
+        return textwrap.indent(code, indent * ' ')
