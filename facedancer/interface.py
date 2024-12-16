@@ -9,7 +9,8 @@ from __future__  import annotations
 import struct
 
 from typing       import Dict, List, Iterable
-from dataclasses  import dataclass, field
+from dataclasses  import field
+from collections  import defaultdict
 
 from .magic       import instantiate_subordinates, AutoInstantiable
 from .types       import USBDirection, USBStandardRequests
@@ -23,7 +24,6 @@ from .endpoint    import USBEndpoint
 from .logging     import log
 
 
-@dataclass
 class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBDevice interface.
 

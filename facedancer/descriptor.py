@@ -3,15 +3,13 @@
 #
 """ Functionality for working with objects with associated USB descriptors. """
 
-from dataclasses import dataclass
-
-from .magic import AutoInstantiable
+from .magic import AutoInstantiable, DescribableMeta
 
 from enum import IntEnum
 from warnings import warn
 
 
-class USBDescribable(object):
+class USBDescribable(metaclass=DescribableMeta):
     """
     Abstract base class for objects that can be created from USB descriptors.
     """
@@ -44,7 +42,6 @@ class USBDescribable(object):
         return USBDescriptor.from_binary_descriptor(data, strings=strings)
 
 
-@dataclass
 class USBDescriptor(USBDescribable, AutoInstantiable):
     """ Class for arbitrary USB descriptors; minimal concrete implementation of USBDescribable. """
 
@@ -79,7 +76,7 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
     def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
 
-@dataclass
+
 class USBClassDescriptor(USBDescriptor):
     """ Class for arbitrary USB Class descriptors. """
 
@@ -93,7 +90,6 @@ class USBClassDescriptor(USBDescriptor):
         super().__init_subclass__(**kwargs)
 
 
-@dataclass
 class USBStringDescriptor(USBDescriptor):
     """ Class representing a USB string descriptor. """
 

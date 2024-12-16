@@ -6,11 +6,24 @@
 import inspect
 
 from abc         import ABCMeta, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, field, fields
 
 
-# FIXME: this should have get_identifier on it
-class AutoInstantiable(metaclass=ABCMeta):
+class DescribableMeta(ABCMeta):
+    """ Metaclass for USBDescribable subclasses. """
+    def __new__(cls, name, bases, classdict):
+        annotations = classdict.setdefault('__annotations__', {})
+        for base in bases:
+            if is_dataclass(base):
+                for field in fields(base):
+                    if field.name in classdict:
+                        if field.name not in annotations:
+                            annotations[field.name] = str(field.type)
+        new_cls = ABCMeta.__new__(cls, name, bases, classdict)
+        return dataclass(new_cls, kw_only=True)
+
+
+class AutoInstantiable(metaclass=DescribableMeta):
     """ Base class for methods that can be decorated with use_automatically. """
 
     @abstractmethod
@@ -54,7 +67,6 @@ def use_automatically(cls):
 
     For example, assume we have a Facedancer class representing a custom USB device::
 
-        @dataclass
         class ExampleDevice(USBDevice):
             product_string : str = "My Example Device"
 
@@ -69,7 +81,7 @@ def use_automatically(cls):
     the decorated class has no explicitly-declared __init__ method. The __post_init__ mechanism
     of python dataclasses can be overridden to perform any needed initialization.
     """
-    return AutoInstantiator(dataclass(cls))
+    return AutoInstantiator(cls)
 
 
 def _use_inner_classes_automatically(cls):
@@ -90,7 +102,7 @@ def _use_inner_classes_automatically(cls):
 
 def use_inner_classes_automatically(cls):
     """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
-    return _use_inner_classes_automatically(dataclass(cls))
+    return _use_inner_classes_automatically(cls)
 
 
 def instantiate_subordinates(obj, expected_type):

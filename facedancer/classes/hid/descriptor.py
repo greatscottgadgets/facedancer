@@ -7,7 +7,6 @@
 from __future__  import annotations
 
 from enum        import IntEnum
-from dataclasses import dataclass
 from typing      import Tuple, Iterable
 
 from ...descriptor import USBDescriptor, USBDescriptorTypeNumber
@@ -119,7 +118,6 @@ class HIDCollection(IntEnum):
     VENDOR         = 0xFF
 
 
-@dataclass
 class HIDReportDescriptor(USBDescriptor):
     """ Descriptor class representing a HID report descriptor. """
 

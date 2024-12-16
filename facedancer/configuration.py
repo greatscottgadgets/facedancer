@@ -5,7 +5,7 @@
 
 import struct
 
-from dataclasses  import dataclass, field
+from dataclasses  import field
 from typing       import Iterable
 
 from .types       import USBDirection
@@ -17,8 +17,6 @@ from .descriptor  import USBDescribable, USBDescriptor
 from .endpoint    import USBEndpoint
 
 
-
-@dataclass
 class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBDevice's configuration.
 

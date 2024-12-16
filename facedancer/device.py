@@ -13,7 +13,7 @@ import warnings
 import itertools
 
 from typing         import Coroutine, Dict, Iterable, Union
-from dataclasses    import dataclass, field
+from dataclasses    import field
 
 from prompt_toolkit import HTML, print_formatted_text
 
@@ -35,7 +35,6 @@ from .request       import standard_request_handler, to_device, get_request_hand
 from .logging       import log
 
 
-@dataclass
 class USBBaseDevice(USBDescribable, USBRequestHandler):
     """
     Base-most class for Facedancer USB devices. This version is very similar to the USBDevice type,
