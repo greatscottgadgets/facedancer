@@ -3,7 +3,7 @@ from .device        import USBDevice
 from .configuration import USBConfiguration
 from .interface     import USBInterface
 from .endpoint      import USBEndpoint
-from .descriptor    import USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber
+from .descriptor    import USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber, StringRef
 
 # Control request handlers.
 from .request       import standard_request_handler, class_request_handler, vendor_request_handler
@@ -34,5 +34,5 @@ __all__ = [
     'USBDirection', 'USBTransferType', 'USBUsageType', 'USBSynchronizationType',
     'USBRequestType', 'USBRequestRecipient', 'USBStandardRequests', 'LanguageIDs',
     'DeviceSpeed', 'use_automatically', 'use_inner_classes_automatically',
-    'USBControlRequest', 'include_in_config', 'requestable',
+    'USBControlRequest', 'include_in_config', 'requestable', 'StringRef',
 ]

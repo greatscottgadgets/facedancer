@@ -13,7 +13,7 @@ from .magic       import instantiate_subordinates, AutoInstantiable
 from .request     import USBRequestHandler
 
 from .interface   import USBInterface
-from .descriptor  import USBDescribable, USBDescriptor
+from .descriptor  import USBDescribable, USBDescriptor, StringRef
 from .endpoint    import USBEndpoint
 
 
@@ -35,7 +35,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     DESCRIPTOR_SIZE_BYTES   = 9
 
     number                 : int            = 1
-    configuration_string   : str            = None
+    configuration_string   : StringRef      = None
 
     max_power              : int            = 500
 
@@ -64,7 +64,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         configuration = cls(
             number=index,
-            configuration_string=None if string_index == 0 else strings[string_index],
+            configuration_string=StringRef.lookup(strings, string_index),
             max_power=half_max_power * 2,
             self_powered=bool((attributes >> 6) & 1),
             supports_remote_wakeup=bool((attributes >> 5) & 1),
@@ -103,6 +103,8 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     def __post_init__(self):
+
+        self.configuration_string = StringRef.ensure(self.configuration_string)
 
         # Gather any interfaces attached to the configuration.
         for interface in instantiate_subordinates(self, USBInterface):

@@ -5,7 +5,9 @@
 
 from .magic import AutoInstantiable, DescribableMeta, adjust_defaults
 
+from dataclasses import field
 from enum import IntEnum
+from typing import Dict
 from warnings import warn
 
 
@@ -108,6 +110,62 @@ class USBStringDescriptor(USBDescriptor):
         return cls(raw=raw, number=index, type_number=3, python_string=string)
 
 
+class StringRef:
+    """ Class representing a reference to a USB string descriptor. """
+
+    def __init__(self, index: int = None, string : str = None):
+        if index is None and str is None:
+            raise TypeError("A StringRef must have an index or a string")
+        self.index = index
+        self.string = string
+
+
+    @classmethod
+    def field(cls, **kwargs):
+        """ Used to create StringRef fields in dataclasses. """
+        return field(default_factory=lambda: StringRef(**kwargs))
+
+
+    @classmethod
+    def lookup(cls, strings: Dict[int, str], index: int):
+        """ Try to construct a StringRef given an index and a mapping """
+        if index == 0:
+            return StringRef(index=0)
+        elif index in strings:
+            return StringRef(index=index, string=strings[index])
+        else:
+            return StringRef(index=index)
+
+
+    @classmethod
+    def ensure(cls, value):
+        """ Turn a value into a StringRef it is not one already. """
+        if isinstance(value, StringRef):
+            return value
+        elif isinstance(value, tuple):
+            index, string = value
+            return StringRef(index=index, string=string)
+        elif isinstance(value, int):
+            return StringRef(index=value)
+        elif isinstance(value, str):
+            return StringRef(string=value)
+        elif value is None:
+            return StringRef(index=0)
+        else:
+            raise TypeError(f"Cannot construct StringRef from {repr(value)}")
+
+
+    def generate_code(self):
+        """ Generate input that will produce this StringRef when passed to ensure() """
+        if self.index is not None and self.string is not None:
+            return f"({self.index}, {repr(self.string)})"
+        elif self.index == 0:
+            return "None"
+        elif self.index is not None:
+            return str(self.index)
+        elif self.string is not None:
+            return repr(self.string)
+
 
 class StringDescriptorManager:
     """ Manager class that collects active string descriptors. """
@@ -130,6 +188,10 @@ class StringDescriptorManager:
         specified, a new, unique, incrementing index is allocated.
         """
 
+        if isinstance(string, StringRef):
+            index = string.index
+            string = string.string
+
         if index is None:
             index = self.next_index
 
@@ -150,7 +212,12 @@ class StringDescriptorManager:
         """ Returns the index of the given string; creating it if the string isn't already known. """
 
         # If we already have an index, leave it alone...
-        if isinstance(string, int):
+        if isinstance(string, StringRef):
+            if string.index is not None:
+                return string.index
+            else:
+                string = string.string
+        elif isinstance(string, int):
             return string
 
         # Special case: return 0 for None, allowing null strings to be represented.

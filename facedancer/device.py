@@ -25,7 +25,7 @@ from .types         import DeviceSpeed
 
 from .magic         import instantiate_subordinates
 
-from .descriptor    import USBDescribable, USBDescriptor, StringDescriptorManager
+from .descriptor    import USBDescribable, USBDescriptor, StringDescriptorManager, StringRef
 from .configuration import USBConfiguration
 from .interface     import USBInterface
 from .endpoint      import USBEndpoint
@@ -72,9 +72,9 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
     vendor_id                : int  = 0x610b
     product_id               : int  = 0x4653
 
-    manufacturer_string      : str  = "Facedancer"
-    product_string           : str  = "Generic USB Device"
-    serial_number_string     : str  = "S/N 3420E"
+    manufacturer_string      : StringRef = StringRef.field(string="Facedancer")
+    product_string           : StringRef = StringRef.field(string="Generic USB Device")
+    serial_number_string     : StringRef = StringRef.field(string="S/N 3420E")
 
     # I feel bad for putting this as the default language ID / propagating anglocentrism,
     # but this appears to be the only language ID supported by some systems, so here it is.
@@ -110,15 +110,6 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
                 manufacturer_string_index, product_string_index, \
                 serial_number_string_index, num_configurations = struct.unpack_from("<xxHBBBBHHHBBBB", data)
 
-        def lookup(string_index):
-            if string_index == 0:
-                return None
-            elif string_index in strings:
-                return strings[string_index]
-            else:
-                raise Exception(
-                    f"Missing string for string descriptor #{string_index}")
-
         device = cls(
             device_class=device_class,
             device_subclass=device_subclass,
@@ -126,12 +117,16 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             max_packet_size_ep0=max_packet_size_ep0,
             vendor_id=vendor_id,
             product_id=product_id,
-            manufacturer_string=lookup(manufacturer_string_index),
-            product_string=lookup(product_string_index),
-            serial_number_string=lookup(serial_number_string_index),
+            manufacturer_string=StringRef.lookup(strings, manufacturer_string_index),
+            product_string=StringRef.lookup(strings, product_string_index),
+            serial_number_string=StringRef.lookup(strings, serial_number_string_index),
             device_revision=device_rev,
             usb_spec_version=spec_version,
         )
+
+        # Populate string descriptors
+        for index, string in strings.items():
+            device.strings.add_string(string, index)
 
         # FIXME: generate better placeholder configurations
         for configuration in range(0, num_configurations):
@@ -142,6 +137,10 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     def __post_init__(self):
         """ Set up our device for execution. """
+
+        self.manufacturer_string = StringRef.ensure(self.manufacturer_string)
+        self.product_string = StringRef.ensure(self.product_string)
+        self.serial_number_string = StringRef.ensure(self.serial_number_string)
 
         self.strings = StringDescriptorManager()
 

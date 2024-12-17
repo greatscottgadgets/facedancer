@@ -16,7 +16,7 @@ from .magic       import instantiate_subordinates, AutoInstantiable
 from .types       import USBDirection, USBStandardRequests
 
 from .            import device
-from .descriptor  import USBDescribable, USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber
+from .descriptor  import USBDescribable, USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber, StringRef
 from .request     import USBControlRequest, USBRequestHandler, get_request_handler_methods
 from .request     import standard_request_handler, to_this_interface
 from .endpoint    import USBEndpoint
@@ -37,7 +37,7 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
     """
     DESCRIPTOR_TYPE_NUMBER = 0x4
 
-    name                   : str = "generic USB interface"
+    name                   : StringRef = StringRef.field(string="generic USB interface")
 
     number                 : int = 0
     alternate              : int = 0
@@ -73,11 +73,13 @@ class USBInterface(USBDescribable, AutoInstantiable, USBRequestHandler):
             class_number=interface_class,
             subclass_number=interface_subclass,
             protocol_number=interface_protocol,
-            interface_string=None if string_index == 0 else strings[string_index]
+            interface_string=StringRef.lookup(strings, string_index)
         )
 
 
     def __post_init__(self):
+
+        self.interface_string = StringRef.ensure(self.interface_string)
 
         # Capture any descriptors/endpoints declared directly on the class.
         for endpoint in instantiate_subordinates(self, USBEndpoint):
