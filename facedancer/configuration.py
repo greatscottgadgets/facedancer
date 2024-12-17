@@ -5,7 +5,7 @@
 
 import struct
 
-from dataclasses  import dataclass, field
+from dataclasses  import field
 from typing       import Iterable
 
 from .types       import USBDirection
@@ -13,12 +13,10 @@ from .magic       import instantiate_subordinates, AutoInstantiable
 from .request     import USBRequestHandler
 
 from .interface   import USBInterface
-from .descriptor  import USBDescribable, USBDescriptor
+from .descriptor  import USBDescribable, USBDescriptor, StringRef
 from .endpoint    import USBEndpoint
 
 
-
-@dataclass
 class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBDevice's configuration.
 
@@ -37,7 +35,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
     DESCRIPTOR_SIZE_BYTES   = 9
 
     number                 : int            = 1
-    configuration_string   : str            = None
+    configuration_string   : StringRef      = None
 
     max_power              : int            = 500
 
@@ -49,7 +47,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Generates a new USBConfiguration object from a configuration descriptor,
         handling any attached subordinate descriptors.
@@ -66,10 +64,10 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         configuration = cls(
             number=index,
-            configuration_string=string_index,
+            configuration_string=StringRef.lookup(strings, string_index),
             max_power=half_max_power * 2,
-            self_powered=(attributes >> 6) & 1,
-            supports_remote_wakeup=(attributes >> 5) & 1,
+            self_powered=bool((attributes >> 6) & 1),
+            supports_remote_wakeup=bool((attributes >> 5) & 1),
         )
 
         data = data[length:total_length]
@@ -81,7 +79,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
             # Determine the length and type of the next descriptor.
             length     = data[0]
-            descriptor = USBDescribable.from_binary_descriptor(data[:length])
+            descriptor = USBDescribable.from_binary_descriptor(data[:length], strings=strings)
 
             # If we have an interface descriptor, add it to our list of interfaces.
             if isinstance(descriptor, USBInterface):
@@ -106,8 +104,11 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def __post_init__(self):
 
-        # Gather any interfaces defined on the object.
-        self.interfaces.update(instantiate_subordinates(self, USBInterface))
+        self.configuration_string = StringRef.ensure(self.configuration_string)
+
+        # Gather any interfaces attached to the configuration.
+        for interface in instantiate_subordinates(self, USBInterface):
+            self.add_interface(interface)
 
 
     @property
@@ -135,8 +136,21 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_interface(self, interface: USBInterface):
         """ Adds an interface to the configuration. """
-        self.interfaces[interface.get_identifier()] = interface
-        interface.parent = self
+        identifier = interface.get_identifier()
+        num, alt = identifier
+
+        if identifier in self.interfaces:
+            other = self.interfaces[identifier]
+            iface_name = type(interface).__name__
+            other_name = type(other).__name__
+            raise Exception(
+                f"Interface of type {iface_name} cannot be added to this "
+                f"configuration because there is already an interface of "
+                f"type {other_name} with the same interface number {num} "
+                f"and alternate setting {alt}")
+        else:
+            self.interfaces[identifier] = interface
+            interface.parent = self
 
 
     def get_endpoint(self, number: int, direction: USBDirection) -> USBEndpoint:
@@ -237,8 +251,7 @@ class USBConfiguration(USBDescribable, AutoInstantiable, USBRequestHandler):
         # FIXME: use construct
 
         # All all subordinate descriptors together to create a big subordinate descriptor.
-        interfaces = sorted(self.interfaces.values(), key=lambda item: item.get_identifier())
-        for interface in interfaces:
+        for interface in self.interfaces.values():
             interface_descriptors += interface.get_descriptor()
 
         total_len      = len(interface_descriptors) + 9

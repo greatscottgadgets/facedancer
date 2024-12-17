@@ -6,11 +6,33 @@
 import inspect
 
 from abc         import ABCMeta, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, field, fields
 
 
-# FIXME: this should have get_identifier on it
-class AutoInstantiable(metaclass=ABCMeta):
+class DescribableMeta(ABCMeta):
+    """ Metaclass for USBDescribable subclasses. """
+    def __new__(cls, name, bases, classdict):
+        annotations = classdict.setdefault('__annotations__', {})
+        for base in bases:
+            if is_dataclass(base):
+                for field in fields(base):
+                    if field.name in classdict:
+                        if field.name not in annotations:
+                            annotations[field.name] = str(field.type)
+        new_cls = ABCMeta.__new__(cls, name, bases, classdict)
+        return dataclass(new_cls, kw_only=True)
+
+
+def adjust_defaults(cls, **kwargs):
+    """ Adjusts the defaults of an existing dataclass. """
+    assert is_dataclass(cls)
+    for name, value in kwargs.items():
+        cls.__dataclass_fields__[name] = field(default = value)
+        cls.__init__.__kwdefaults__[name] = value
+    return cls
+
+
+class AutoInstantiable(metaclass=DescribableMeta):
     """ Base class for methods that can be decorated with use_automatically. """
 
     @abstractmethod
@@ -31,21 +53,14 @@ class AutoInstantiator:
     at the cost of being somewhat cryptic.
     """
 
-    def __init__(self, target_type, identifier=None):
+    def __init__(self, target_type):
         self._target_type = target_type
-        self._identifier  = identifier
 
     def creates_instance_of(self, expected_type):
         return issubclass(self._target_type, expected_type)
 
     def __call__(self, parent):
-        instance   = self._target_type(parent=parent)
-        identifier = self._identifier
-
-        if identifier is None:
-            identifier = instance.get_identifier()
-
-        return identifier, instance
+        return self._target_type(parent=parent)
 
 
 def use_automatically(cls):
@@ -61,7 +76,6 @@ def use_automatically(cls):
 
     For example, assume we have a Facedancer class representing a custom USB device::
 
-        @dataclass
         class ExampleDevice(USBDevice):
             product_string : str = "My Example Device"
 
@@ -76,12 +90,12 @@ def use_automatically(cls):
     the decorated class has no explicitly-declared __init__ method. The __post_init__ mechanism
     of python dataclasses can be overridden to perform any needed initialization.
     """
-    return AutoInstantiator(dataclass(cls))
+    return AutoInstantiator(cls)
 
 
 def _use_inner_classes_automatically(cls):
     # Iterate over the relevant class...
-    for name, member in inspect.getmembers(cls):
+    for name, member in cls.__dict__.items():
 
         # ... and tag each inner class with both use_automatically
         # -and- use_inner_classes_automatically. The former
@@ -97,7 +111,7 @@ def _use_inner_classes_automatically(cls):
 
 def use_inner_classes_automatically(cls):
     """ Decorator that acts as if all inner classes were defined with `use_automatically`. """
-    return _use_inner_classes_automatically(dataclass(cls))
+    return _use_inner_classes_automatically(cls)
 
 
 def instantiate_subordinates(obj, expected_type):
@@ -108,14 +122,7 @@ def instantiate_subordinates(obj, expected_type):
     objects of any inner class decorated with ``@use_automatically``.
     """
 
-    instances = {}
-
     # Search our class for anything decorated with an AutoInstantiator of the relevant type.
-    for _, member in inspect.getmembers(obj):
+    for member in type(obj).__dict__.values():
         if isinstance(member, AutoInstantiator) and member.creates_instance_of(expected_type):
-
-            # And instantiate it.
-            identifier, target = member(obj)
-            instances[identifier] = target
-
-    return instances
+            yield member(object)

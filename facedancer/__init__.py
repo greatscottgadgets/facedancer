@@ -3,7 +3,7 @@ from .device        import USBDevice
 from .configuration import USBConfiguration
 from .interface     import USBInterface
 from .endpoint      import USBEndpoint
-from .descriptor    import USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber
+from .descriptor    import USBDescriptor, USBClassDescriptor, USBDescriptorTypeNumber, StringRef
 
 # Control request handlers.
 from .request       import standard_request_handler, class_request_handler, vendor_request_handler
@@ -17,7 +17,8 @@ from .types         import USBRequestType, USBRequestRecipient, USBStandardReque
 from .types         import DeviceSpeed
 
 # Decorators.
-from .magic import use_automatically, use_inner_classes_automatically
+from .magic         import use_automatically, use_inner_classes_automatically
+from .descriptor    import include_in_config, requestable
 
 # Alias objects to make them easier to import.
 from .backends import *
@@ -33,5 +34,5 @@ __all__ = [
     'USBDirection', 'USBTransferType', 'USBUsageType', 'USBSynchronizationType',
     'USBRequestType', 'USBRequestRecipient', 'USBStandardRequests', 'LanguageIDs',
     'DeviceSpeed', 'use_automatically', 'use_inner_classes_automatically',
-    'USBControlRequest',
+    'USBControlRequest', 'include_in_config', 'requestable', 'StringRef',
 ]

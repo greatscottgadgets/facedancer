@@ -9,9 +9,10 @@ from __future__  import annotations
 import struct
 
 from typing      import Iterable, List, Dict
-from dataclasses import dataclass, field
+from dataclasses import field
+from collections import defaultdict
 
-from .magic      import AutoInstantiable
+from .magic      import AutoInstantiable, instantiate_subordinates
 from .descriptor import USBDescribable, USBDescriptor
 from .request    import USBRequestHandler, get_request_handler_methods
 from .request    import to_this_endpoint, standard_request_handler
@@ -21,7 +22,6 @@ from .types      import USBUsageType, USBStandardRequests
 from .logging    import log
 
 
-@dataclass
 class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
     """ Class representing a USBEndpoint object.
 
@@ -65,7 +65,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Creates an endpoint object from a description of that endpoint.
         """
@@ -82,10 +82,10 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         return cls(
             number=number,
-            direction=direction,
-            transfer_type=transfer_type,
-            synchronization_type=sync_type,
-            usage_type=usage_type,
+            direction=USBDirection(direction),
+            transfer_type=USBTransferType(transfer_type),
+            synchronization_type=USBSynchronizationType(sync_type),
+            usage_type=USBUsageType(usage_type),
             max_packet_size=max_packet_size,
             interval=interval,
             extra_bytes=data[7:]
@@ -93,6 +93,10 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
 
     def __post_init__(self):
+
+        # Capture any descriptors declared directly on the class.
+        for descriptor in instantiate_subordinates(self, USBDescriptor):
+            self.add_descriptor(descriptor)
 
         # Grab our request handlers.
         self._request_handler_methods = get_request_handler_methods(self)
@@ -180,12 +184,32 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
     def add_descriptor(self, descriptor: USBDescriptor):
         """ Adds the provided descriptor to the endpoint. """
+        identifier = descriptor.get_identifier()
+        desc_name = type(descriptor).__name__
+
         if descriptor.include_in_config:
             self.attached_descriptors.append(descriptor)
+
+        elif descriptor.number is None:
+            raise Exception(
+                f"Descriptor of type {desc_name} cannot be added to this "
+                f"endpoint because it is not to be included in the "
+                f"configuration descriptor, yet does not have a number "
+                f"to request it separately with")
+
+        elif identifier in self.requestable_descriptors:
+            other = self.requestable_descriptors[identifier]
+            other_name = type(other).__name__
+            other_type = f"0x{other.type_number:02X}"
+            raise Exception(
+                f"Descriptor of type {desc_name} cannot be added to this "
+                f"endpoint because there is already a descriptor of type "
+                f"{other_name} with the same type code {other_type} and "
+                f"number {other.number}")
+
         else:
-            identifier = descriptor.get_identifier()
             self.requestable_descriptors[identifier] = descriptor
-        descriptor.parent = self
+            descriptor.parent = self
 
 
     def get_descriptor(self) -> bytes:

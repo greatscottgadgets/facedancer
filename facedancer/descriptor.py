@@ -3,15 +3,15 @@
 #
 """ Functionality for working with objects with associated USB descriptors. """
 
-from dataclasses import dataclass
+from .magic import AutoInstantiable, DescribableMeta, adjust_defaults
 
-from .magic import AutoInstantiable
-
+from dataclasses import field
 from enum import IntEnum
+from typing import Dict
 from warnings import warn
 
 
-class USBDescribable(object):
+class USBDescribable(metaclass=DescribableMeta):
     """
     Abstract base class for objects that can be created from USB descriptors.
     """
@@ -30,7 +30,7 @@ class USBDescribable(object):
 
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         """
         Attempts to create a USBDescriptor subclass from the given raw
         descriptor data.
@@ -39,23 +39,33 @@ class USBDescribable(object):
         for subclass in cls.__subclasses__():
             # If this subclass handles our binary descriptor, use it to parse the given descriptor.
             if subclass.handles_binary_descriptor(data):
-                return subclass.from_binary_descriptor(data)
+                return subclass.from_binary_descriptor(data, strings=strings)
 
-        return USBDescriptor.from_binary_descriptor(data)
+        return USBDescriptor.from_binary_descriptor(data, strings=strings)
 
 
-@dataclass
 class USBDescriptor(USBDescribable, AutoInstantiable):
     """ Class for arbitrary USB descriptors; minimal concrete implementation of USBDescribable. """
 
-    number      : int
-    raw         : bytes
+    """ The raw bytes of the descriptor. """
+    raw : bytes
 
-    type_number : int            = None
-    parent      : USBDescribable = None
+    """ The bDescriptorType of the descriptor. """
+    type_number : int = None
 
-    # Whether this descriptor should be included in a GET_CONFIGURATION response.
-    include_in_config : bool     = False
+    """ Number to request this descriptor with a GET_DESCRIPTOR request. """
+    number : int = None
+
+    """ Parent object which this descriptor is associated with. """
+    parent : USBDescribable = None
+
+    """ Whether this descriptor should be included in a GET_CONFIGURATION response. """
+    include_in_config : bool = False
+
+    def __post_init__(self):
+        # If type number was not set, get it from the raw bytes.
+        if self.type_number is None and self.raw is not None:
+            self.type_number = self.raw[1]
 
     def __call__(self, index=0):
         """ Converts the descriptor object into raw bytes. """
@@ -65,10 +75,10 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
         return (self.type_number, self.number)
 
     @classmethod
-    def from_binary_descriptor(cls, data):
+    def from_binary_descriptor(cls, data, strings={}):
         return USBDescriptor(raw=data, type_number=data[1], number=None)
 
-@dataclass
+
 class USBClassDescriptor(USBDescriptor):
     """ Class for arbitrary USB Class descriptors. """
 
@@ -82,7 +92,6 @@ class USBClassDescriptor(USBDescriptor):
         super().__init_subclass__(**kwargs)
 
 
-@dataclass
 class USBStringDescriptor(USBDescriptor):
     """ Class representing a USB string descriptor. """
 
@@ -100,6 +109,62 @@ class USBStringDescriptor(USBDescriptor):
 
         return cls(raw=raw, number=index, type_number=3, python_string=string)
 
+
+class StringRef:
+    """ Class representing a reference to a USB string descriptor. """
+
+    def __init__(self, index: int = None, string : str = None):
+        if index is None and str is None:
+            raise TypeError("A StringRef must have an index or a string")
+        self.index = index
+        self.string = string
+
+
+    @classmethod
+    def field(cls, **kwargs):
+        """ Used to create StringRef fields in dataclasses. """
+        return field(default_factory=lambda: StringRef(**kwargs))
+
+
+    @classmethod
+    def lookup(cls, strings: Dict[int, str], index: int):
+        """ Try to construct a StringRef given an index and a mapping """
+        if index == 0:
+            return StringRef(index=0)
+        elif index in strings:
+            return StringRef(index=index, string=strings[index])
+        else:
+            return StringRef(index=index)
+
+
+    @classmethod
+    def ensure(cls, value):
+        """ Turn a value into a StringRef it is not one already. """
+        if isinstance(value, StringRef):
+            return value
+        elif isinstance(value, tuple):
+            index, string = value
+            return StringRef(index=index, string=string)
+        elif isinstance(value, int):
+            return StringRef(index=value)
+        elif isinstance(value, str):
+            return StringRef(string=value)
+        elif value is None:
+            return StringRef(index=0)
+        else:
+            raise TypeError(f"Cannot construct StringRef from {repr(value)}")
+
+
+    def generate_code(self):
+        """ Generate input that will produce this StringRef when passed to ensure() """
+        if self.index is not None and self.string is not None:
+            return f"({self.index}, {repr(self.string)})"
+        elif self.index == 0:
+            return "None"
+        elif self.index is not None:
+            return str(self.index)
+        elif self.string is not None:
+            return repr(self.string)
 
 
 class StringDescriptorManager:
@@ -123,6 +188,10 @@ class StringDescriptorManager:
         specified, a new, unique, incrementing index is allocated.
         """
 
+        if isinstance(string, StringRef):
+            index = string.index
+            string = string.string
+
         if index is None:
             index = self.next_index
 
@@ -143,7 +212,12 @@ class StringDescriptorManager:
         """ Returns the index of the given string; creating it if the string isn't already known. """
 
         # If we already have an index, leave it alone...
-        if isinstance(string, int):
+        if isinstance(string, StringRef):
+            if string.index is not None:
+                return string.index
+            else:
+                string = string.string
+        elif isinstance(string, int):
             return string
 
         # Special case: return 0 for None, allowing null strings to be represented.
@@ -176,3 +250,13 @@ class USBDescriptorTypeNumber(IntEnum):
     INTERFACE_POWER           = 8
     HID                       = 33
     REPORT                    = 34
+
+
+def include_in_config(cls):
+    """ Decorator that marks a descriptor to be included in configuration data. """
+    return adjust_defaults(cls, include_in_config=True)
+
+
+def requestable(type_number, number):
+    """ Decorator that marks a descriptor as requestable. """
+    return lambda cls: adjust_defaults(cls, type_number=type_number, number=number)
