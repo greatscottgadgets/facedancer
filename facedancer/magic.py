@@ -4,6 +4,7 @@
 """ Functionally for automatic instantiations / tracking via decorators. """
 
 import inspect
+import sys
 
 from abc         import ABCMeta, abstractmethod
 from dataclasses import dataclass, is_dataclass, field, fields
@@ -20,15 +21,26 @@ class DescribableMeta(ABCMeta):
                         if field.name not in annotations:
                             annotations[field.name] = str(field.type)
         new_cls = ABCMeta.__new__(cls, name, bases, classdict)
-        return dataclass(new_cls, kw_only=True)
+        if sys.version_info >= (3, 10):
+            return dataclass(new_cls, kw_only=True)
+        else:
+            return dataclass(new_cls)
 
 
 def adjust_defaults(cls, **kwargs):
     """ Adjusts the defaults of an existing dataclass. """
     assert is_dataclass(cls)
     for name, value in kwargs.items():
-        cls.__dataclass_fields__[name] = field(default = value)
-        cls.__init__.__kwdefaults__[name] = value
+        if sys.version_info >= (3, 10):
+            cls.__dataclass_fields__[name] = field(default = value)
+            cls.__init__.__kwdefaults__[name] = value
+        else:
+            defaults = list(cls.__init__.__defaults__)
+            for i, existing_field in enumerate(fields(cls)):
+                if existing_field.name == name:
+                    defaults[i] = value
+            cls.__init__.__defaults__ = tuple(defaults)
+            defaults = list(cls.__init__.__defaults__)
     return cls
 
 
