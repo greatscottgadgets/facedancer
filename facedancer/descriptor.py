@@ -88,6 +88,12 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
             else:
                 name = f"Descriptor_{type_num}_{self.number}"
 
+        # use a shim until we get itertools.batched in Python 3.12
+        def batched(iterable, n=1):
+            l = len(iterable)
+            for ndx in range(0, l, n):
+                yield iterable[ndx:min(ndx + n, l)]
+
         num_bytes = len(self.raw)
         if num_bytes == 0:
             raw = ""
@@ -100,7 +106,7 @@ class USBDescriptor(USBDescribable, AutoInstantiable):
                 chunk_size = 10
             raw = "\n        " + str.join(",\n        ", (
                 str.join(", ", (f'0x{b:02X}' for b in chunk))
-                    for chunk in itertools.batched(self.raw, chunk_size)))
+                    for chunk in batched(self.raw, chunk_size)))
 
         code = "\n"
         if self.include_in_config:
