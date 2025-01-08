@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -->
 
+## [3.1.0] - 2025-01-08
+> This is a breaking release which may require updates to your usage of Facedancer API's.
+
+### Changed
+* Dropped support for Python 3.8 and 3.9. The minimum supported Python version is now Python 3.10.
+* The descriptor API has been changed and expanded to handle more complex device definitions:
+  - New USBDescriptor property: `include_in_config`, which specifies whether the descriptor should be included in a GET_CONFIGURATION response.
+  - Descriptors attached to endpoints are now instantiated (replaces #139)
+  - The `instantiate_subordinates` function is redesigned to avoid silent dropping of subordinates with duplicate identifiers.
+  - Orderings of declaration/insertion of subordinates are preserved, allowing control of ordering in binary configurations.
+  - Fixes to convert some fields to the right types in `from_binary_descriptor` methods.
+  - A dictionary of known strings and their indexes may be passed to `from_binary_descriptor` methods.
+  - The `number` field of `USBDescriptor` is made optional, as it is not required for descriptors attached in a configuration.
+  - The `type_number` field will now be inferred from the `raw` bytes if not otherwise specified.
+  - Add `@include_in_config` and `@requestable(number=N)` decorators for use on declared descriptor classes.
+  - Add docstrings for all `USBDescriptor` fields.
+  - More information: #126 #141
+
+### Fixed
+* USBProxy errors after changes for alternate interface settings.
+
+### Added
+* Round-trip support for creating Facedancer devices, configurations, interfaces, endpoints and descriptors from binary data to objects, to code, to objects and back to binary data.
+* New backend method: `validate_configuration` for rejecting USB device configurations that are not supported by a given backend.
+
+
+
 ## [3.0.6] - 2024-11-27
 ### Fixed
 * Updated Keyboard device / rubber-ducky to work with new descriptor handling features.
@@ -91,7 +118,8 @@ Any future bug-fixes or backports to Facedancer `2.9.x` should use the [`v2.9.x 
 - The current Facedancer core will be supersed by the implementation in `future/` with the `v3.0` release.
 
 
-[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.0.6...HEAD
+[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.1.0...HEAD
+[3.1.0]: https://github.com/greatscottgadgets/facedancer/compare/3.0.6...3.1.0
 [3.0.6]: https://github.com/greatscottgadgets/facedancer/compare/3.0.5...3.0.6
 [3.0.5]: https://github.com/greatscottgadgets/facedancer/compare/3.0.4...3.0.5
 [3.0.4]: https://github.com/greatscottgadgets/facedancer/compare/3.0.3...3.0.4
