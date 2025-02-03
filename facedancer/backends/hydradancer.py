@@ -275,6 +275,16 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
         self.api.stall_endpoint(endpoint_number, direction)         
 
+    def clear_halt(self, endpoint_number:int, direction: USBDirection):
+        """ Clears a halt condition on the provided non-control endpoint.
+
+        Args:
+            endpoint_number : The endpoint number
+            direction       : The endpoint direction; or OUT if not provided.
+        """
+        logging.debug(f"Clearing halt for endpoint {endpoint_number}")
+        self.api.clear_halt(endpoint_number, direction)
+
     def service_irqs(self):
         """
         Core routine of the Facedancer execution/event loop. Continuously monitors the
@@ -395,6 +405,7 @@ class HydradancerBoard():
     CHECK_HYDRADANCER_READY = 57
     DO_BUS_RESET = 58
     CONFIGURED = 59
+    CLEAR_HALT = 60
 
     # Facedancer USB2 speed to Hydradancer USB2 speed
     facedancer_to_hydradancer_speed = {
@@ -636,6 +647,14 @@ class HydradancerBoard():
             logging.error(exception)
             raise HydradancerBoardFatalError("Error, unable to set speed") from exception
 
+    def clear_halt(self, endpoint_number:int, direction: USBDirection):
+        try:
+            self.device.ctrl_transfer(
+                CTRL_TYPE_VENDOR | CTRL_RECIPIENT_DEVICE | CTRL_OUT, self.CLEAR_HALT, wValue=((endpoint_number & 0xff) | ((direction & 0xff) << 8)))
+        except (usb.core.USBTimeoutError, usb.core.USBError) as exception:
+            logging.error(exception)
+            raise HydradancerBoardFatalError("Error, unable to clear halt on endpoint {endpoint_number} direction {direction}") from exception
+      
     def set_address(self, address, defer=False):
         """
         Set the USB address on the emulation board
