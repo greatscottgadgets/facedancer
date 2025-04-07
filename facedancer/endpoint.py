@@ -190,6 +190,7 @@ class USBEndpoint(USBDescribable, AutoInstantiable, USBRequestHandler):
 
         if descriptor.include_in_config:
             self.attached_descriptors.append(descriptor)
+            descriptor.parent = self
 
         elif descriptor.number is None:
             raise Exception(

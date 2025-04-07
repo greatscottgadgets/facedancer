@@ -202,6 +202,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
         else:
             self.requestable_descriptors[identifier] = descriptor
+            descriptor.parent = self
 
 
     def connect(self, device_speed: DeviceSpeed=DeviceSpeed.FULL):
