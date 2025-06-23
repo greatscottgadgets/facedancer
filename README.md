@@ -100,6 +100,7 @@ export BACKEND=greatfet
  * All GoodFET-based Facedancers, including the common Facedancer21 (```BACKEND=goodfet```)
  * RPi + Max3241 Raspdancer boards (```BACKEND=raspdancer```)
  * HydraDancer and HydraUSB3 boards (```BACKEND=hydradancer```)
+ * Any Linux board with [Raw Gadget](https://github.com/xairy/raw-gadget) support (```BACKEND=rawgadget```)
 
 Note that hardware restrictions prevent the MAX3420/MAX3421 boards from emulating
 more complex devices -- there's limitation on the number/type of endpoints that can be

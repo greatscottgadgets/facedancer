@@ -6,5 +6,6 @@ __all__ = [
     "greathost",
     "libusbhost",
     "moondancer",
-    "hydradancer"
+    "hydradancer",
+    "rawgadget",
 ]

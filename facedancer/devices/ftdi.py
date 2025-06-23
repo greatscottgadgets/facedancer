@@ -182,7 +182,7 @@ class FTDIDevice(USBDevice):
             (1 << 5) if self.data_set_ready     else 0 | \
             (1 << 6) if self.ring_detect        else 0 | \
             (1 << 7) if self.line_status_detect else 0
-        request.reply((response,))
+        request.reply(bytes([response]))
 
 
     @vendor_request_handler(number=6)

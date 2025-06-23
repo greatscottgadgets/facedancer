@@ -80,7 +80,7 @@ class FacedancerApp:
 
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name=None):
+    def appropriate_for_environment(cls, backend_name: str | None = None) -> bool:
         """
         Returns true if the current class is likely to be the appropriate
         class to connect to a facedancer given the board_name and other
@@ -101,7 +101,7 @@ class FacedancerApp:
         self.init_commands()
 
         if self.verbose > 0:
-            log.info(self.app_name, "initialized")
+            log.info(f"{self.app_name} initialized")
 
     def init_commands(self):
         pass

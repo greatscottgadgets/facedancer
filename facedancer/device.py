@@ -300,7 +300,7 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
 
     def control_send(self, endpoint_number: int, in_request: USBControlRequest, data: bytes, *, blocking: bool = False):
         """ Queues sending data on the provided control endpoint in
-            response to a IN control request.
+            response to a control request.
 
         Args:
             endpoint_number : The endpoint number to send data upon.

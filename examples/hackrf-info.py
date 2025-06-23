@@ -44,7 +44,7 @@ class HackRF(USBDevice):
 
         # Theoretically, this is the point where you'd experiment
         # with providing one-byte responses and see what `hackrf_info` does.
-        request.reply([2])
+        request.reply(bytes([2]))
 
 
     #
