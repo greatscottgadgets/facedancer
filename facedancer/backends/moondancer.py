@@ -84,7 +84,7 @@ class MoondancerApp(FacedancerApp, FacedancerBackend):
     # Number of supported USB endpoints.
     SUPPORTED_ENDPOINTS = 16
 
-    def __init__(self, device: USBDevice=None, verbose: int=0, quirks: List[str]=[]):
+    def __init__(self, device=None, verbose: int=0, quirks: List[str]=[]):
         """
         Sets up a new Cynthion-backed Facedancer (Moondancer) application.
 

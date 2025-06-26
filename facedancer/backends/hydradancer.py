@@ -57,14 +57,14 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
     current_setup_req = None
 
-    def __init__(self, device: USBDevice=None, verbose: int=0, quirks: List[str]=[]):
+    def __init__(self, device=None, verbose: int=0, quirks: List[str]=[]):
         """
         Initializes the backend.
 
         Args:
-            device  :  The device that will act as our Facedancer.   (Optional)
+            device  : The device that will act as our Facedancer.   (Optional)
             verbose : The verbosity level of the given application. (Optional)
-            quirks  :  List of USB platform quirks.                  (Optional)
+            quirks  : List of USB platform quirks.                  (Optional)
         """
         super().__init__(self)
 
