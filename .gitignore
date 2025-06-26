@@ -94,6 +94,9 @@ tags
 # IntelliJ Project
 .idea/
 
+# vim
+*.swp
+
 # Release files
 VERSION
 release-files
