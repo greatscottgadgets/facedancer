@@ -352,15 +352,17 @@ class USBBaseDevice(USBDescribable, USBRequestHandler):
             self.backend.send_on_endpoint(endpoint_number, data, blocking=blocking)
             return
 
-        # Send the relevant data one packet at a time,
-        # chunking if we're larger than the max packet size.
-        # This matches the behavior of the MAX3420E.
-        while data:
-            packet = data[0:packet_size]
-            del data[0:packet_size]
+        if self.backend.requires_packetizing():
+            # Send the relevant data one packet at a time,
+            # chunking if we're larger than the max packet size.
+            # This matches the behavior of the MAX3420E.
+            while data:
+                packet = data[0:packet_size]
+                del data[0:packet_size]
 
-            self.backend.send_on_endpoint(endpoint_number, packet, blocking=blocking)
-
+                self.backend.send_on_endpoint(endpoint_number, packet, blocking=blocking)
+        else:
+                self.backend.send_on_endpoint(endpoint_number, data, blocking=blocking)
 
     def get_endpoint(self, endpoint_number: int, direction: USBDirection) -> USBEndpoint:
         """ Attempts to find a subordinate endpoint matching the given number/direction.

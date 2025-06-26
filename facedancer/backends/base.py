@@ -34,6 +34,14 @@ class FacedancerBackend:
         raise NotImplementedError
 
 
+    def requires_packetizing(self):
+        """
+        Tells whether the backend requires the data to be split into chunks
+        of max packet size when sending this data on an endpoint.
+        """
+        return True
+
+
     def connect(self, usb_device: USBDevice, max_packet_size_ep0: int=64, device_speed: DeviceSpeed=DeviceSpeed.FULL):
         """
         Prepares backend to connect to the target host and emulate
