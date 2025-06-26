@@ -16,7 +16,7 @@ class FacedancerBackend:
 
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name: str) -> bool:
+    def appropriate_for_environment(cls, backend_name: str | None) -> bool:
         """
         Determines if the current environment seems appropriate
         for using this backend.
