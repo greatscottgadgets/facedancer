@@ -92,7 +92,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
             backend_name : Backend name being requested. (Optional)
         """
 
-        logging.info("this is hydradancer hi")
         # Open a connection to the target device...
         device = usb.core.find(idVendor=0x16c0, idProduct=0x27d8)
 
