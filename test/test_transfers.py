@@ -73,6 +73,9 @@ class TestTransfers(FacedancerTestCase):
         # perform Bulk OUT transfer
         bytes_sent = self.bulk_out_transfer(OUT_ENDPOINT, data)
 
+        # give device time to record transfer data
+        time.sleep(0.1)
+
         # check transfer
         self.check_out_transfer(length, data, bytes_sent)
 
