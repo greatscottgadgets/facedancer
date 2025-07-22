@@ -29,18 +29,6 @@ ENDPOINT_IN  = 3
 class USBMassStorageDevice(USBDevice):
     """ Class implementing an emulated USB Mass Storage device. """
 
-    name                 : str = "USB mass storage interface"
-
-    vendor_id            : int = 0x8107 # Sandisk
-    product_id           : int = 0x5051 # SDCZ2 Cruzer Mini Flash Drive (thin)
-    device_revision      : int = 0x0003
-
-    manufacturer_string  : str = "Facedancer"
-    product_string       : str = "USB Mass Storage emulation"
-
-    max_packet_size_ep0  : int = 64
-
-
     class _Configuration(USBConfiguration):
         configuration_string : str = "Mass Storage config"
 
@@ -63,12 +51,19 @@ class USBMassStorageDevice(USBDevice):
                 transfer_type : USBTransferType   = USBTransferType.BULK
                 max_packet_size : int             = 64
 
-
     def __init__(self, disk_image):
         self.disk_image = disk_image
 
-        super().__init__()
-
+        # Pass our custom values explicitly to prevent them from being reset
+        super().__init__(
+            name="USB mass storage interface",
+            vendor_id=0x8107, # Sandisk
+            product_id=0x5051, # SDCZ2 Cruzer Mini Flash Drive (thin)
+            device_revision=0x0003,
+            manufacturer_string="Facedancer",
+            product_string="USB Mass Storage emulation",
+            max_packet_size_ep0=64,
+        )
 
     #
     # Device overrides
