@@ -63,12 +63,31 @@ class USBMassStorageDevice(USBDevice):
                 transfer_type : USBTransferType   = USBTransferType.BULK
                 max_packet_size : int             = 64
 
+    def __init__(self, disk_image,
+                name="USB mass storage interface",
+                vendor_id=0x8107, # Sandisk
+                product_id=0x5051, # SDCZ2 Cruzer Mini Flash Drive (thin)
+                device_revision=0x0003,
+                manufacturer_string="Facedancer",
+                product_string="USB Mass Storage emulation",
+                max_packet_size_ep0=64,
+                serial_number_string=None,
+                vendor="LifeScan"):
 
-    def __init__(self, disk_image):
         self.disk_image = disk_image
+        self.vendor = vendor
 
-        super().__init__()
-
+        # Pass our custom values explicitly to prevent them from being reset
+        super().__init__(
+            name=name,
+            vendor_id=vendor_id,
+            product_id=product_id,
+            device_revision=device_revision,
+            manufacturer_string=manufacturer_string,
+            product_string=product_string,
+            max_packet_size_ep0=max_packet_size_ep0,
+            serial_number_string=serial_number_string
+        )
 
     #
     # Device overrides
@@ -78,7 +97,7 @@ class USBMassStorageDevice(USBDevice):
         super().connect()
 
         # instantiate our SCSI command handler
-        self.scsi_command_handler = ScsiCommandHandler(self, self.disk_image, verbose=3)
+        self.scsi_command_handler = ScsiCommandHandler(self, self.disk_image, verbose=3, vendor=self.vendor)
 
 
     def disconnect(self):
@@ -129,10 +148,11 @@ class ScsiCommandHandler:
     STATUS_FAILURE    = 0x02 # TODO: Should this be 0x01?
     STATUS_INCOMPLETE = -1   # Special case status that aborts before response.
 
-    def __init__(self, device, disk_image, verbose=0):
+    def __init__(self, device, disk_image, verbose=0, vendor="GoodFET "):
         self.device = device
         self.disk_image = disk_image
         self.verbose = verbose
+        self.vendor = vendor
 
         self.is_write_in_progress = False
         self.write_cbw = None
@@ -255,7 +275,7 @@ class ScsiCommandHandler:
             0x00, 0x00, 0x00
         ])
 
-        response += b'GoodFET '         # vendor
+        response += self.vendor.encode('utf-8')  # vendor
         response += b'GoodFET '         # product id
         response += b'        '         # product revision
         response += b'0.01'
