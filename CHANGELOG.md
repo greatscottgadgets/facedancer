@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 -->
 
+## [3.1.1] - 2025-08-01
+
+### Added
+* Hydradancer: Handle `clear_halt` (tx @kauwua!)
+* Add `parent` field to all descriptors. (tx @kauwua!)
+* Extend mass storage device constructor to be more configurable. (tx @gniezen!)
+
+### Fixed
+* Mass storage device was unable to use custom descriptors. (tx @gniezen!)
+
+
 ## [3.1.0] - 2025-01-08
 > This is a breaking release which may require updates to your usage of Facedancer API's.
 
@@ -118,7 +129,8 @@ Any future bug-fixes or backports to Facedancer `2.9.x` should use the [`v2.9.x 
 - The current Facedancer core will be supersed by the implementation in `future/` with the `v3.0` release.
 
 
-[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.1.0...HEAD
+[Unreleased]: https://github.com/greatscottgadgets/facedancer/compare/3.1.1...HEAD
+[3.1.1]: https://github.com/greatscottgadgets/facedancer/compare/3.1.0...3.1.1
 [3.1.0]: https://github.com/greatscottgadgets/facedancer/compare/3.0.6...3.1.0
 [3.0.6]: https://github.com/greatscottgadgets/facedancer/compare/3.0.5...3.0.6
 [3.0.5]: https://github.com/greatscottgadgets/facedancer/compare/3.0.4...3.0.5
