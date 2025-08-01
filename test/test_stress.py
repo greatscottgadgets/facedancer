@@ -24,11 +24,11 @@ class TestStress(FacedancerTestCase):
     # - life-cycle ------------------------------------------------------------
 
     def setUp(self):
-        # select first interface
-        self.set_interface(0, 0)
-
         # reset test device state between tests
         self.reset_device_state()
+
+        # select first interface
+        self.set_interface(0, 0)
 
     def test_stress_test(self):
         def bulk_out_transfer(self, length):

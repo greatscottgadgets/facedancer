@@ -54,6 +54,9 @@ class TestAlternate(FacedancerTestCase):
             # perform Bulk OUT transfer
             bytes_sent = self.bulk_out_transfer(out_ep, data)
 
+            # give device time to record transfer data
+            time.sleep(0.1)
+
             # request a copy of the received data to compare against
             received_data = self.get_last_out_transfer_data()
 

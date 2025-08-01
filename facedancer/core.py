@@ -80,7 +80,7 @@ class FacedancerApp:
 
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name=None):
+    def appropriate_for_environment(cls, backend_name: str | None = None) -> bool:
         """
         Returns true if the current class is likely to be the appropriate
         class to connect to a facedancer given the board_name and other
@@ -218,7 +218,7 @@ class FacedancerUSBHost:
 
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name=None):
+    def appropriate_for_environment(cls, backend_name: str | None = None):
         """
         Returns true if the current class is likely to be the appropriate
         class to connect to a facedancer given the board_name and other

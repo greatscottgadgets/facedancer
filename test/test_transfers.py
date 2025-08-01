@@ -29,11 +29,11 @@ class TestTransfers(FacedancerTestCase):
     # - life-cycle ------------------------------------------------------------
 
     def setUp(self):
-        # select first interface
-        self.set_interface(0, 0)
-
         # reset test device state between tests
         self.reset_device_state()
+
+        # select first interface
+        self.set_interface(0, 0)
 
 
     # - transfer checks -------------------------------------------------------
@@ -72,6 +72,9 @@ class TestTransfers(FacedancerTestCase):
 
         # perform Bulk OUT transfer
         bytes_sent = self.bulk_out_transfer(OUT_ENDPOINT, data)
+
+        # give device time to record transfer data
+        time.sleep(0.1)
 
         # check transfer
         self.check_out_transfer(length, data, bytes_sent)

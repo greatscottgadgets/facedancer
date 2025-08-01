@@ -3,20 +3,20 @@ from ..        import *
 
 
 class FacedancerBackend:
-    def __init__(self, device: USBDevice=None, verbose: int=0, quirks: List[str]=[]):
+    def __init__(self, device=None, verbose: int=0, quirks: List[str]=[]):
         """
         Initializes the backend.
 
         Args:
-            device  :  The device that will act as our Facedancer.   (Optional)
+            device  : The device that will act as our Facedancer.   (Optional)
             verbose : The verbosity level of the given application. (Optional)
-            quirks  :  List of USB platform quirks.                  (Optional)
+            quirks  : List of USB platform quirks.                  (Optional)
         """
         raise NotImplementedError
 
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name: str) -> bool:
+    def appropriate_for_environment(cls, backend_name: str | None) -> bool:
         """
         Determines if the current environment seems appropriate
         for using this backend.
@@ -32,6 +32,14 @@ class FacedancerBackend:
         Returns information about the active Facedancer version.
         """
         raise NotImplementedError
+
+
+    def requires_packetizing(self):
+        """
+        Tells whether the backend requires the data to be split into chunks
+        of max packet size when sending this data on an endpoint.
+        """
+        return True
 
 
     def connect(self, usb_device: USBDevice, max_packet_size_ep0: int=64, device_speed: DeviceSpeed=DeviceSpeed.FULL):

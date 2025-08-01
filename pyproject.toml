@@ -33,6 +33,7 @@ dependencies = [
     "pyserial",
     "prompt-toolkit",
     "libusb1",
+    "construct>=2.10",
 ]
 
 dynamic = ["version"]

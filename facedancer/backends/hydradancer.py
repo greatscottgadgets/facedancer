@@ -57,14 +57,14 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
 
     current_setup_req = None
 
-    def __init__(self, device: USBDevice=None, verbose: int=0, quirks: List[str]=[]):
+    def __init__(self, device=None, verbose: int=0, quirks: List[str]=[]):
         """
         Initializes the backend.
 
         Args:
-            device  :  The device that will act as our Facedancer.   (Optional)
+            device  : The device that will act as our Facedancer.   (Optional)
             verbose : The verbosity level of the given application. (Optional)
-            quirks  :  List of USB platform quirks.                  (Optional)
+            quirks  : List of USB platform quirks.                  (Optional)
         """
         super().__init__(self)
 
@@ -83,7 +83,7 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
         self.api.wait_board_ready()
 
     @classmethod
-    def appropriate_for_environment(cls, backend_name: str) -> bool:
+    def appropriate_for_environment(cls, backend_name: str | None) -> bool:
         """
         Determines if the current environment seems appropriate
         for using this backend.
@@ -92,7 +92,6 @@ class HydradancerHostApp(FacedancerApp, FacedancerBackend):
             backend_name : Backend name being requested. (Optional)
         """
 
-        logging.info("this is hydradancer hi")
         # Open a connection to the target device...
         device = usb.core.find(idVendor=0x16c0, idProduct=0x27d8)
 
