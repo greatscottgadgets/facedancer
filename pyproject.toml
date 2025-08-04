@@ -33,6 +33,7 @@ dependencies = [
     "pyserial",
     "prompt-toolkit",
     "libusb1",
+    "hid-parser>=0.1.0",
 ]
 
 dynamic = ["version"]
