@@ -5,6 +5,10 @@ the original GoodFET-based Facedancer, this repository provides a python module
 that provides expanded Facedancer support -- including support for multiple boards
 and some pretty significant new features.
 
+## Project Documentation
+
+Facedancer's documentation is captured on [Read the Docs](https://facedancer.readthedocs.io/en/latest/). Raw documentation sources are in the [`docs/`](docs/) folder.
+
 
 ## Installation
 
