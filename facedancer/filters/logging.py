@@ -4,6 +4,8 @@
 
 import datetime
 
+from facedancer.request import USBControlRequest
+
 from ..logging import log
 
 from .         import USBProxyFilter
@@ -23,7 +25,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
 
 
-    def filter_control_in(self, req, data, stalled):
+    def filter_control_in(self, req: USBControlRequest | None, data, stalled):
         """
         Log IN control requests without modification.
         """
@@ -33,7 +35,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
             return req, data, stalled
 
         if self.verbose > 3:
-            log.info("{} {}{}".format(self.timestamp(), self.decoration, repr(req)))
+            log.info("{} {}< control {}".format(self.timestamp(), self.decoration, req))
 
         if self.verbose > 3 and stalled:
             log.info("{} {}< --STALLED-- ".format(self.timestamp(), self.decoration))
@@ -57,7 +59,7 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
             return req, data
 
         if self.verbose > 3:
-            log.info("{} {}{}".format(self.timestamp(), self.decoration, repr(req)))
+            log.info("{} {}> control {}".format(self.timestamp(), self.decoration, req))
 
         if self.verbose > 4 and data:
             self._pretty_print_data(data, '>', self.decoration)
@@ -101,16 +103,18 @@ class USBProxyPrettyPrintFilter(USBProxyFilter):
 
     def timestamp(self):
         """ Generate a quick timestamp for printing. """
-        return datetime.datetime.now().strftime("[%H:%M:%S]")
+        return datetime.datetime.now().strftime("[%H:%M:%S.%f]")
 
     def _magic_decode(self, data):
         """ Simple decode function that attempts to find a nice string representation for the console."""
         try:
             return bytes(data).decode('utf-16le')
         except:
-            return bytes(data)
+            return bytes(data).hex(' ', 2)
 
 
     def _pretty_print_data(self, data, direction_marker, decoration='', is_string=False, ep_marker=''):
-        data = self._magic_decode(data) if is_string else bytes(data)
-        log.info("{} {}{}{}: {}".format(self.timestamp(), ep_marker, decoration, direction_marker, data))
+        decoded = self._magic_decode(data) if is_string else bytes(data).hex(' ', 2)
+        if self.verbose < 6 and len(data) >= 30:
+            decoded = decoded[:30] + '…'
+        log.info("{} {}{}{}: {} ({})".format(self.timestamp(), ep_marker, decoration, direction_marker, decoded, len(data)))
